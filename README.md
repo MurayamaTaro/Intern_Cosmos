@@ -24,25 +24,23 @@ Cosmos-Predict1 includes the following features:
 ## Examples
 
 Inference with pre-trained models:
-* [Inference with diffusion-based Text2World models](examples/inference_diffusion_text2world.md)
-* [Inference with diffusion-based Video2World models](examples/inference_diffusion_video2world.md)
-* [Inference with autoregressive-based base models](examples/inference_autoregressive_base.md)
-* [Inference with autoregressive-based Video2World models](examples/inference_autoregressive_video2world.md)
+* [Inference with diffusion-based Text2World models](examples/inference_diffusion_text2world.md) **[with multi-GPU support]**
+* [Inference with diffusion-based Video2World models](examples/inference_diffusion_video2world.md) **[with multi-GPU support]**
+* [Inference with autoregressive-based base models](examples/inference_autoregressive_base.md) **[with multi-GPU support]**
+* [Inference with autoregressive-based Video2World models](examples/inference_autoregressive_video2world.md) **[with multi-GPU support]**
 * [Inference with tokenizer models](examples/inference_tokenizer.md)
 
 Post-training models:
-* [Post-training diffusion-based Text2World models](examples/post-training_diffusion_text2world.md)
-* [Post-training diffusion-based Text2World models (with multi-view data)](examples/post-training_diffusion_text2world_multiview.md)
-* [Post-training diffusion-based Video2World models](examples/post-training_diffusion_video2world.md)
-* [Post-training diffusion-based Video2World models (with multi-view data)](examples/post-training_diffusion_video2world_multiview.md)
-* [Post-training diffusion-based Video2World models (with instruction following)](examples/post-training_diffusion_video2world_instruction.md)
-* [Post-training diffusion-based Video2World models (with action control)](examples/post-training_diffusion_video2world_action.md)
-* [Post-training autoregressive-based base models](examples/post-training_autoregressive_base.md)
+* [Post-training diffusion-based Text2World models](examples/post-training_diffusion_text2world.md) **[with multi-GPU support]**
+* [Post-training diffusion-based Video2World models](examples/post-training_diffusion_video2world.md) **[with multi-GPU support]**
+* [Post-training diffusion-based Text2World models (with multi-view data)](examples/post-training_diffusion_text2world_multiview.md) **[with multi-GPU support]**
+* [Post-training diffusion-based Video2World models (with multi-view data)](examples/post-training_diffusion_video2world_multiview.md) **[with multi-GPU support]**
+* [Post-training autoregressive-based base models](examples/post-training_autoregressive_base.md) **[with multi-GPU support]**
 * [Post-training tokenizer models](examples/post-training_tokenizer.md)
 
 Inference with post-trained models:
-* [Inference with diffusion-based Text2World models (with multi-view data)](examples/inference_diffusion_text2world_multiview.md)
-* [Inference with diffusion-based Video2World models (with multi-view data)](examples/inference_diffusion_video2world_multiview.md)
+* [Inference with diffusion-based Text2World models (with multi-view data)](examples/inference_diffusion_text2world_multiview.md) **[with multi-GPU support]**
+* [Inference with diffusion-based Video2World models (with multi-view data)](examples/inference_diffusion_video2world_multiview.md) **[with multi-GPU support]**
 
 <!-- ------------------------------ -->
 
