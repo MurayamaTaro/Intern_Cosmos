@@ -1,4 +1,4 @@
-## Post-training diffusion-based Video2World models
+## Post-training diffusion-based Video2World models (with multi-view data)
 
 ### Model Support Matrix
 
@@ -7,7 +7,6 @@ We support the following Cosmos Diffusion models for post-training. Review the a
 | Model Name                               | Model Status | Compute Requirements for Post-Training |
 |----------------------------------------------|------------------|------------------------------------------|
 | Cosmos-Predict1-7B-Video2World           | **Supported**    | 8 NVIDIA GPUs*                           |
-| Cosmos-Predict1-14B-Video2World          | **Supported**    | 8 NVIDIA GPUs*                           |
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
 
