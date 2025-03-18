@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from megatron.core import parallel_state
+from torch.utils.data import DataLoader, DistributedSampler
+
+from cosmos_predict1.autoregressive.configs.base.dataset import BridgeDatasetConfig, OverfitDatasetConfig
+from cosmos_predict1.autoregressive.datasets.bridge_dataset import BridgeDataset
+from cosmos_predict1.autoregressive.datasets.overfit_dataset import OverfitDataset
+from cosmos_predict1.utils import log
+from cosmos_predict1.utils.lazy_config import LazyCall as L
+
+DATALOADER_OPTIONS = {}
+
+
+def get_sampler(dataset):
+    return DistributedSampler(
+        dataset,
+        num_replicas=parallel_state.get_data_parallel_world_size(),
+        rank=parallel_state.get_data_parallel_rank(),
+        shuffle=True,
+        seed=0,
+    )
+
+
+def dataloader_register(key):
+    log.info(f"registering dataloader {key}...")
+
+    def decorator(func):
+        DATALOADER_OPTIONS[key] = func
+        return func
+
+    return decorator
+
+
+@dataloader_register("mock_video")
+def get_mock_video(num_video_frames=36, video_height=384, video_width=640, single_data=False):
+    return L(OverfitDataset)(
+        config=OverfitDatasetConfig(
+            data_key="video",
+            batch_size=1,
+            num_video_frames=num_video_frames,
+            video_height=video_height,
+            video_width=video_width,
+            single_data=single_data,
+        )
+    )
+
+
+@dataloader_register("bridge_video")
+def get_bridge_video(
+    batch_size: int = 1,
+    dataset_dir: str = "assets/example_training_data_bridge/",
+    sequence_interval: int = 1,
+    num_frames: int = 33,
+    video_size: list[int, int] = [640, 848],
+    start_frame_interval: int = 1,
+):
+    dataset = L(BridgeDataset)(
+        config=BridgeDatasetConfig(
+            dataset_dir=dataset_dir,
+            sequence_interval=sequence_interval,
+            num_frames=num_frames,
+            video_size=video_size,
+            start_frame_interval=start_frame_interval,
+        )
+    )
+    return L(DataLoader)(
+        dataset=dataset,
+        sampler=L(get_sampler)(dataset=dataset),
+        batch_size=batch_size,
+        drop_last=True,
+    )
