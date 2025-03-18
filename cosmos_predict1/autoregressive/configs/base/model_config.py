@@ -17,6 +17,7 @@ import copy
 from typing import Callable, List, Optional
 
 import torch
+from megatron.core import ModelParallelConfig
 
 from cosmos_predict1.autoregressive.configs.base.model import ModelConfig, TrainingModelConfig
 from cosmos_predict1.autoregressive.configs.base.tokenizer import (
@@ -32,9 +33,6 @@ from cosmos_predict1.utils import log
 from cosmos_predict1.utils.config import EMAConfig
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 
-from megatron.core import ModelParallelConfig
-
-
 # Common architecture specifications
 BASE_CONFIG = {"n_kv_heads": 8, "norm_type": "rmsnorm", "norm_eps": 1e-5, "ffn_hidden_size": 14336}
 COSMOS_ARCHITECTURES = {
@@ -42,8 +40,6 @@ COSMOS_ARCHITECTURES = {
         "n_layers": 16,
         "dim": 2048,
         "n_heads": 32,
-        # "ffn_dim_multiplier": 1.3,
-        # "multiple_of": 1024
     },
     "4b": {
         "n_layers": 16,
@@ -444,27 +440,6 @@ def create_video2world_model_config(
     return model_config, tokenizer_config
 
 
-# def create_video2world_model(**kwargs):
-#     model_config, tokenizer_config = create_video2world_model_config(**kwargs)
-
-#     model_parallel = ModelParallelConfig(
-#         bf16=True,
-#         params_dtype=getattr(torch, "bfloat16"),
-#     )
-#     model_parallel.tensor_model_parallel_size = "${model.model_config.tensor_model_parallel_size}"
-#     # model_parallel.context_parallel_size = "${model.model_config.context_parallel_size}"
-#     # model_parallel.sequence_parallel = "${model.model_config.sequence_parallel}"
-
-#     model = L(AutoRegressiveTrainingModel.build)(
-#         model_config=model_config,
-#         tokenizer_config=tokenizer_config,
-#         model_parallel=model_parallel,
-#         train_from_scratch=True,
-#     )
-
-#     return model
-
-
 def create_video2world_model(
     tensor_model_parallel_size: int = 1,
     context_parallel_size: int = 1,
@@ -488,7 +463,6 @@ def create_video2world_model(
     video_tokenizer_config_creator: Callable = create_discrete_video_fsq_tokenizer_state_dict_config,
     rope_dim: str = "3D",
     add_special_tokens: bool = False,
-    # video_tokenizer_version: str = "20240807",
     video_height: int = 384,
     video_width: int = 640,
     original_latent_shape: Optional[List[int]] = None,
@@ -578,15 +552,13 @@ def create_video2world_model(
     Returns:
         dict: A dictionary containing the model configuration representing the model object, can be instantiated.
     """
-    # ckpt_dir = get_model_ckpt_dir(model_family, model_size, is_instruct_model=False)
-    ckpt_dir = "checkpoints"
     assert (
         pixel_chunk_duration % compression_ratio[0] == 1
     ), f"pixel_chunk_duration({pixel_chunk_duration}) should be k*n + 1 (k={compression_ratio[0]})"
     latent_chunk_duration = (pixel_chunk_duration - 1) // compression_ratio[0] + 1
     latent_height = video_height // compression_ratio[1]
     latent_width = video_width // compression_ratio[2]
-    # Do some math to compute the video latent shape and sequence length
+    # Compute the video latent shape and sequence length
     if temporal_overlap == 0:
         assert (
             num_video_frames % pixel_chunk_duration == 0
@@ -663,15 +635,14 @@ def create_video2world_model(
         inference=inference,
         backend=backend,
         precision="bfloat16",
-        ema=EMAConfig(enabled=False),  # Not needed for LLM training + Not supported in our FSDP
+        ema=EMAConfig(enabled=False),
         act_ckpt_enabled=act_ckpt_enabled,
         fsdp_enabled=fsdp_enabled,
         cache_dir=None,
-        # ckpt_dir=ckpt_dir,
         ckpt_path="checkpoints/Cosmos-Predict1-4B/model.pt",
         use_qk_normalization=use_qk_normalization,
         vocab_size=64000,
-        ignore_first_num_tokens=num_tokens_to_ignore,  # Ignore the first token and first chunk
+        ignore_first_num_tokens=num_tokens_to_ignore,
         apply_yarn=apply_yarn,
         yarn_beta_fast=yarn_beta_fast,
         yarn_beta_slow=yarn_beta_slow,
@@ -717,7 +688,7 @@ def create_video2world_model(
                 ckpt_path=tokenizer_ckpt_path, pixel_chunk_duration=pixel_chunk_duration
             ),
             data_key="video",
-            tokenizer_offset=0,  # Since there is no text embeddings in the model. Note this only apply when the model is trained from scratch. If we use text pretrained model, the offset will be vocab_size of text token.
+            tokenizer_offset=0,
             vocab_size=64000,
             tokenize_here=True,
             max_seq_len=num_token_video_latent,

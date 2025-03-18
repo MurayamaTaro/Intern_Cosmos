@@ -70,7 +70,7 @@ MD5_CHECKSUM_LOOKUP = {
 def get_md5_checksum(checkpoints_dir, model_name):
     print("---------------------")
     for key, value in MD5_CHECKSUM_LOOKUP.items():
-        if key.startswith(model_name+"/"):
+        if key.startswith(model_name + "/"):
             print(f"Verifying checkpoint {key}...")
             file_path = checkpoints_dir.joinpath(key)
             # File must exist
@@ -110,7 +110,9 @@ def main(args):
     checkpoints_dir = Path(args.checkpoint_dir)
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
-    download_kwargs = dict(allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit", "guardrail/*"])
+    download_kwargs = dict(
+        allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit", "guardrail/*"]
+    )
 
     # Download the requested Autoregressive models
     for size in args.model_sizes:

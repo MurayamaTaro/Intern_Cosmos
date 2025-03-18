@@ -164,8 +164,7 @@ def obtain_tensor_parallel_state_dict(
 
     if target_backend is None:
         target_backend = source_backend
-    # source_backend = identify_checkpoint_backend(new_state_dict_shard)
-    # assert source_backend == "pytorch"
+
     new_state_dict_shard = maybe_convert_checkpoint_to_backend(
         new_state_dict_shard,
         target_backend=target_backend,
@@ -173,14 +172,6 @@ def obtain_tensor_parallel_state_dict(
         is_tensor_parallel_shard=True,
         tensor_parallel_size=tensor_parallel_size,
     )
-    # target_backend = identify_checkpoint_backend(new_state_dict_shard)
-    # log.info(f"Sample key: {list(new_state_dict_shard.keys())[:10]}")
-    # assert target_backend == "transformer_engine"
-
-    # # Save the sharded checkpoint for each tp rank
-    # output_path = f"checkpoints/Cosmos-Predict1-4B/model_model_mp_{tensor_parallel_rank}.pt"
-    # log.info(f"Saving sharded checkpoint to {output_path}")
-    # torch.save(new_state_dict_shard, output_path)
 
     return new_state_dict_shard
 

@@ -29,7 +29,6 @@ from transformer_engine.pytorch.module.rmsnorm import RMSNorm as RMSNormTE
 
 from cosmos_predict1.utils import log
 
-# from cosmos_predict1.autoregressive.datasets.augmentors.action_transform import _ACTION_DIM
 _ACTION_DIM = 8
 from cosmos_predict1.autoregressive.modules.embedding import (
     RotaryPositionEmbeddingPytorch,

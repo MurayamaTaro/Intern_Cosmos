@@ -45,6 +45,7 @@ try:
 except ImportError:
     print("Megatron-core is not installed.")
 
+
 def init() -> int | None:
     """Initialize distributed training."""
     # Set GPU affinity.
@@ -325,6 +326,7 @@ def broadcast(tensor, src, group=None, async_op=False):
         return tensor
     dist.broadcast(tensor, src=src, group=group, async_op=async_op)
 
+
 def sync_model_states(
     model: torch.nn.Module,
     process_group: Optional[dist.ProcessGroup] = None,
@@ -416,8 +418,8 @@ def sync_model_states(
         params_and_buffers_to_ignore=params_and_buffers_to_ignore,
         broadcast_buffers=broadcast_buffers,
     )
-    
-    
+
+
 def dist_reduce_tensor(tensor, rank=0, reduce="mean"):
     r"""Reduce to rank 0"""
     world_size = get_world_size()

@@ -22,14 +22,13 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import torch
 import torch.nn.functional as F
-from torch.nn.modules.module import _IncompatibleKeys
-
 from megatron.core import InferenceParams, ModelParallelConfig, parallel_state
 from safetensors.torch import load_file
 from torch.distributed.fsdp import FullStateDictConfig
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import ShardingStrategy, StateDictType
 from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy, transformer_auto_wrap_policy
+from torch.nn.modules.module import _IncompatibleKeys
 
 from cosmos_predict1.autoregressive.configs.base.model import TrainingModelConfig as ModelConfig
 from cosmos_predict1.autoregressive.configs.base.tokenizer import TokenizerConfig
@@ -59,10 +58,7 @@ from cosmos_predict1.autoregressive.utils.sampling import (
     sample_top_k,
     sample_top_p,
 )
-from cosmos_predict1.diffusion.training.utils.fsdp_helper import (
-    apply_fsdp_checkpointing,
-    hsdp_device_mesh,
-)
+from cosmos_predict1.diffusion.training.utils.fsdp_helper import apply_fsdp_checkpointing, hsdp_device_mesh
 from cosmos_predict1.utils import distributed, log, misc
 from cosmos_predict1.utils.lazy_config import LazyDict
 from cosmos_predict1.utils.misc import download_from_s3_with_cache, sync_s3_dir_to_local

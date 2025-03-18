@@ -59,7 +59,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/test_environment.py
    ```
 4. For tensor parallel training, checkpoints need to be sharded to the target tensor model parallel size TP. Shard checkpoints to TP=4 with:
    ```bash
-    python scripts/shard_autoregressive_base_checkpoints.py --checkpoint_path checkpoints/Cosmos-Predict1-4B/model.pt --model_size 4b --tensor_parallel_size 4   
+    python scripts/shard_autoregressive_base_checkpoints.py --checkpoint_path checkpoints/Cosmos-Predict1-4B/model.pt --model_size 4b --tensor_parallel_size 4  
    ```
 
 ### Examples
@@ -77,7 +77,6 @@ The Bridge dataset can be downloaded from [IRASim](https://github.com/bytedance/
 Run the following command to execute an example post-training job with mock data
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-export WANDB_API_KEY=<WANDB_API_KEY> # optional
 torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock job.wandb_mode="online"
 ```
 
@@ -113,14 +112,12 @@ checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_fr
 Run the following command to execute an example post-training job with bridge data by training from scratch with TP=4.
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-export WANDB_API_KEY=<WANDB_API_KEY> # optional
 torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.wandb_mode="online"
 ```
 
 We can also load the pre-trained checkpoints and fine-tune it on the bridge data for faster convergence with TP=4.
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-export WANDB_API_KEY=<WANDB_API_KEY> # optional
 torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.wandb_mode="online"
 ```
 
@@ -168,7 +165,7 @@ cp checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp
 
 With TP=4, the postrained checkpoints are sharded and should first be merged into a single checkpoint for inference
 ```bash
-python scripts/merge_autoregressive_tp_checkpoints.py --checkpoint_path checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock/checkpoints/iter_000001000.pt --output_path checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt --model_size 4b --tensor_parallel_size 4 
+python scripts/merge_autoregressive_tp_checkpoints.py --checkpoint_path checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock/checkpoints/iter_000001000.pt --output_path checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt --model_size 4b --tensor_parallel_size 4
 ```
 
 #### 2. Running the Inference

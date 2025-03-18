@@ -15,6 +15,7 @@
 
 import importlib
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -23,8 +24,6 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from decord import VideoReader
-
-import re
 
 from cosmos_predict1.utils import log
 

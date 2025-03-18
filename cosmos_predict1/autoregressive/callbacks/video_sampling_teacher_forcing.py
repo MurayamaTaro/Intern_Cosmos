@@ -37,13 +37,12 @@ from cosmos_predict1.utils import distributed, log, misc
 from cosmos_predict1.utils.model import Model
 from cosmos_predict1.utils.trainer import Trainer
 
-from cosmos_predict1.callbacks.every_n import EveryN
-from cosmos_predict1.utils import distributed, log, misc
 
 def resize_image(image: torch.Tensor, resize_factor=0.5) -> torch.Tensor:
     _, _, h, w = image.shape
     new_h, new_w = int(resize_factor * h), int(resize_factor * w)
     return torchvision_F.resize(image, (new_h, new_w))
+
 
 class VideoSamplingTeacherForcing(EveryN):
     def __init__(

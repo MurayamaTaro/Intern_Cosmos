@@ -60,7 +60,6 @@ class Config(config.Config):
             assert (
                 "NVTE_FLASH_ATTN" in os.environ and os.environ["NVTE_FLASH_ATTN"] == "1"
             )  # Enable Flash attention for transformer engine
-            # assert "low_precision" in self.trainer.callbacks, "Need to add LowPrecisionCallback when using transformer engine"
 
         # TP, CP config check
         if self.model_parallel is not None:

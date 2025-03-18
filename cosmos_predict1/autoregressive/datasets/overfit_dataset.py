@@ -26,13 +26,17 @@ def get_mock_video_data_batch(length: int = 36, video_height: int = 384, video_w
     # generate video non-random values are between -1 and 1
     video_data_batch["video"] = torch.zeros(n, 3, length, video_height, video_width, dtype=torch.bfloat16)
     video_data_batch["video"][:, :, :, 0:100, :] = 1
-    video_data_batch["video"][-1, :, :, 0:100, 100:200] = -1
+    if video_width > 100:
+        video_data_batch["video"][-1, :, :, 0:100, 100:200] = -1
     video_data_batch["padding_mask"] = torch.zeros(n, 1, video_height, video_width, dtype=torch.bfloat16)
-    video_data_batch["padding_mask"][:, :, -20:, -20:] = 1
+    if video_width > 20 and video_height > 20:
+        video_data_batch["padding_mask"][:, :, -20:, -20:] = 1
     video_data_batch["fps"] = torch.tensor([25] * n, dtype=torch.bfloat16)
     video_data_batch["num_frames"] = torch.tensor([length] * n, dtype=torch.bfloat16)
     video_data_batch["chunk_index"] = torch.tensor([1] * n, dtype=torch.bfloat16)
-    video_data_batch["image_size"] = torch.tensor([[video_height, video_width, 360, 640]] * n, dtype=torch.bfloat16)
+    video_data_batch["image_size"] = torch.tensor(
+        [[video_height, video_width, video_width, video_height]] * n, dtype=torch.bfloat16
+    )
     video_data_batch["caption"] = (
         [
             """

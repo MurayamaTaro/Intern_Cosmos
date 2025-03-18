@@ -27,11 +27,6 @@ from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.lazy_config import instantiate
 from cosmos_predict1.utils.lazy_config.lazy import LazyConfig
 
-# from cosmos_predict1.utils.launch import log_reproducible_setup
-# from cosmos_predict1.utils.one_logger.one_logger_override_utils import override_one_logger_callback
-# from cosmos_predict1.utils.one_logger.one_logger_utils import get_one_logger, one_logger_is_initialized
-# from projects.cosmos.diffusion.v1.checkpointers.s3_fast_tp import Checkpointer as S3FastTensorParallelCheckpointer
-
 """
 The training entry script for the Edify-World-A project. Works for both DDP and FSDP training.
 Example usage:
@@ -42,13 +37,9 @@ Example usage:
 @misc.timer("instantiate LLM")
 def instantiate_model(config, trainer) -> None:
     model_parallel_cuda_manual_seed(config.trainer.seed)
-    # if config.model["model_config"].fsdp_enabled:
-    #     # As FSDP is enabled, we need to pass the FSDP checkpointer to the FSDP model constructor
-    #     log.critical("FSDP enabled")
-    #     config.model["fsdp_checkpointer"] = trainer.checkpointer
     model = instantiate(config.model)
-    # if not config.model["model_config"].set_parallel_mode:
-    #     misc.set_random_seed(seed=config.trainer.seed, by_rank=True)
+    if not config.model["model_config"].set_parallel_mode:
+        misc.set_random_seed(seed=config.trainer.seed, by_rank=True)
 
     return model
 
@@ -60,29 +51,12 @@ def launch(config, args: argparse.Namespace) -> None:
     # Freeze the config so developers don't change it during training.
     config.freeze()  # type: ignore
     trainer = config.trainer.type(config)
-    # Setup the miscellaneous stuff for reproducibility.
-    # log_reproducible_setup(config, args)
     # Create the model
     model = instantiate_model(config, trainer)
 
-    # if args.cluster is not None and args.cluster.startswith("aws"):
-    #     if isinstance(trainer.checkpointer, TensorParallelCheckpointer):
-    #         del trainer.checkpointer
-    #         trainer.checkpointer = S3FastTensorParallelCheckpointer(
-    #             config.checkpoint, config.job, callbacks=trainer.callbacks
-    #         )
-    #         log.critical(f"[cluster={args.cluster}] Replaced TP checkpointer with the S3-Fast TP Checkpointer")
-
     model.on_model_init_end()
-    # # get OneLoggerUtils object
-    # one_logger = get_one_logger()  # globally unique one_logger is initialized in trainer
-    # # Create the dataloaders.
-    # if one_logger_is_initialized():
-    #     one_logger.on_dataloader_init_start()
     dataloader_train = instantiate(config.dataloader_train)
     dataloader_val = instantiate(config.dataloader_val)
-    # if one_logger_is_initialized():
-    #     one_logger.on_dataloader_init_end()
     trainer.train(
         model,
         dataloader_train,
@@ -113,7 +87,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = importlib.import_module(get_config_module(args.config)).make_config()
     config = override(config, args.opts)
-    # config = override_one_logger_callback(config)
     if args.dryrun:
         os.makedirs(config.job.path_local, exist_ok=True)
         LazyConfig.save_yaml(config, f"{config.job.path_local}/config.yaml")
