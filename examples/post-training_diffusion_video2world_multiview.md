@@ -40,7 +40,7 @@ CUDA_HOME=$CONDA_PREFIX pip install -v --disable-pip-version-check --no-cache-di
 
 You can test the environment setup with
 ```bash
-PYTHONPATH=$(pwd) python scripts/test_environment.py
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/test_environment.py
 ```
 
 ### Download checkpoints

@@ -129,7 +129,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
 This example runs parallelized inference on a single prompt using 8 GPUs.
 ```bash
 NUM_GPUS=8
-PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/diffusion/inference/text2world_multiview.py \
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/diffusion/inference/text2world_multiview.py \
     --num_gpus ${NUM_GPUS} \
     --checkpoint_dir checkpoints \
     --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview \

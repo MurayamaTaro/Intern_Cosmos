@@ -188,7 +188,7 @@ This is the basic example for running inference on the post-trained 4B model wit
 
 ```bash
 NUM_GPUS=<NUM_GPUS>
-PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/autoregressive/inference/base.py \
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/autoregressive/inference/base.py \
     --num_gpus ${NUM_GPUS} \
     --checkpoint_dir checkpoints \
     --ar_model_dir Cosmos-Predict1-4B-Base_post-trained \
