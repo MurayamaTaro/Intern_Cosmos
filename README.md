@@ -42,6 +42,25 @@ Inference with post-trained models:
 * [Inference with diffusion-based Text2World models (with multi-view data)](examples/inference_diffusion_text2world_multiview.md) **[with multi-GPU support]**
 * [Inference with diffusion-based Video2World models (with multi-view data)](examples/inference_diffusion_video2world_multiview.md) **[with multi-GPU support]**
 
+
+The code snippet below provides a gist of the inference usage.
+
+```bash
+PROMPT="A sleek, humanoid robot stands in a vast warehouse filled with neatly stacked cardboard boxes on industrial shelves. The robot's metallic body gleams under the bright, even lighting, highlighting its futuristic design and intricate joints. A glowing blue light emanates from its chest, adding a touch of advanced technology. The background is dominated by rows of boxes, suggesting a highly organized storage system. The floor is lined with wooden pallets, enhancing the industrial setting. The camera remains static, capturing the robot's poised stance amidst the orderly environment, with a shallow depth of field that keeps the focus on the robot while subtly blurring the background for a cinematic effect."
+
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World \
+    --prompt "${PROMPT}" \
+    --offload_prompt_upsampler \
+    --video_save_name diffusion-text2world-7b
+```
+
+<video src="https://github.com/user-attachments/assets/2ee7386b-8808-4db2-b38a-87ab679339f9">
+  Your browser does not support the video tag.
+</video>
+
+
 <!-- ------------------------------ -->
 
 ## Model Family
@@ -77,6 +96,6 @@ We provide a series of pre-trained models of different families, available for d
 
 ## License and Contact
 
-This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.  
-NVIDIA Cosmos source code is released under the [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0).  
+This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
+NVIDIA Cosmos source code is released under the [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0).
 NVIDIA Cosmos models are released under the [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license). For a custom license, please contact [cosmos-license@nvidia.com](mailto:cosmos-license@nvidia.com).
