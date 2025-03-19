@@ -48,36 +48,6 @@ class SamplingConfig:
     logprobs: bool = False
     echo: bool = False
 
-
-@attrs.define(slots=False)
-class TrainingSamplingConfig:
-    """
-    Sampling config
-    Args:
-        temperature (float): Temperature value for controlling randomness in sampling. Defaults to 0.6.
-        top_p (float): Top-p probability threshold for nucleus sampling. Defaults to 0.9.
-        top_k (Optional[int]): Top-k value for top-k sampling. Defaults to None.
-        logprobs (bool): Flag indicating whether to compute token log probabilities. Defaults to False.
-        echo (bool): Flag indicating whether to include prompt tokens in the generated output. Defaults to False.
-        fast_generate (bool): Flag indicating whether to use fast generate. Defaults to False.
-        compile_decode (bool): Flag indicating whether to compile the decoding step. Only used when fast_generate is True. Defaults to True.
-        compile_prefill (bool): Flag indicating whether to compile the prefilling step. Only used when fast_generate is True. Defaults to False.
-        int8_quant (bool): Flag indicating whether to use INT8 weights-only quantization. Defaults to False.
-
-    """
-
-    temperature: float = 0.6
-    top_p: float = 0.9
-    top_k: Optional[int] = None
-    logprobs: bool = False
-    num_gpu_eval: int = -1  # -1 means not set
-    echo: bool = False
-    fast_generate: bool = False
-    compile_decode: bool = True
-    compile_prefill: bool = False
-    int8_quant: bool = False
-
-
 @attrs.define(slots=False)
 class DiffusionDecoderSamplingConfig:
     """

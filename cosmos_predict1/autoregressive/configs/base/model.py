@@ -120,6 +120,8 @@ class ModelConfig:
     # Video tokenizer output dimension, in (T,H,W), it's computed by num_video_frames/temporal_compress_factor, video_height/spatial_compression_fact, video_width/spatial_compression_fact
     video_latent_shape: Optional[list] = None
 
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 @attrs.define
 class TrainingModelConfig:

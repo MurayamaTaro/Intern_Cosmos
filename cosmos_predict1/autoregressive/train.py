@@ -21,17 +21,10 @@ from loguru import logger as logging
 from megatron.core.tensor_parallel.random import model_parallel_cuda_manual_seed
 from omegaconf import OmegaConf
 
-from cosmos_predict1.checkpointer.tp import Checkpointer as TensorParallelCheckpointer
-from cosmos_predict1.utils import log, misc
+from cosmos_predict1.utils import misc
 from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.lazy_config import instantiate
 from cosmos_predict1.utils.lazy_config.lazy import LazyConfig
-
-"""
-The training entry script for the Edify-World-A project. Works for both DDP and FSDP training.
-Example usage:
-    PYTHONPATH=$(pwd) torchrun --nproc_per_node=4 --master_port=2001 projects/cosmos/ar/v1/train.py
-"""
 
 
 @misc.timer("instantiate LLM")

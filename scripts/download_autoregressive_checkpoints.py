@@ -132,7 +132,9 @@ def main(args):
 
     # Download the always-included models
     for model_name in extra_models:
-        if model_name != "google-t5/t5-11b":
+        if model_name == "google-t5/t5-11b":
+            repo_id = model_name
+        else:
             repo_id = f"{ORG_NAME}/{model_name}"
         local_dir = checkpoints_dir.joinpath(model_name)
 

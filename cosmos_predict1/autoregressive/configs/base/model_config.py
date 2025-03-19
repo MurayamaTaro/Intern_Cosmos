@@ -479,7 +479,7 @@ def create_video2world_model(
     action_embedding_dim: int = 1024,
     group_causal_mask_mode: Optional[str] = None,
     training_type: str = "video_to_video",
-    pad_to_multiple_of: Optional[int] = 64,
+    pad_to_multiple_of: Optional[int] = 1,
     z_loss_coeff: float = 1e-4,
     temporal_overlap: int = 0,
     embedding_dropout: float = 0.0,

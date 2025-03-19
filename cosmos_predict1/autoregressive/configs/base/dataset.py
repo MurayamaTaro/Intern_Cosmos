@@ -15,34 +15,13 @@
 
 """Dataset config class."""
 
-from typing import Union
-
 import attrs
 
 from cosmos_predict1.utils.config import make_freezable
 
-
 @make_freezable
 @attrs.define(slots=False)
-class OverfitDatasetConfig:
-    # """
-    # A class to hold overfitting dataset.
-
-    # Args:
-    #     data_key (str): The input key from data_dict.
-    # """
-    data_key: str = "video"
-    batch_size: Union[int, None] = None
-    num_video_frames: Union[int, None] = None
-    single_data: bool = False  # always return the first data
-    # Raw video pixel dimension, input video will be resized to this dimension
-    video_height: int = 384
-    video_width: int = 640
-
-
-@make_freezable
-@attrs.define(slots=False)
-class BridgeDatasetConfig:
+class VideoDatasetConfig:
     """
     Args:
         dataset_dir (str): Base path to the dataset directory
@@ -52,7 +31,7 @@ class BridgeDatasetConfig:
         start_frame_interval (int): Interval between starting frames of sequences
     """
 
-    dataset_dir: str = "assets/example_training_data_bridge/"
+    dataset_dir: str = "datasets/cosmos_nemo_assets/videos/"
     sequence_interval: int = 1
     num_frames: int = 33
     video_size: list[int, int] = [640, 848]

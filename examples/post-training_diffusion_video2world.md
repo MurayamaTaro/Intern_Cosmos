@@ -176,7 +176,7 @@ checkpoints/posttraining/diffusion_video2world/video2world_7b_example_hdvila/che
 
 ### Inference with the Post-trained Model Checkpoint
 
-The inference can be done with the same interface as described in [examples/inference_diffusion_video2world.md](examples/inference_diffusion_video2world.md).
+The inference can be done with the same interface as described in [examples/inference_diffusion_video2world.md](inference_diffusion_video2world.md).
 
 #### 1. Copying checkpoint to Designated Location
 

@@ -18,14 +18,14 @@ from hydra.core.config_store import ConfigStore
 
 from cosmos_predict1.autoregressive.configs.base.callbacks import (
     BASIC_CALLBACKS,
-    VIDEO_PARTIAL_TOKENS_CALLBACK,
     VIDEO_TEACHER_FORCING_CALLBACK,
 )
-from cosmos_predict1.autoregressive.configs.base.dataloader import get_bridge_video, get_mock_video
+from cosmos_predict1.autoregressive.configs.base.dataloader import get_tealrobot_video
 from cosmos_predict1.autoregressive.configs.base.optim import LambdaLinearLR
 from cosmos_predict1.utils import config, log
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.scheduler import WarmupCosineLR
+from cosmos_predict1.autoregressive.configs.experiment.video2video.basic import register_experiments
 
 
 def register_checkpoint(cs):
@@ -38,9 +38,6 @@ def register_checkpoint(cs):
 
 def register_callbacks(cs):
     cs.store(group="callbacks", package="trainer.callbacks", name="basic", node=BASIC_CALLBACKS)
-    cs.store(
-        group="callbacks", package="trainer.callbacks", name="video_partial_tokens", node=VIDEO_PARTIAL_TOKENS_CALLBACK
-    )
     cs.store(
         group="callbacks",
         package="trainer.callbacks",
@@ -75,15 +72,15 @@ def register_optimizer(cs):
 
 
 def register_training_data(cs):
-    cs.store(group="data_train", package="dataloader_train", name="mock_video", node=get_mock_video())
-    cs.store(group="data_train", package="dataloader_train", name="bridge_video", node=get_bridge_video())
-
+    cs.store(group="data_train", package="dataloader_train", name="tealrobot_video_small", node=get_tealrobot_video(num_frames=33,video_size=[384, 640]))
+    cs.store(group="data_train", package="dataloader_train", name="tealrobot_video", node=get_tealrobot_video())
 
 def register_configs():
-    log.info("Registering configs for cosmos_ar")
+    log.info("Registering configs for autoregressive_base")
     cs = ConfigStore.instance()
     register_callbacks(cs)
     register_checkpoint(cs)
     register_optimizer(cs)
     register_scheduler(cs)
     register_training_data(cs)
+    register_experiments(cs)

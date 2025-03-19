@@ -28,20 +28,18 @@ cs = ConfigStore.instance()
 
 
 """
-Train 1B model from scratch with 1 TP and 1 CP, pytorch backend, mock data. Use for basic debugging. Teacher forcing accuracy should reach ~100% within a few hundred iterations.
-Usage:
-torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock job.name=local_debug_vid2world_1b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
+   Finetune 4B model with TP=1, pytorch backend, low resolution tealrobot data, frames 33, chunk 33.
+   Usage:
+   torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=base_4b_example_tealrobotsmall_tp1
 """
-
-VIDEO2WORLD_1B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
+base_4b_example_tealrobotsmall_tp1: LazyDict = LazyDict(
     dict(
         defaults=[
-            {"override /data_train": "mock_video"},
+            {"override /data_train": "tealrobot_video_small"},
             {
                 "override /callbacks": [
                     "basic",
                     "video_teacher_forcing",
-                    "video_partial_tokens",
                 ]
             },
             {"override /checkpoint": "local"},
@@ -49,15 +47,23 @@ VIDEO2WORLD_1B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
             {"override /scheduler": "warmup_cosine_lr"},
             "_self_",
         ],
+        job=dict(
+            project="posttraining",
+            group="autoregressive_base",
+            name="base_4b_example_tealrobotsmall_tp1",
+        ),
         model=create_video2world_model(
-            tensor_model_parallel_size=1,
-            model_size="1b",
-            backend="pytorch",
-            fsdp_enabled=False,
+            model_size="4b",
             model_family="cosmos",
-            pixel_chunk_duration=9,
-            num_video_frames=36,
+            backend="pytorch",
+            tensor_model_parallel_size=1,
+            batch_size=1,
+            pixel_chunk_duration=33,
+            num_video_frames=33,
+            video_height=384,
+            video_width=640,
             tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
+            add_special_tokens=False,
         ),
         trainer=dict(
             max_iter=50000,
@@ -65,83 +71,11 @@ VIDEO2WORLD_1B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
             grad_scaler_args=dict(enabled=False),
             run_validation=False,  # No need for validation as epoch <= 1
             distributed_parallelism="ddp",
-        ),
-        model_parallel=create_model_parallel_config(),
-        job=dict(group="debug", name="basic_video2world_1b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
-    ),
-    flags={"allow_objects": True},
-)
-log.info("Registering experiment video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-    node=VIDEO2WORLD_1B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK,
-)
-
-
-"""
-   Train 4B model from scratch with 1 TP and 1 CP, pytorch backend, mock data.
-   Usage:
-   torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock job.name=local_debug_vid2world_4b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
-"""
-VIDEO2WORLD_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
-    dict(
-        defaults=[
-            "/experiment/video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-            "_self_",
-        ],
-        model=create_video2world_model(
-            model_size="4b",
-            model_family="cosmos",
-            backend="pytorch",
-            tensor_model_parallel_size=1,
-            shard_checkpoint=True,
-            batch_size=1,
-            pixel_chunk_duration=9,
-            num_video_frames=36,
-            tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
-            add_special_tokens=False,
-        ),
-        checkpoint=dict(
-            load_path="",
-            load_training_state=False,
-            strict_resume=True,
-            save_iter=1000,
-        ),
-        job=dict(group="debug", name="basic_video2world_4b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
-    ),
-)
-log.info("Registering experiment video2world_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-    node=VIDEO2WORLD_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK,
-)
-
-"""
-   Finetune 4B model with 1 TP and 1 CP, pytorch backend, mock data.
-   Usage:
-   torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock job.name=local_debug_vid2world_4b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
-"""
-VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
-    dict(
-        defaults=[
-            "/experiment/video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-            "_self_",
-        ],
-        model=create_video2world_model(
-            model_size="4b",
-            model_family="cosmos",
-            backend="pytorch",
-            tensor_model_parallel_size=1,
-            shard_checkpoint=True,
-            batch_size=1,
-            pixel_chunk_duration=9,
-            num_video_frames=36,
-            tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
-            add_special_tokens=False,
+            callbacks=dict(
+                vid_sampling_tf=dict(
+                    every_n=2,
+                ),
+            ),
         ),
         checkpoint=dict(
             load_path="checkpoints/Cosmos-Predict1-4B/model.pt",
@@ -149,74 +83,41 @@ VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
             strict_resume=True,
             save_iter=1000,
         ),
-        job=dict(group="debug", name="basic_video2world_ft_4b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
+        model_parallel=create_model_parallel_config(),
     ),
 )
-log.info("Registering experiment video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-    node=VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK,
-)
 
 
 """
-   Train 4B model from scratch with 4 TP and 1 CP, pytorch backend, mock data.
+   Finetune 4B model with TP=4, pytorch backend, high resolution tealrobot data, frame 33, chunk 33.
    Usage:
-   torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_4b_tp4_cp1_pt_ddp_frame36_chunk9_mock job.name=local_debug_vid2world_4b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
+   torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=base_4b_example_tealrobot_tp4
 """
-VIDEO2WORLD_4B_TP4_CP1_PT_DDP_FRAME36_CHUNK9_MOCK: LazyDict = LazyDict(
+base_4b_example_tealrobot_tp4: LazyDict = LazyDict(
     dict(
         defaults=[
-            "/experiment/video2world_1b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
+            {"override /data_train": "tealrobot_video"},
+            {
+                "override /callbacks": [
+                    "basic",
+                    "video_teacher_forcing",
+                ]
+            },
+            {"override /checkpoint": "local"},
+            {"override /optimizer": "fused_adamw"},
+            {"override /scheduler": "warmup_cosine_lr"},
             "_self_",
         ],
-        model=create_video2world_model(
-            model_size="4b",
-            model_family="cosmos",
-            backend="pytorch",
-            tensor_model_parallel_size=4,
-            shard_checkpoint=True,
-            batch_size=1,
-            pixel_chunk_duration=9,
-            num_video_frames=36,
-            tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
-            add_special_tokens=False,
+        job=dict(
+            project="posttraining",
+            group="autoregressive_base",
+            name="base_4b_example_tealrobot_tp4",
         ),
-        checkpoint=dict(load_path=""),
-        job=dict(group="debug", name="basic_video2world_4b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
-    ),
-)
-log.info("Registering experiment video2world_4b_tp4_cp1_pt_ddp_frame36_chunk9_mock")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_4b_tp4_cp1_pt_ddp_frame36_chunk9_mock",
-    node=VIDEO2WORLD_4B_TP4_CP1_PT_DDP_FRAME36_CHUNK9_MOCK,
-)
-
-#  ######################################## BRIDGE DATA EXPERIMENTS #########################################
-
-
-"""
-   Train from scratch 4B model with 4 TP and 1 CP, pytorch backend, bridge data, frame 33, chunk 33.
-   Usage:
-   torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.name=local_debug_vid2world_4b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
-"""
-VIDEO2WORLD_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE: LazyDict = LazyDict(
-    dict(
-        defaults=[
-            "/experiment/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-            {"override /data_train": "bridge_video"},
-            "_self_",
-        ],
         model=create_video2world_model(
             model_size="4b",
             model_family="cosmos",
             backend="pytorch",
             tensor_model_parallel_size=4,
-            shard_checkpoint=True,
             batch_size=1,
             pixel_chunk_duration=33,
             num_video_frames=33,
@@ -224,62 +125,39 @@ VIDEO2WORLD_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE: LazyDict = LazyDict(
             video_width=848,
             tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
             add_special_tokens=False,
-            training_type="video_to_video",
-            pad_to_multiple_of=1,
+        ),
+        trainer=dict(
+            max_iter=50000,
+            grad_accum_iter=1,
+            grad_scaler_args=dict(enabled=False),
+            run_validation=False,  # No need for validation as epoch <= 1
+            distributed_parallelism="ddp",
+            callbacks=dict(
+                vid_sampling_tf=dict(
+                    every_n=2,
+                ),
+            ),
         ),
         checkpoint=dict(
-            load_path="",
+            load_path="checkpoints/Cosmos-Predict1-4B/model.pt",
             load_training_state=False,
             strict_resume=False,
-            save_iter=1000,
+            save_iter=10
         ),
-        job=dict(group="debug", name="basic_video2world_4b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
+        model_parallel=create_model_parallel_config(),
     ),
-)
-log.info("Registering experiment video2world_4b_tp1_cp1_pt_ddp_frame33_chunk33_bridge")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge",
-    node=VIDEO2WORLD_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE,
 )
 
 
-"""
-   Finetune 4B model with 4 TP and 1 CP, pytorch backend, bridge data, frame 33, chunk 33.
-   Usage:
-   torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.name=local_debug_vid2world_4b job.group=debug trainer.callbacks.vid_sampling_tf.every_n=2
-"""
-VIDEO2WORLD_FT_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE: LazyDict = LazyDict(
-    dict(
-        defaults=[
-            "/experiment/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
-            {"override /data_train": "bridge_video"},
-            "_self_",
-        ],
-        model=create_video2world_model(
-            model_size="4b",
-            model_family="cosmos",
-            backend="pytorch",
-            tensor_model_parallel_size=4,
-            shard_checkpoint=True,
-            batch_size=1,
-            pixel_chunk_duration=33,
-            num_video_frames=33,
-            video_height=640,
-            video_width=848,
-            tokenizer_ckpt_path="checkpoints/Cosmos-Tokenize1-DV8x16x16-720p/ema.jit",
-            add_special_tokens=False,
-            training_type="video_to_video",
-            pad_to_multiple_of=1,
-        ),
-        job=dict(group="debug", name="basic_video2world_ft_4b_mockdata_${now:%Y-%m-%d}_${now:%H-%M-%S}"),
-    ),
-)
-log.info("Registering experiment video2world_ft_4b_tp1_cp1_pt_ddp_frame33_chunk33_bridge")
-cs.store(
-    group="experiment",
-    package="_global_",
-    name="video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge",
-    node=VIDEO2WORLD_FT_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE,
-)
+def register_experiments(cs):
+    # Register the experiments
+    for _item in [
+        base_4b_example_tealrobotsmall_tp1,
+        base_4b_example_tealrobot_tp4,
+    ]:
+        cs.store(
+            group="experiment",
+            package="_global_",
+            name=_item["job"]["name"],
+            node=_item,
+        )

@@ -61,40 +61,53 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/test_environment.py
    ```bash
     python scripts/shard_autoregressive_base_checkpoints.py --checkpoint_path checkpoints/Cosmos-Predict1-4B/model.pt --model_size 4b --tensor_parallel_size 4  
    ```
+   This command will shard and save 4 TP checkpoint shards as `checkpoints/Cosmos-Predict1-4B/model_model_mp_{rank}.pt`
 
 ### Examples
 
 Post-training a Cosmos Autoregressive WFM enables you to train the model to generate videos that are more specific to your use case.
 
-There are 3 steps to post-training: downloading a dataset, preprocessing the data, and post-training the model.
+There are 2 steps to post-training: downloading a dataset and post-training the model.
 
 
 #### 1. Download a Dataset
-The Bridge dataset can be downloaded from [IRASim](https://github.com/bytedance/IRASim). We just need the raw RGB videos.
+The first step is to download a dataset with videos. You must provide a folder containing a collection of videos in **MP4 format**.
 
-#### 2. Post-train the Model with Mock Data
+You can use [nvidia/Cosmos-NeMo-Assets](https://huggingface.co/datasets/nvidia/Cosmos-NeMo-Assets) for post-training.
 
-Run the following command to execute an example post-training job with mock data
 ```bash
-export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock job.wandb_mode="online"
+mkdir -p datasets/cosmos_nemo_assets/
+
+# This command will download the videos for physical AI
+huggingface-cli download nvidia/Cosmos-NeMo-Assets --repo-type dataset --local-dir datasets/cosmos_nemo_assets/ --include "*.mp4*"
+
+mv datasets/cosmos_nemo_assets/nemo_diffusion_example_data datasets/cosmos_nemo_assets/videos
 ```
 
-The model will be post-trained using mock data.
-See the config `VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK1` defined in `cosmos_predict1/autoregressive/configs/experiment/video2video/basic.py` to understand how the dataloader is determined.
+#### 2. Post-train the model on a single GPU (TP = 1)
 
-The checkpoints will be saved to `${OUTPUT_ROOT}/PROJECT/GROUP/NAME`.
-In the above example, `PROJECT` is `posttraining`, `GROUP` is `autoregressive_base`, `NAME` is `video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock`.
+Run the following command to execute an example post-training job with the above data which is scaled to a lower resolution by the dataloader to fit on a single GPU
+
+```bash
+export OUTPUT_ROOT=checkpoints # default value
+torchrun --nproc_per_node=1 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=base_4b_example_tealrobotsmall_tp1
+```
+
+The model will be post-trained using the above cosmos_nemo_assets dataset.
+See the `VideoDataset` defined in `cosmos_predict1/autoregressive/datasets/video_dataset.py` and `register_training_data`  in `cosmos_predict1/autoregressive/configs/registry.py` to understand how the dataloader works and is registered.
+
+The checkpoints will be saved to `${OUTPUT_ROOT}/PROJECT/GROUP/NAME`. In the above example,
+`PROJECT` is `posttraining`, `GROUP` is `autoregressive_base`, `NAME` is `base_4b_example_tealrobotsmall_tp1`.
 
 See the job config to understand how they are determined.
 ```python
-VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK1= LazyDict(
+base_4b_example_tealrobotsmall_tp1= LazyDict(
     dict(
         ...
         job=dict(
             project="posttraining",
             group="autoregressive_base",
-            name="video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock",
+            name="base_4b_example_tealrobotsmall_tp1",
         ),
         ...
     )
@@ -103,54 +116,52 @@ VIDEO2WORLD_FT_4B_TP1_CP1_PT_DDP_FRAME36_CHUNK9_MOCK1= LazyDict(
 
 During the training, the checkpoints will be saved in the below structure.
 ```
-checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock/checkpoints/
+checkpoints/posttraining/autoregressive_base/base_4b_example_tealrobotsmall_tp1/checkpoints/
 ├── iter_{NUMBER}.pt
 ```
 
-#### 3. Post-train the Model with Bridge Data
+#### 3. Post-train the model on 4 GPUs (TP = 4)
 
-Run the following command to execute an example post-training job with bridge data by training from scratch with TP=4.
+The model can also be post-trained on multiple GPUs using tensor parallelism. Run the following command to execute an example post-training job with the above data with higher resolution.
+
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.wandb_mode="online"
+torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=base_4b_example_tealrobot_tp4
 ```
 
-We can also load the pre-trained checkpoints and fine-tune it on the bridge data for faster convergence with TP=4.
-```bash
-export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=4 -m cosmos_predict1.autoregressive.train --config=cosmos_predict1/autoregressive/configs/config.py -- experiment=video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge job.wandb_mode="online"
-```
-
-The model will be post-trained using bridge data.
-See the `BridgeDataset` defined in `cosmos_predict1/autoregressive/datasets/bridge_dataset.py` to understand how the dataloader is determined.
-
-The checkpoints will be saved to `${OUTPUT_ROOT}/PROJECT/GROUP/NAME`. Taking the fine-tuning job as an example:
-`PROJECT` is `posttraining`, `GROUP` is `autoregressive_base`, `NAME` is `video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge`.
+The checkpoints will be saved to `${OUTPUT_ROOT}/PROJECT/GROUP/NAME`. In the above example,
+`PROJECT` is `posttraining`, `GROUP` is `autoregressive_base`, `NAME` is `base_4b_example_tealrobot_tp4`.
 
 See the job config to understand how they are determined.
 ```python
-VIDEO2WORLD_FT_4B_TP4_CP1_PT_DDP_FRAME33_CHUNK33_BRIDGE= LazyDict(
+base_4b_example_tealrobotsmall_tp4= LazyDict(
     dict(
         ...
         job=dict(
             project="posttraining",
             group="autoregressive_base",
-            name="video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge",
+            name="base_4b_example_tealrobotsmall_tp4",
         ),
         ...
     )
 )
 ```
 
-During the training, the checkpoints will be saved in the below structure.
+During the training, the sharded checkpoints will be saved in the below structure.
 ```
-checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp4_cp1_pt_ddp_frame33_chunk33_bridge/checkpoints/
+checkpoints/posttraining/autoregressive_base/base_4b_example_tealrobot_tp4/checkpoints/
 ├── iter_{NUMBER}.pt
+├── iter_{NUMBER}_model_mp_0.pt
+├── iter_{NUMBER}_model_mp_1.pt
+├── iter_{NUMBER}_model_mp_2.pt
+├── iter_{NUMBER}_model_mp_3.pt
 ```
+
+
 
 ### Inference with the Post-trained Model Checkpoint
 
-The inference can be done with the same interface as described in [examples/inference_autoregressive_base.md](examples/inference_autoregressive_base.md).
+The inference can be done with the same interface as described in [examples/inference_autoregressive_base.md](inference_autoregressive_base.md).
 
 #### 1. Copying checkpoint to Designated Location
 
@@ -159,18 +170,21 @@ The post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-4
 For example, with TP=1 if a posttrained checkpoint with 1000 iterations is to be used,
 ```bash
 # copy checkpoint to the designated location
-mkdir checkpoints/Cosmos-Predict1-4B-Base_post-trained_post-trained/
-cp checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock/checkpoints/iter_000001000.pt checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt
+mkdir checkpoints/Cosmos-Predict1-4B-Base_post-trained/
+cp checkpoints/posttraining/autoregressive_base/base_4b_example_tealrobotsmall_tp1/checkpoints/iter_000001000.pt checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt
 ```
 
 With TP=4, the postrained checkpoints are sharded and should first be merged into a single checkpoint for inference
+
 ```bash
-python scripts/merge_autoregressive_tp_checkpoints.py --checkpoint_path checkpoints/posttraining_autoregressive_base/video2world_ft_4b_tp1_cp1_pt_ddp_frame36_chunk9_mock/checkpoints/iter_000001000.pt --output_path checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt --model_size 4b --tensor_parallel_size 4
+# merge tensor parallel model shards
+mkdir checkpoints/Cosmos-Predict1-4B-Base_post-trained/
+python scripts/merge_autoregressive_tp_checkpoints.py --checkpoint_path checkpoints/posttraining/autoregressive_base/base_4b_example_tealrobot_tp4/checkpoints/iter_000001000.pt --output_path checkpoints/Cosmos-Predict1-4B-Base_post-trained/model.pt --model_size 4b --tensor_parallel_size 4
 ```
 
 #### 2. Running the Inference
 
-This is the basic example for running inference on the TP=1 post-trained 4B model with a single video.
+This is the basic example for running inference on the post-trained 4B model with a single video.
 
 ```bash
 NUM_GPUS=<NUM_GPUS>
@@ -179,7 +193,7 @@ PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/autoregr
     --checkpoint_dir checkpoints \
     --ar_model_dir Cosmos-Predict1-4B-Base_post-trained \
     --input_type video \
-    --input_image_or_video_path assets/autoregressive/input.mp4 \
+    --input_image_or_video_path datasets/cosmos_nemo_assets/videos/output_oige_render_view_sub.mp4  \
     --top_p 0.8 \
     --temperature 1.0 \
     --offload_diffusion_decoder \

@@ -218,7 +218,7 @@ checkpoints/posttraining/tokenizer/Cosmos-Tokenize1-CV8x8x8-720p-HDVILA/checkpoi
 
 ### Inference with the Post-trained Model Checkpoint
 
-The inference can be done with the same interface as described in [examples/inference_tokenizer.md](examples/inference_tokenizer.md).
+The inference can be done with the same interface as described in [examples/inference_tokenizer.md](inference_tokenizer.md).
 
 ```bash
 # Autoencoding videos using post-trained `Cosmos-Tokenize1-CV8x8x8-720p-HDVILA`.

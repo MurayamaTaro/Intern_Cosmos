@@ -16,9 +16,8 @@
 from megatron.core import parallel_state
 from torch.utils.data import DataLoader, DistributedSampler
 
-from cosmos_predict1.autoregressive.configs.base.dataset import BridgeDatasetConfig, OverfitDatasetConfig
-from cosmos_predict1.autoregressive.datasets.bridge_dataset import BridgeDataset
-from cosmos_predict1.autoregressive.datasets.overfit_dataset import OverfitDataset
+from cosmos_predict1.autoregressive.configs.base.dataset import VideoDatasetConfig
+from cosmos_predict1.autoregressive.datasets.video_dataset import VideoDataset
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 
@@ -45,31 +44,17 @@ def dataloader_register(key):
     return decorator
 
 
-@dataloader_register("mock_video")
-def get_mock_video(num_video_frames=36, video_height=384, video_width=640, single_data=False):
-    return L(OverfitDataset)(
-        config=OverfitDatasetConfig(
-            data_key="video",
-            batch_size=1,
-            num_video_frames=num_video_frames,
-            video_height=video_height,
-            video_width=video_width,
-            single_data=single_data,
-        )
-    )
-
-
-@dataloader_register("bridge_video")
-def get_bridge_video(
+@dataloader_register("tealrobot_video")
+def get_tealrobot_video(
     batch_size: int = 1,
-    dataset_dir: str = "assets/example_training_data_bridge/",
+    dataset_dir: str = "datasets/cosmos_nemo_assets/videos/",
     sequence_interval: int = 1,
     num_frames: int = 33,
     video_size: list[int, int] = [640, 848],
     start_frame_interval: int = 1,
 ):
-    dataset = L(BridgeDataset)(
-        config=BridgeDatasetConfig(
+    dataset = L(VideoDataset)(
+        config=VideoDatasetConfig(
             dataset_dir=dataset_dir,
             sequence_interval=sequence_interval,
             num_frames=num_frames,

@@ -86,7 +86,7 @@ checkpoints/posttraining/diffusion_text2world/text2world_multiview_7b_example/ch
 
 ### Inference with the Post-trained Model Checkpoint
 
-The inference can be done with the same interface as described in [examples/inference_diffusion_text2world.md](examples/inference_diffusion_text2world.md).
+The inference can be done with the same interface as described in [examples/inference_diffusion_text2world.md](inference_diffusion_text2world.md).
 
 #### 1. Copying checkpoint to Designated Location
 

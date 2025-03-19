@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cosmos_predict1.autoregressive.callbacks.video_sampling_partial_tokens import VideoSamplingPartialTokens
 from cosmos_predict1.autoregressive.callbacks.video_sampling_teacher_forcing import VideoSamplingTeacherForcing
-from cosmos_predict1.autoregressive.configs.inference.inference_config import TrainingSamplingConfig as SamplingConfig
 from cosmos_predict1.callbacks.grad_clip import GradClip
 from cosmos_predict1.utils.callback import ProgressBarCallback
 from cosmos_predict1.utils.lazy_config import LazyCall as L
@@ -32,25 +30,4 @@ VIDEO_TEACHER_FORCING_CALLBACK = dict(
         num_frames_to_display=4,
         save_folder="video_sampling_teacher_forcing",
     )
-)
-
-
-def create_video_partial_sampling_callback(task_condition: str, latent_context_t_sizes: list = [1]):
-    """Create a video partial token sampling callback by varying latent_context_t_sizes."""
-    return dict(
-        vid_sampling_partial_tokens=L(VideoSamplingPartialTokens)(
-            every_n=5000,
-            task_condition=task_condition,
-            sampling_config=SamplingConfig(echo=True, temperature=1.0),
-            video_latent_shape="${model.model_config.video_latent_shape}",
-            latent_context_t_sizes=latent_context_t_sizes,
-            save_folder="video_sampling_partial_tokens",
-            iteration_early_test=5000,
-        )
-    )
-
-
-# if we set latent_context_t_sizes=[1], we have one condition frame, which is image(video)-to-video
-VIDEO_PARTIAL_TOKENS_CALLBACK = create_video_partial_sampling_callback(
-    task_condition="video", latent_context_t_sizes=[1]
 )
