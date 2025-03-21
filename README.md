@@ -36,7 +36,7 @@ Post-training models:
 * [Post-training diffusion-based Text2World models (with multi-view data)](examples/post-training_diffusion_text2world_multiview.md) **[with multi-GPU support]**
 * [Post-training diffusion-based Video2World models (with multi-view data)](examples/post-training_diffusion_video2world_multiview.md) **[with multi-GPU support]**
 * [Post-training autoregressive-based base models](examples/post-training_autoregressive_base.md) **[with multi-GPU support]**
-* [Post-training tokenizer models](examples/post-training_tokenizer.md)
+* [Post-training tokenizer models](examples/post-training_tokenizer.md) **[with multi-GPU support]**
 
 Inference with post-trained models:
 * [Inference with diffusion-based Text2World models (with multi-view data)](examples/inference_diffusion_text2world_multiview.md) **[with multi-GPU support]**
@@ -97,5 +97,7 @@ We provide a series of pre-trained models of different families, available for d
 ## License and Contact
 
 This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
+
 NVIDIA Cosmos source code is released under the [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0).
+
 NVIDIA Cosmos models are released under the [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license). For a custom license, please contact [cosmos-license@nvidia.com](mailto:cosmos-license@nvidia.com).
