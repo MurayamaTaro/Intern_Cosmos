@@ -16,16 +16,13 @@
 import torch
 from hydra.core.config_store import ConfigStore
 
-from cosmos_predict1.autoregressive.configs.base.callbacks import (
-    BASIC_CALLBACKS,
-    VIDEO_TEACHER_FORCING_CALLBACK,
-)
+from cosmos_predict1.autoregressive.configs.base.callbacks import BASIC_CALLBACKS, VIDEO_TEACHER_FORCING_CALLBACK
 from cosmos_predict1.autoregressive.configs.base.dataloader import get_tealrobot_video
 from cosmos_predict1.autoregressive.configs.base.optim import LambdaLinearLR
+from cosmos_predict1.autoregressive.configs.experiment.video2video.basic import register_experiments
 from cosmos_predict1.utils import config, log
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.scheduler import WarmupCosineLR
-from cosmos_predict1.autoregressive.configs.experiment.video2video.basic import register_experiments
 
 
 def register_checkpoint(cs):
@@ -72,8 +69,14 @@ def register_optimizer(cs):
 
 
 def register_training_data(cs):
-    cs.store(group="data_train", package="dataloader_train", name="tealrobot_video_small", node=get_tealrobot_video(num_frames=33,video_size=[384, 640]))
+    cs.store(
+        group="data_train",
+        package="dataloader_train",
+        name="tealrobot_video_small",
+        node=get_tealrobot_video(num_frames=33, video_size=[384, 640]),
+    )
     cs.store(group="data_train", package="dataloader_train", name="tealrobot_video", node=get_tealrobot_video())
+
 
 def register_configs():
     log.info("Registering configs for autoregressive_base")

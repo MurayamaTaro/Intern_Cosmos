@@ -142,7 +142,7 @@ base_4b_example_tealrobot_tp4: LazyDict = LazyDict(
             load_path="checkpoints/Cosmos-Predict1-4B/model.pt",
             load_training_state=False,
             strict_resume=False,
-            save_iter=10
+            save_iter=10,
         ),
         model_parallel=create_model_parallel_config(),
     ),

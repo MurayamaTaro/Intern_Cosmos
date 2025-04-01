@@ -39,8 +39,7 @@ from cosmos_predict1.autoregressive.datasets.dataset_utils import (
 
 class VideoDataset(Dataset):
     def __init__(self, config: VideoDatasetConfig):
-        """Video Dataset class for loading video-to-video generation data.
-        """
+        """Video Dataset class for loading video-to-video generation data."""
 
         super().__init__()
         self.dataset_dir = config.dataset_dir
