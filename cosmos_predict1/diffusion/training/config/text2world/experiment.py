@@ -344,7 +344,7 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=1,
+            context_parallel_size=8,
         ),
         model=dict(
             # Use 16x16x32x40 latent shape for training
@@ -361,7 +361,7 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
             fsdp_enabled=True,
             fsdp=dict(
                 policy="block",
-                checkpoint=True,
+                checkpoint=False,
                 min_num_params=1024,
                 sharding_group_size=32,
                 sharding_strategy="hybrid",
