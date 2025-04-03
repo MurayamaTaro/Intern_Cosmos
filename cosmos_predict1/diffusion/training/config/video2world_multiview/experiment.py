@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 
 from cosmos_predict1.diffusion.training.callbacks.iter_speed import IterSpeed
 from cosmos_predict1.diffusion.training.callbacks.low_precision import LowPrecisionCallback
-from cosmos_predict1.diffusion.training.datasets.dataset_multiview import MockDataset
+from cosmos_predict1.diffusion.training.datasets.dataset_multiview import Dataset
 from cosmos_predict1.diffusion.training.models.extend_model_multiview import FSDPExtendDiffusionModel
 from cosmos_predict1.diffusion.training.networks.general_dit_lvg_multiview import VideoExtendMultiviewGeneralDIT
 from cosmos_predict1.utils import log
@@ -42,16 +42,18 @@ def get_sampler(dataset):
 cs = ConfigStore.instance()
 
 num_frames = 57
-num_views = 6
-example_multiview_dataset = L(MockDataset)(
-    dataset_dir="datasets/example_training_data",
+num_views = 5
+view_keys = ["pinhole_front_left", "pinhole_front", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"]
+example_multiview_dataset_waymo = L(Dataset)(
+    dataset_dir="datasets/waymo",
+    sequence_interval=1,
     num_frames=num_frames,
-    num_views=num_views,
-    video_size=(704, 1280),
+    view_keys=view_keys,
+    video_size=(480, 848),
 )
 
 
-video2world_multiview_7b_example = LazyDict(
+video2world_multiview_7b_example_waymo = LazyDict(
     dict(
         defaults=[
             {"override /net": "faditv2_7b"},
@@ -64,7 +66,7 @@ video2world_multiview_7b_example = LazyDict(
         job=dict(
             project="posttraining",
             group="diffusion_video2world",
-            name="video2world_multiview_7b_example",
+            name="video2world_multiview_7b_example_waymo",
         ),
         optimizer=dict(
             lr=2 ** (-14.3),  # 2**(-14.3) approx 5e-5
@@ -100,7 +102,7 @@ video2world_multiview_7b_example = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=1,
+            context_parallel_size=8,
         ),
         model=dict(
             n_views=num_views,
@@ -118,16 +120,12 @@ video2world_multiview_7b_example = LazyDict(
             fsdp_enabled=True,
             fsdp=dict(
                 policy="block",
-                checkpoint=True,
+                checkpoint=False,
                 min_num_params=1024,
                 sharding_group_size=32,
                 sharding_strategy="hybrid",
             ),
             net=L(VideoExtendMultiviewGeneralDIT)(
-                extra_per_block_abs_pos_emb=True,
-                pos_emb_learnable=True,
-                extra_per_block_abs_pos_emb_type="learnable",
-                ###########
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -163,14 +161,14 @@ video2world_multiview_7b_example = LazyDict(
             f_min=[1.0],
         ),
         dataloader_train=L(DataLoader)(
-            dataset=example_multiview_dataset,
-            sampler=L(get_sampler)(dataset=example_multiview_dataset),
+            dataset=example_multiview_dataset_waymo,
+            sampler=L(get_sampler)(dataset=example_multiview_dataset_waymo),
             batch_size=1,
             drop_last=True,
         ),
         dataloader_val=L(DataLoader)(
-            dataset=example_multiview_dataset,
-            sampler=L(get_sampler)(dataset=example_multiview_dataset),
+            dataset=example_multiview_dataset_waymo,
+            sampler=L(get_sampler)(dataset=example_multiview_dataset_waymo),
             batch_size=1,
             drop_last=True,
         ),
@@ -181,7 +179,7 @@ video2world_multiview_7b_example = LazyDict(
 def register_experiments(cs):
     # Register the experiments
     for _item in [
-        video2world_multiview_7b_example,
+        video2world_multiview_7b_example_waymo,
     ]:
         experiment_name = _item["job"]["name"]
         log.info(f"Registering experiment: {experiment_name}")
