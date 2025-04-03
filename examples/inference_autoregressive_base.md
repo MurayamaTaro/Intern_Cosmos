@@ -18,6 +18,22 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
    CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_autoregressive_checkpoints.py --model_sizes 4B 12B --checkpoint_dir checkpoints
    ```
 
+### GPU memory requirements
+
+We report the maximum observed GPU memory usage during end-to-end inference. Additionally, we offer a series of model offloading strategies to help users manage GPU memory usage effectively.
+
+For GPUs with limited memory, we recommend fully offloading all models. For higher-end GPUs, users can select the most suitable offloading strategy considering the numbers provided below.
+
+| Offloading Strategy | Cosmos-Predict1-4B | Cosmos-Predict1-12B |
+|-------------|---------|---------|
+| No offloading | 31.3 GB | 47.5 GB |
+| Offload guardrails | 28.9 GB | 45.2 GB |
+| Offload guardrails & diffusion decoder | 28.5 GB | 43.1 GB |
+| Offload guardrails & diffusion decoder & tokenizer | 27.3 GB | 42.9 GB |
+| Offload guardrails & diffusion decoder & tokenizer & AR model | 18.7 GB | 27.4 GB |
+
+The numbers may vary depending on system specs and are for reference only.
+
 ### Examples
 There are two model types available for autoregressive world generation: `Cosmos-Predict1-4B` and `Cosmos-Predict1-12B`.
 It requires the input argument `--input_image_or_video_path` (image/video input).
