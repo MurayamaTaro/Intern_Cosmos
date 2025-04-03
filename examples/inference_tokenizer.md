@@ -15,7 +15,7 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 3. Download the Cosmos Tokenize model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
 ```bash
-python3 -m scripts.download_tokenizer_checkpoints
+python3 -m scripts.download_tokenizer_checkpoints --checkpoint_dir checkpoints
 ```
 
 The downloaded files should be in the following structure:
