@@ -19,6 +19,8 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
+from scripts.download_guardrail_checkpoints import download_guardrail_checkpoints
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -110,9 +112,7 @@ def main(args):
     checkpoints_dir = Path(args.checkpoint_dir)
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
-    download_kwargs = dict(
-        allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit", "guardrail/*"]
-    )
+    download_kwargs = dict(allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit"])
 
     # Download the requested Autoregressive models
     for size in args.model_sizes:
@@ -147,6 +147,8 @@ def main(args):
                 local_dir=str(local_dir),
                 local_dir_use_symlinks=False,
             )
+
+    download_guardrail_checkpoints(args.checkpoint_dir)
 
 
 if __name__ == "__main__":

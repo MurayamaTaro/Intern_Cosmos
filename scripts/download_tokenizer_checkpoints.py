@@ -20,6 +20,8 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
+from scripts.download_guardrail_checkpoints import download_guardrail_checkpoints
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -142,6 +144,8 @@ def main(args) -> None:
             snapshot_download(
                 repo_id=repo_id, local_dir=str(local_dir), local_dir_use_symlinks=False, **download_kwargs
             )
+
+    download_guardrail_checkpoints(args.checkpoint_dir)
 
 
 if __name__ == "__main__":

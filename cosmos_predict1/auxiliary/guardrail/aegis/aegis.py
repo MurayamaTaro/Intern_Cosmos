@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import argparse
+import os
 
 import torch
 from peft import PeftModel
@@ -36,11 +37,16 @@ class Aegis(ContentSafetyGuardrail):
         self.checkpoint_dir = checkpoint_dir
         self.device = device
         self.dtype = torch.bfloat16
+
         base_model_id = "meta-llama/LlamaGuard-7b"
         aegis_adapter = "nvidia/Aegis-AI-Content-Safety-LlamaGuard-Defensive-1.0"
-        base_model = AutoModelForCausalLM.from_pretrained(base_model_id, cache_dir=self.checkpoint_dir)
-        self.tokenizer = AutoTokenizer.from_pretrained(base_model_id, cache_dir=self.checkpoint_dir)
-        self.model = PeftModel.from_pretrained(base_model, aegis_adapter, cache_dir=self.checkpoint_dir)
+        base_model_dir = os.path.join(self.checkpoint_dir, base_model_id)
+        aegis_adapter_dir = os.path.join(self.checkpoint_dir, aegis_adapter)
+
+        base_model = AutoModelForCausalLM.from_pretrained(base_model_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(base_model_dir)
+        self.model = PeftModel.from_pretrained(base_model, aegis_adapter_dir)
+
         self.model.to(self.device, dtype=self.dtype).eval()
 
     def get_moderation_prompt(self, user_prompt: str) -> str:

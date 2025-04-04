@@ -19,6 +19,7 @@ checkpoints/*
 !checkpoints/README.md
 datasets/*
 !datasets/README.md
+apex/
 
 # Data types
 *.jit
