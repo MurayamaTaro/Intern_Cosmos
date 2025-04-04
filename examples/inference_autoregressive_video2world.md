@@ -15,8 +15,25 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_autoregressive_checkpoints.py --model_sizes 5B 13B
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_autoregressive_checkpoints.py --model_sizes 5B 13B --checkpoint_dir checkpoints
    ```
+
+### GPU memory requirements
+
+We report the maximum observed GPU memory usage during end-to-end inference. Additionally, we offer a series of model offloading strategies to help users manage GPU memory usage effectively.
+
+For GPUs with limited memory, we recommend fully offloading all models. For higher-end GPUs, users can select the most suitable offloading strategy considering the numbers provided below.
+
+| Offloading Strategy | Cosmos-Predict1-5B-Video2World | Cosmos-Predict1-13B-Video2World |
+|-------------|---------|---------|
+| No offloading | 66.2 GB | > 80 GB |
+| Offload guardrails | 58.7 GB | 76.6 GB |
+| Offload guardrails & T5 encoder | 41.3 GB | 58.0 GB |
+| Offload guardrails & T5 encoder & diffusion decoder | 29.0 GB | 46.9 GB |
+| Offload guardrails & T5 encoder & diffusion decoder & tokenizer | 28.8 GB | 46.7 GB |
+| Offload guardrails & T5 encoder & diffusion decoder & tokenizer & AR model | 21.1 GB | 30.9 GB |
+
+The numbers may vary depending on system specs and are for reference only.
 
 ### Examples
 There are two model types available for autoregressive world generation: `Cosmos-Predict1-5B-Video2World` and `Cosmos-Predict1-13B-Video2World`.

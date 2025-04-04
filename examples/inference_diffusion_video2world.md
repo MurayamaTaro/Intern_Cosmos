@@ -15,8 +15,24 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Video2World
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Video2World --checkpoint_dir checkpoints
    ```
+
+### GPU memory requirements
+
+We report the maximum observed GPU memory usage during end-to-end inference. Additionally, we offer a series of model offloading strategies to help users manage GPU memory usage effectively.
+
+For GPUs with limited memory, we recommend fully offloading all models. For higher-end GPUs, users can select the most suitable offloading strategy considering the numbers provided below.
+
+| Offloading Strategy                                                              | Cosmos-Predict1-7B-Video2World | Cosmos-Predict1-14B-Video2World |
+|----------------------------------------------------------------------------------|---------|---------|
+| Offload prompt upsampler                                                         | 76.5 GB | > 80.0 GB |
+| Offload prompt upsampler & guardrails                                            | 59.9 GB | 73.3 GB |
+| Offload prompt upsampler & guardrails & T5 encoder                               | 41.3 GB | 54.8 GB |
+| Offload prompt upsampler & guardrails & T5 encoder & tokenizer                   | 41.1 GB | 54.5 GB |
+| Offload prompt upsampler & guardrails & T5 encoder & tokenizer & diffusion model | 27.3 GB | 39.0 GB |
+
+The numbers may vary depending on system specs and are for reference only.
 
 ### Examples
 

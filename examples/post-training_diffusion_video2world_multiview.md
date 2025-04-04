@@ -25,7 +25,7 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
 
 3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Video2World-Sample-AV-Multiview
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Video2World-Sample-AV-Multiview --checkpoint_dir checkpoints
    ```
 
 ### Examples

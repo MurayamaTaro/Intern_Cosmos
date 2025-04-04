@@ -25,7 +25,7 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
 
 3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_autoregressive_checkpoints.py --model_sizes 4B
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_autoregressive_checkpoints.py --model_sizes 4B --checkpoint_dir checkpoints
    ```
 4. For tensor parallel training, checkpoints need to be sharded to the target tensor model parallel size TP. Shard checkpoints to TP=4 with:
    ```bash
