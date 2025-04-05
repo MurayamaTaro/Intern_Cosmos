@@ -57,7 +57,7 @@ class RetinaFaceFilter(PostprocessingGuardrail):
             batch_size: Batch size for RetinaFace inference and processing
             confidence_threshold: Minimum confidence score to consider a face detection
         """
-        self.checkpoint = f"{checkpoint_dir}/Resnet50_Final.pth"
+        self.checkpoint = f"{checkpoint_dir}/nvidia/Cosmos-Guardrail1/face_blur_filter/Resnet50_Final.pth"
         self.cfg = cfg_re50
         self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
