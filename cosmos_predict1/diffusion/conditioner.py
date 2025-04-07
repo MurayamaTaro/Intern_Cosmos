@@ -133,6 +133,12 @@ class VideoExtendCondition(BaseVideoCondition):
     condition_video_augment_sigma: Optional[torch.Tensor] = None
 
 
+@dataclass
+class ViewConditionedVideoExtendCondition(VideoExtendCondition):
+    # view index indicating camera, used to index nn.Embedding
+    view_indices_B_T: Optional[torch.Tensor] = None
+
+
 class GeneralConditioner(nn.Module, ABC):
     """
     An abstract module designed to handle various embedding models with conditional and
@@ -320,3 +326,13 @@ class VideoExtendConditioner(GeneralConditioner):
     ) -> VideoExtendCondition:
         output = super()._forward(batch, override_dropout_rate)
         return VideoExtendCondition(**output)
+
+
+class ViewConditionedVideoExtendConditioner(GeneralConditioner):
+    def forward(
+        self,
+        batch: Dict,
+        override_dropout_rate: Optional[Dict[str, float]] = None,
+    ) -> ViewConditionedVideoExtendCondition:
+        output = super()._forward(batch, override_dropout_rate)
+        return ViewConditionedVideoExtendCondition(**output)

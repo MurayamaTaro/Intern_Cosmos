@@ -423,7 +423,7 @@ def get_video_batch_for_multiview_model(
 
     Args:
         model: Diffusion model instance
-        prompt_embedding (torch.Tensor): Text prompt embeddings
+        prompt_embedding list(torch.Tensor): Text prompt embeddings
         height (int): Output video height
         width (int): Output video width
         fps (int): Output video frame rate
@@ -510,6 +510,7 @@ def generate_world_from_video(
     seed: int,
     condition_latent: torch.Tensor,
     num_input_frames: int,
+    augment_sigma: Optional[float]=None,
 ) -> Tuple[np.array, list, list]:
     """Generate video using a conditioning video/image input.
 
@@ -528,7 +529,8 @@ def generate_world_from_video(
         np.array: Generated video frames in shape [T,H,W,C], range [0,255]
     """
     assert not model.config.conditioner.video_cond_bool.sample_tokens_start_from_p_or_i, "not supported"
-    augment_sigma = DEFAULT_AUGMENT_SIGMA
+    if augment_sigma is None:
+        augment_sigma = DEFAULT_AUGMENT_SIGMA
 
     if condition_latent.shape[2] < state_shape[1]:
         # Padding condition latent to state shape
@@ -658,6 +660,7 @@ def create_condition_latent_from_input_frames(
     model: DiffusionV2WModel,
     input_frames: torch.Tensor,
     num_frames_condition: int = 25,
+    from_back: bool = True,
 ):
     """Create condition latent for video generation from input frames.
 
@@ -693,16 +696,27 @@ def create_condition_latent_from_input_frames(
     ), f"num_frames_encode should be larger than num_frames_condition, get {num_frames_encode}, {num_frames_condition}"
 
     # Put the conditioal frames to the begining of the video, and pad the end with zero
-    condition_frames = input_frames[:, :, -num_frames_condition:]
-    padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
-    encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
+    if not from_back:
+        condition_frames = input_frames[:, :, :num_frames_condition]
+        padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
+    else:
+        condition_frames = input_frames[:, :, -num_frames_condition:]
+        padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
 
-    log.debug(
+    log.info(
         f"create latent with input shape {encode_input_frames.shape} including padding {num_frames_encode - num_frames_condition} at the end"
     )
-    if hasattr(model, "n_views"):
+    if hasattr(model, "n_views") and encode_input_frames.shape[0] == model.n_views:
         encode_input_frames = einops.rearrange(encode_input_frames, "(B V) C T H W -> B C (V T) H W", V=model.n_views)
-    latent = model.encode(encode_input_frames)
+        latent = model.encode(encode_input_frames)
+    elif encode_input_frames.shape[0]:
+        # treat as single view video
+        latent = model.tokenizer.encode(encode_input_frames) * model.sigma_data
+    else:
+        raise ValueError(f"First dimension of encode_input_frames {encode_input_frames.shape[0]} matches neither "
+                         f"model.n_views or model.n_views is not defined and shape is not 1")
     return latent, encode_input_frames
 
 
@@ -711,7 +725,9 @@ def get_condition_latent(
     input_image_or_video_path: str,
     num_input_frames: int = 1,
     state_shape: list[int] = None,
-):
+    from_back: bool = True,
+    start_frame: int=0
+) -> torch.Tensor:
     """Get condition latent from input image/video file.
 
     Args:
@@ -740,8 +756,8 @@ def get_condition_latent(
         H=H,
         W=W,
     )
-
-    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames)
+    input_frames = input_frames[:, :, start_frame:, :, :]
+    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames, from_back=from_back)
     condition_latent = condition_latent.to(torch.bfloat16)
 
     return condition_latent
@@ -752,6 +768,7 @@ def get_condition_latent_multiview(
     input_image_or_video_path: str,
     num_input_frames: int = 1,
     state_shape: list[int] = None,
+    start_frame: int=0
 ):
     """Get condition latent from input image/video file. This is the function for the multi-view model where each view has one latent condition frame.
 
@@ -781,6 +798,7 @@ def get_condition_latent_multiview(
         W=W,
     )
     input_frames = einops.rearrange(input_frames, "B C (V T) H W -> (B V) C T H W", V=model.n_views)
+    input_frames = input_frames[:,:,start_frame:,:,:]
     condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames)
     condition_latent = condition_latent.to(torch.bfloat16)
 

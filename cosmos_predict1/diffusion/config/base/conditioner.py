@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 import attrs
 import torch
 
-from cosmos_predict1.diffusion.conditioner import BaseConditionEntry, TextAttr, VideoConditioner, VideoExtendConditioner
+from cosmos_predict1.diffusion.conditioner import BaseConditionEntry, TextAttr, VideoConditioner, VideoExtendConditioner, ViewConditionedVideoExtendConditioner
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 
@@ -177,6 +177,11 @@ class VideoCondBoolConfig:
 
 
 @attrs.define(slots=False)
+class MVVideoCondBoolConfig(VideoCondBoolConfig):
+    n_cond_view_max: int = 1  # The max number of camera views as condition region
+    n_cond_view_min: int = 1  # The min number of camera views as condition region
+
+@attrs.define(slots=False)
 class LatentConditionConfig:
     """
     Remap the key from the input dictionary to the output dictionary. For `latent condition`.
@@ -235,5 +240,15 @@ VideoExtendConditionerFrameRepeatConfig: LazyDict = L(VideoExtendConditioner)(
     image_size=ImageSizeConfig(),
     padding_mask=PaddingMaskConfig(),
     video_cond_bool=VideoCondBoolConfig(),
+    frame_repeat=FrameRepeatConfig(),
+)
+
+ViewConditionedVideoExtendConditionerFrameRepeatConfig: LazyDict = L(ViewConditionedVideoExtendConditioner)(
+    text=TextConfig(),
+    fps=FPSConfig(),
+    num_frames=NumFramesConfig(),
+    image_size=ImageSizeConfig(),
+    padding_mask=PaddingMaskConfig(),
+    video_cond_bool=MVVideoCondBoolConfig(),
     frame_repeat=FrameRepeatConfig(),
 )
