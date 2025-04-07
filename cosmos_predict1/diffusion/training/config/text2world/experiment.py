@@ -373,6 +373,7 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
+                use_checkpoint=True
             ),
             vae=dict(pixel_chunk_duration=num_frames),
         ),
