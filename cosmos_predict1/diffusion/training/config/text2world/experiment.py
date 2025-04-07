@@ -57,12 +57,16 @@ dataloader_train_hdvila = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_hdvila),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_hdvila = L(DataLoader)(
     dataset=example_video_dataset_hdvila,
     sampler=L(get_sampler)(dataset=example_video_dataset_hdvila),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 # Cosmos-NeMo-Assets example
@@ -79,12 +83,16 @@ dataloader_train_cosmos_nemo_assets = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 

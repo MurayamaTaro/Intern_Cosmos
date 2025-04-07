@@ -154,6 +154,9 @@ class Trainer:
                 with self.training_timer("dataloader_train"):
                     try:
                         data_batch = next(dataloader_train_iter)
+                        for k in data_batch.keys():
+                            if torch.is_tensor(data_batch[k]):
+                                data_batch[k] = data_batch[k].cuda()
                     except StopIteration:
                         break
                 self.callbacks.on_after_dataloading(iteration)
