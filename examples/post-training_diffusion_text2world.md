@@ -82,7 +82,7 @@ Run the following command to execute an example post-training job with `cosmos_n
 export OUTPUT_ROOT=checkpoints # default value
 torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
-    -- experiment=text2world_7b_example_cosmos_nemo_assets
+    -- experiment=text2world_7b_example_cosmos_nemo_assets model.net.use_checkpoint=True
 ```
 
 Optionally, multi-node training can be done with
