@@ -240,6 +240,9 @@ class Attention(nn.Module):
             self.attn_op = torch.nn.functional.scaled_dot_product_attention
         else:
             raise ValueError(f"Backend {backend} not found")
+        self.query_dim = query_dim
+        self.context_dim = context_dim
+        self.inner_dim = inner_dim
 
     def cal_qkv(
         self, x, context=None, mask=None, rope_emb=None, **kwargs

@@ -70,7 +70,7 @@ class DefaultModelConfig:
     fsdp: FSDPConfig = attrs.field(factory=FSDPConfig)
     use_dummy_temporal_dim: bool = False  # Whether to use dummy temporal dimension in data
     adjust_video_noise: bool = False  # whether or not adjust video noise accroding to the video length
-
+    peft_control: LazyDict = None
 
 @attrs.define(slots=False)
 class MultiviewModelConfig(DefaultModelConfig):

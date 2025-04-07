@@ -23,11 +23,10 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
    ```bash
    huggingface-cli login
    ```
-3. Accept the [LlamaGuard-7b terms](https://huggingface.co/meta-llama/LlamaGuard-7b)
 
-4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
+3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Text2World --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Text2World
    ```
 
 ### Examples
@@ -152,6 +151,48 @@ checkpoints/posttraining/diffusion_text2world/text2world_7b_example_cosmos_nemo_
 ```
 
 
+##### Cosmos-Predict1-7B-Text2World with LoRA
+
+Run the following command to execute an example LoRA post-training job with `cosmos_nemo_assets` data.
+```bash
+export OUTPUT_ROOT=checkpoints # default value
+torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
+```
+See the config `text2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/text2world/experiment.py` to understand how LoRA is enabled. 
+```python
+text2world_7b_example_cosmos_nemo_assets = LazyDict(
+    dict(
+        defaults=[
+            ...
+            {"override /ckpt_klass": "peft"},
+            ...
+        ],
+        trainer=dict(
+            ...
+            distributed_parallelism="ddp",
+            ...
+        )
+        model=dict(
+            ...
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+            ...
+        ),
+    )
+)
+```
+
+During the training, the checkpoints will be saved in the below structure.
+```
+checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/
+├── iter_{NUMBER}_model.pt
+├── iter_{NUMBER}_merged.pt
+```
+
+`iter_{NUMBER}_model.pt` contains all weights (base model weights and LoRA weights tensors). During training, the checkpointer also creates a merged checkpoint `iter_{NUMBER}_merged.pt` by summing LoRA weights product with the base model weights.
+
+
 ##### Cosmos-Predict1-14B-Text2World
 
 Run the following command to execute an example post-training job with `cosmos_nemo_assets` data.
@@ -211,6 +252,43 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
 
 The output file is located at `outputs/diffusion-text2world-7b-post-trained.mp4`.
 
+
+##### Cosmos-Predict1-7B-Text2World with LoRA
+
+1. Copying checkpoint to the designated location.
+
+The merged post-trained checkpoint is compatible with base model inference scripts and can be copied to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt`
+
+For example, if a merged post-trained checkpoint with 5000 iterations is to be used,
+```bash
+# copy checkpoint to the designated location
+mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/
+cp checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/iter_000005000_merged.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt
+```
+
+2. Running the inference
+
+We will set the prompt with an environment variable first.
+```bash
+PROMPT="A sleek, humanoid robot stands in a vast warehouse filled with neatly stacked cardboard boxes on industrial shelves. \
+The robot's metallic body gleams under the bright, even lighting, highlighting its futuristic design and intricate joints. \
+A glowing blue light emanates from its chest, adding a touch of advanced technology. The background is dominated by rows of boxes, \
+suggesting a highly organized storage system. The floor is lined with wooden pallets, enhancing the industrial setting. \
+The camera remains static, capturing the robot's poised stance amidst the orderly environment, with a shallow depth of \
+field that keeps the focus on the robot while subtly blurring the background for a cinematic effect."
+```
+
+```bash
+# Run the video generation command with a single gpu
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
+    --prompt "${PROMPT}" \
+    --offload_prompt_upsampler \
+    --video_save_name diffusion-text2world-7b-post-trained-lora
+```
+
+The output file is located at `outputs/diffusion-text2world-7b-post-trained-lora.mp4`.
 
 ##### Cosmos-Predict1-14B-Text2World
 

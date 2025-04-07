@@ -21,13 +21,14 @@ from cosmos_predict1.diffusion.training.callbacks.iter_speed import IterSpeed
 from cosmos_predict1.diffusion.training.callbacks.low_precision import LowPrecisionCallback
 from cosmos_predict1.diffusion.training.datasets.dataset_video import Dataset
 from cosmos_predict1.diffusion.training.models.model import FSDPDiffusionModel
+from cosmos_predict1.diffusion.training.models.model_peft import PEFTVideoDiffusionModel
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.callback import ProgressBarCallback
 from cosmos_predict1.utils.callbacks.grad_clip import GradClip
 from cosmos_predict1.utils.lazy_config import PLACEHOLDER
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
-
+from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 
 def get_sampler(dataset):
     return DistributedSampler(
@@ -74,6 +75,14 @@ example_video_dataset_cosmos_nemo_assets = L(Dataset)(
     start_frame_interval=1,
 )
 
+example_video_dataset_cosmos_nemo_assets_720x720 = L(Dataset)(
+    dataset_dir="datasets/cosmos_nemo_assets",
+    sequence_interval=1,
+    num_frames=num_frames,
+    video_size=(720, 720),
+    start_frame_interval=1,
+)
+
 dataloader_train_cosmos_nemo_assets = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets),
@@ -87,6 +96,18 @@ dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     drop_last=True,
 )
 
+dataloader_train_cosmos_nemo_assets_720x720 = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_720x720,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_720x720),
+    batch_size=1,
+    drop_last=True,
+)
+dataloader_val_cosmos_nemo_assets_720x720 = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_720x720,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_720x720),
+    batch_size=1,
+    drop_last=True,
+)
 
 text2world_7b_example_hdvila = LazyDict(
     dict(
@@ -501,6 +522,94 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
 )
 
 
+text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
+    dict(
+        defaults=[
+            {"override /net": "faditv2_7b"},
+            {"override /ckpt_klass": "peft"},
+            {"override /checkpoint": "local"},
+            {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+            {"override /conditioner": "add_fps_image_size_padding_mask"},
+            "_self_",
+        ],
+        job=dict(
+            project="posttraining",
+            group="diffusion_text2world",
+            name="text2world_7b_lora_example_cosmos_nemo_assets",
+        ),
+        optimizer=dict(
+            lr=1e-3,
+            weight_decay=0.1,
+            betas=[0.9, 0.99],
+            eps=1e-10,
+        ),
+        checkpoint=dict(
+            save_iter=200,
+            broadcast_via_filesystem=True,
+            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_training_state=False,
+            strict_resume=False,
+            keys_not_to_resume=["merged_model"],
+        ),
+        trainer=dict(
+            max_iter=5000,
+            distributed_parallelism="ddp",
+            logging_iter=200,
+            callbacks=dict(
+                low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+                iter_speed=L(IterSpeed)(
+                    every_n=10,
+                    hit_thres=0,
+                ),
+                progress_bar=L(ProgressBarCallback)(),
+            ),
+        ),
+        model_parallel=dict(
+            sequence_parallel=False,
+            tensor_model_parallel_size=1,
+            context_parallel_size=4,
+        ),
+        model=dict(
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+            # Use 16x16x32x40 latent shape for training
+            latent_shape=[
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                88,  # Latent height dim
+                160,  # Latent width dim
+            ],
+            loss_reduce="mean",
+            ema=dict(
+                enabled=False,
+            ),
+            fsdp_enabled=False,
+            net=dict(
+                in_channels=16,
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
+                rope_h_extrapolation_ratio=1,
+                rope_w_extrapolation_ratio=1,
+                rope_t_extrapolation_ratio=2,
+            ),
+            vae=dict(pixel_chunk_duration=num_frames),
+        ),
+        model_obj=L(PEFTVideoDiffusionModel)(
+            config=PLACEHOLDER,
+            fsdp_checkpointer=PLACEHOLDER,
+        ),
+        # warming up for first 2500 steps~(when resume from 310000)
+        scheduler=dict(
+            warm_up_steps=[2500],
+            cycle_lengths=[10000000000000],
+            f_start=[1.0e-6],
+            f_max=[1.0],
+            f_min=[1.0],
+        ),
+        dataloader_train=dataloader_train_cosmos_nemo_assets_720x720,
+        dataloader_val=dataloader_val_cosmos_nemo_assets_720x720,
+    )
+)
+
 def register_experiments(cs):
     # Register the experiments
     for _item in [
@@ -508,6 +617,7 @@ def register_experiments(cs):
         text2world_14b_example_hdvila,
         text2world_7b_example_cosmos_nemo_assets,
         text2world_14b_example_cosmos_nemo_assets,
+        text2world_7b_lora_example_cosmos_nemo_assets,
     ]:
         experiment_name = _item["job"]["name"]
         log.info(f"Registering experiment: {experiment_name}")
