@@ -614,28 +614,26 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
                 Final prompt used for generation (may be enhanced)
             ), or None if content fails guardrail safety checks
         """
-        log.info(f"Run with prompt: {prompt}")
+
         log.info(f"Run with image or video path: {image_or_video_path}")
         log.info(f"Run with negative prompt: {negative_prompt}")
         log.info(f"Run with prompt upsampler: {self.enable_prompt_upsampler}")
 
-        if not self.disable_guardrail and not self.enable_prompt_upsampler:
-            log.info("Run guardrail on prompt")
-            is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
-            if not is_safe:
-                log.critical("Input text prompt is not safe")
-                return None
-            log.info("Pass guardrail on prompt")
-        else:
+        if self.enable_prompt_upsampler:
             log.info("Run prompt upsampler on image or video, input prompt is not used")
             prompt = self._run_prompt_upsampler_on_prompt_with_offload(image_or_video_path=image_or_video_path)
-            if not self.disable_guardrail:
-                log.info("Run guardrail on upsampled prompt")
-                is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
-                if not is_safe:
-                    log.critical("Upsampled text prompt is not safe")
-                    return None
-                log.info("Pass guardrail on upsampled prompt")
+
+        log.info(f"Run with prompt: {prompt}")
+        if not self.disable_guardrail:
+            log.info(f"Run guardrail on {'upsampled' if self.enable_prompt_upsampler else 'text'} prompt")
+            is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
+            if not is_safe:
+                log.critical(f"Input {'upsampled' if self.enable_prompt_upsampler else 'text'} prompt is not safe")
+                return None
+            log.info(f"Pass guardrail on {'upsampled' if self.enable_prompt_upsampler else 'text'} prompt")
+        else:
+            log.info("Not running guardrail")
+
 
         log.info("Run text embedding on prompt")
         if negative_prompt:
