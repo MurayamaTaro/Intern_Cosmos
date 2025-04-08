@@ -715,8 +715,8 @@ def create_condition_latent_from_input_frames(
         # treat as single view video
         latent = model.tokenizer.encode(encode_input_frames) * model.sigma_data
     else:
-        raise ValueError(f"First dimension of encode_input_frames {encode_input_frames.shape[0]} matches neither "
-                         f"model.n_views or model.n_views is not defined and shape is not 1")
+        raise ValueError(f"First dimension of encode_input_frames {encode_input_frames.shape[0]} does not match "
+                         f"model.n_views or model.n_views is not defined and first dimension is not 1")
     return latent, encode_input_frames
 
 
@@ -768,6 +768,7 @@ def get_condition_latent_multiview(
     input_image_or_video_path: str,
     num_input_frames: int = 1,
     state_shape: list[int] = None,
+    from_back: bool = True,
     start_frame: int=0
 ):
     """Get condition latent from input image/video file. This is the function for the multi-view model where each view has one latent condition frame.
@@ -799,7 +800,7 @@ def get_condition_latent_multiview(
     )
     input_frames = einops.rearrange(input_frames, "B C (V T) H W -> (B V) C T H W", V=model.n_views)
     input_frames = input_frames[:,:,start_frame:,:,:]
-    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames)
+    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames, from_back=from_back)
     condition_latent = condition_latent.to(torch.bfloat16)
 
     return condition_latent, einops.rearrange(input_frames, "(B V) C T H W -> B C (V T) H W", V=model.n_views)[0]

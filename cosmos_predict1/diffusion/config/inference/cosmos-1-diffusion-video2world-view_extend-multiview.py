@@ -32,7 +32,7 @@ Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview: LazyDict = LazyDict(
             name="Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
         ),
         model=dict(
-            latent_shape=[      # Tianshi: Pretty sure first two dims arn't used at all, seems like a very roundabout way to describe resolution
+            latent_shape=[
                 16,
                 16,
                 72,

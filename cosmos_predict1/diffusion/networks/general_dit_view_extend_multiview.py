@@ -21,12 +21,7 @@ from torch import nn
 from torchvision import transforms
 
 from cosmos_predict1.diffusion.conditioner import DataType
-from cosmos_predict1.diffusion.module.blocks import GeneralDITTransformerBlock, PatchEmbed
 from cosmos_predict1.diffusion.module.parallel import split_inputs_cp
-from cosmos_predict1.diffusion.module.position_embedding import (
-    MultiviewSinCosPosEmbAxis,
-    MultiviewVideoRopePosition3DEmb,
-)
 from cosmos_predict1.diffusion.networks.general_dit_multiview import MultiviewGeneralDIT
 from cosmos_predict1.utils import log
 
