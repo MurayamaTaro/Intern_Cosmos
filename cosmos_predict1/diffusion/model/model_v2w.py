@@ -255,5 +255,5 @@ class DiffusionV2WModel(DiffusionT2WModel):
         sigma_data = self.scheduler.config.sigma_data
         c_skip = sigma_data**2 / (sigma**2 + sigma_data**2)
         c_out = sigma * sigma_data / (sigma**2 + sigma_data**2) ** 0.5
-        latent_unscaled = latent / c_out - c_skip * xt
+        latent_unscaled = (latent - c_skip * xt) / c_out
         return latent_unscaled
