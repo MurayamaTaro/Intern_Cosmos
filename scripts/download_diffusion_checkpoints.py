@@ -25,6 +25,8 @@ import torch
 from huggingface_hub import snapshot_download
 from safetensors.torch import load_file
 
+from scripts.download_guardrail_checkpoints import download_guardrail_checkpoints
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Download NVIDIA Cosmos Predict1 diffusion models from Hugging Face")
@@ -320,6 +322,8 @@ def main(args):
             checkpoint_name="Pixtral-12B",
             vit_type="pixtral-12b-vit",
         )
+
+    download_guardrail_checkpoints(args.checkpoint_dir)
 
 
 if __name__ == "__main__":

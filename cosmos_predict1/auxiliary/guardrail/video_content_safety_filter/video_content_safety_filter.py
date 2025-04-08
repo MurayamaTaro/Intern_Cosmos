@@ -49,14 +49,15 @@ class VideoContentSafetyFilter(ContentSafetyGuardrail):
         self.dtype = torch.float32
 
         # Initialize the SigLIP encoder
-        self.encoder = SigLIPEncoder(checkpoint_dir=checkpoint_dir, device=device, dtype=self.dtype)
+        self.checkpoint_dir = os.path.join(checkpoint_dir, "nvidia/Cosmos-Guardrail1/video_content_safety_filter")
+        self.encoder = SigLIPEncoder(checkpoint_dir=self.checkpoint_dir, device=device, dtype=self.dtype)
 
         # Use ModelConfig directly for inference configuration
         model_config = ModelConfig(input_size=1152, num_classes=7)
 
         # Load the multi-class classifier
         self.model = VideoSafetyModel(model_config)
-        safety_filter_local_path = os.path.join(checkpoint_dir, "safety_filter.pt")
+        safety_filter_local_path = os.path.join(self.checkpoint_dir, "safety_filter.pt")
         checkpoint = torch.load(safety_filter_local_path, map_location=torch.device("cpu"), weights_only=True)
         self.model.load_state_dict(checkpoint["model"])
         self.model.to(self.device, dtype=self.dtype).eval()

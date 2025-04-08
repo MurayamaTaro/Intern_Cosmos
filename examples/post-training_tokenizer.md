@@ -26,10 +26,11 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
    ```bash
    huggingface-cli login
    ```
+3. Accept the [LlamaGuard-7b terms](https://huggingface.co/meta-llama/LlamaGuard-7b)
 
-3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
+4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   python3 -m scripts.download_tokenizer_checkpoints --tokenizer_types CV8x8x8-720p DV8x16x16-720p CV4x8x8-360p DV4x8x8-360p
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python3 -m scripts.download_tokenizer_checkpoints --tokenizer_types CV8x8x8-720p DV8x16x16-720p CV4x8x8-360p DV4x8x8-360p --checkpoint_dir checkpoints
    ```
 
 The downloaded files should be in the following structure:

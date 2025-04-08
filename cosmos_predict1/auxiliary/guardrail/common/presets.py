@@ -28,46 +28,16 @@ from cosmos_predict1.auxiliary.guardrail.video_content_safety_filter.video_conte
 from cosmos_predict1.utils import log
 
 
-def get_guardrail_checkpoint_dir(checkpoint_dir: str, recursive: bool = True) -> str:
-    """Get the guardrail checkpoint directory."""
-    directory = Path(checkpoint_dir)
-
-    if not directory.exists():
-        raise FileNotFoundError(f"Directory does not exist: {directory}")
-
-    # First check the immediate directory
-    guardrail_dir = directory / "guardrail"
-    if guardrail_dir.exists() and guardrail_dir.is_dir():
-        return str(guardrail_dir.absolute())
-
-    # If recursive is True, search through subdirectories
-    if recursive:
-        for subdir in directory.iterdir():
-            if subdir.is_dir():
-                try:
-                    return get_guardrail_checkpoint_dir(subdir, recursive=True)
-                except FileNotFoundError:
-                    continue
-
-    raise FileNotFoundError(f"No guardrail directory found in {directory}")
-
-
 def create_text_guardrail_runner(checkpoint_dir: str) -> GuardrailRunner:
     """Create the text guardrail runner."""
-    checkpoint_dir = get_guardrail_checkpoint_dir(checkpoint_dir)
-    blocklist_checkpoint_dir = os.path.join(checkpoint_dir, "blocklist")
-    aegis_checkpoint_dir = os.path.join(checkpoint_dir, "aegis")
-    return GuardrailRunner(safety_models=[Blocklist(blocklist_checkpoint_dir), Aegis(aegis_checkpoint_dir)])
+    return GuardrailRunner(safety_models=[Blocklist(checkpoint_dir), Aegis(checkpoint_dir)])
 
 
 def create_video_guardrail_runner(checkpoint_dir: str) -> GuardrailRunner:
     """Create the video guardrail runner."""
-    checkpoint_dir = get_guardrail_checkpoint_dir(checkpoint_dir)
-    video_filter_checkpoint_dir = os.path.join(checkpoint_dir, "video_content_safety_filter")
-    retinaface_checkpoint_path = os.path.join(checkpoint_dir, "face_blur_filter")
     return GuardrailRunner(
-        safety_models=[VideoContentSafetyFilter(video_filter_checkpoint_dir)],
-        postprocessors=[RetinaFaceFilter(retinaface_checkpoint_path)],
+        safety_models=[VideoContentSafetyFilter(checkpoint_dir)],
+        postprocessors=[RetinaFaceFilter(checkpoint_dir)],
     )
 
 

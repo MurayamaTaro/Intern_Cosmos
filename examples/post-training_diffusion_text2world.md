@@ -7,6 +7,7 @@ We support the following Cosmos Diffusion models for post-training. Review the a
 | Model Name                               | Model Status | Compute Requirements for Post-Training |
 |----------------------------------------------|------------------|------------------------------------------|
 | Cosmos-Predict1-7B-Text2World           | **Supported**    | 8 NVIDIA GPUs*                           |
+| Cosmos-Predict1-14B-Text2World          | **Supported**    | 8 NVIDIA GPUs* x 4 nodes                 |
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
 
@@ -22,10 +23,11 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
    ```bash
    huggingface-cli login
    ```
+3. Accept the [LlamaGuard-7b terms](https://huggingface.co/meta-llama/LlamaGuard-7b)
 
-3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
+4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Text2World --checkpoint_dir checkpoints
    ```
 
 ### Examples
@@ -73,11 +75,25 @@ datasets/cosmos_nemo_assets/
 
 #### 3. Post-train the Model
 
-Run the following command to execute an example post-training job with the above data.
+##### Cosmos-Predict1-7B-Text2World
+
+Run the following command to execute an example post-training job with `cosmos_nemo_assets` data.
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train --config=cosmos_predict1/diffusion/training/config/config.py -- experiment=text2world_7b_example_cosmos_nemo_assets
+torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_example_cosmos_nemo_assets
 ```
+
+Optionally, multi-node training can be done with
+```bash
+# 4-node training example.
+torchrun --nproc_per_node=8 --nnodes=4 --rdzv_id 123 --rdzv_backend c10d --rdzv_endpoint $MASTER_ADDR:1234 \
+    -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_example_cosmos_nemo_assets
+```
+
 
 The model will be post-trained using the above cosmos_nemo_assets dataset.
 See the config `text2world_7b_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/text2world/experiment.py` to understand how the dataloader is determined.
@@ -136,21 +152,42 @@ checkpoints/posttraining/diffusion_text2world/text2world_7b_example_cosmos_nemo_
 ```
 
 
-### Inference with the Post-trained Model Checkpoint
+##### Cosmos-Predict1-14B-Text2World
 
-The inference can be done with the same interface as described in [examples/inference_diffusion_text2world.md](/examples/inference_diffusion_text2world.md).
+Run the following command to execute an example post-training job with `cosmos_nemo_assets` data.
+```bash
+export OUTPUT_ROOT=checkpoints # default value
+torchrun --nproc_per_node=8 --nnodes=4 --rdzv_id 123 --rdzv_backend c10d --rdzv_endpoint $MASTER_ADDR:1234 \
+    -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_14b_example_cosmos_nemo_assets
+```
 
-#### 1. Copying checkpoint to Designated Location
+During the training, the checkpoints will be saved in the below structure.
+```
+checkpoints/posttraining/diffusion_text2world/text2world_14b_example_cosmos_nemo_assets/checkpoints/
+├── iter_{NUMBER}_reg_model.pt
+├── iter_{NUMBER}_ema_model.pt
+```
+
+#### 4. Inference with the Post-trained Model Checkpoint
+
+The inference can be done with the same interface as described in [examples/inference_diffusion_text2world.md](inference_diffusion_text2world.md).
+
+##### Cosmos-Predict1-7B-Text2World
+
+1. Copying checkpoint to the designated location
 
 The post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt`
 
-For example, if a post-trained checkpoint (ema) with 1000 iterations is to be used,
+For example, if a post-trained checkpoint (ema) with 2000 iterations is to be used,
 ```bash
 # copy checkpoint to the designated location
 mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/
-cp checkpoints/posttraining/diffusion_text2world/text2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000001000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt
+cp checkpoints/posttraining/diffusion_text2world/text2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000002000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt
 ```
-#### 2. Running the Inference
+
+2. Running the inference
 
 We will set the prompt with an environment variable first.
 ```bash
@@ -164,5 +201,53 @@ field that keeps the focus on the robot while subtly blurring the background for
 
 ```bash
 # Run the video generation command with a single gpu
-CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained --prompt "${PROMPT}" --video_save_name diffusion-text2world-7b-post-train --offload_prompt_upsampler
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained \
+    --prompt "${PROMPT}" \
+    --offload_prompt_upsampler \
+    --video_save_name diffusion-text2world-7b-post-trained
 ```
+
+The output file is located at `outputs/diffusion-text2world-7b-post-trained.mp4`.
+
+
+##### Cosmos-Predict1-14B-Text2World
+
+1. Copying checkpoint to the designated location
+
+The post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-14B-Text2World_post-trained/model.pt`
+
+For example, if a post-trained checkpoint (ema) with 2000 iterations is to be used,
+```bash
+# copy checkpoint to the designated location
+mkdir checkpoints/Cosmos-Predict1-14B-Text2World_post-trained/
+cp checkpoints/posttraining/diffusion_text2world/text2world_14b_example_cosmos_nemo_assets/checkpoints/iter_000002000_ema_model.pt checkpoints/Cosmos-Predict1-14B-Text2World_post-trained/model.pt
+```
+
+2. Running the inference
+
+We will set the prompt with an environment variable first.
+```bash
+PROMPT="A sleek, humanoid robot stands in a vast warehouse filled with neatly stacked cardboard boxes on industrial shelves. \
+The robot's metallic body gleams under the bright, even lighting, highlighting its futuristic design and intricate joints. \
+A glowing blue light emanates from its chest, adding a touch of advanced technology. The background is dominated by rows of boxes, \
+suggesting a highly organized storage system. The floor is lined with wooden pallets, enhancing the industrial setting. \
+The camera remains static, capturing the robot's poised stance amidst the orderly environment, with a shallow depth of \
+field that keeps the focus on the robot while subtly blurring the background for a cinematic effect."
+```
+
+```bash
+# Run the video generation command with a single GPU
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
+    --diffusion_transformer_dir Cosmos-Predict1-14B-Text2World_post-trained \
+    --prompt "${PROMPT}" \
+    --offload_tokenizer \
+    --offload_diffusion_transformer \
+    --offload_text_encoder_model \
+    --offload_prompt_upsampler \
+    --offload_guardrail_models \
+    --video_save_name diffusion-text2world-14b-post-trained
+```
+
+The output file is located at `outputs/diffusion-text2world-14b-post-trained.mp4`.
