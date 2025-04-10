@@ -182,7 +182,10 @@ class Trainer:
                 iteration += 1
                 # Save checkpoint.
                 if iteration % self.config.checkpoint.save_iter == 0:
-                    self.checkpointer.save(model, optimizer, scheduler, grad_scaler, iteration=iteration)
+                    async_saving = getattr(self.config.checkpoint, "async_saving", True)
+                    self.checkpointer.save(
+                        model, optimizer, scheduler, grad_scaler, iteration=iteration, async_saving=async_saving
+                    )
                 self.callbacks.on_training_step_end(model, data_batch, output_batch, loss, iteration=iteration)
                 # Validation.
                 if self.config.trainer.run_validation and iteration % self.config.trainer.validation_iter == 0:
@@ -193,7 +196,10 @@ class Trainer:
                 break
         log.success("Done with training.")
         if iteration % self.config.checkpoint.save_iter != 0:
-            self.checkpointer.save(model, optimizer, scheduler, grad_scaler, iteration=iteration)
+            async_saving = getattr(self.config.checkpoint, "async_saving", True)
+            self.checkpointer.save(
+                model, optimizer, scheduler, grad_scaler, iteration=iteration, async_saving=async_saving
+            )
         self.callbacks.on_train_end(model, iteration=iteration)
         self.checkpointer.finalize()
         distributed.barrier()

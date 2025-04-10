@@ -18,13 +18,6 @@ import omegaconf
 from cosmos_predict1.diffusion.training.module.pretrained_vae import VideoJITTokenizer
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 
-# from cosmos_predict1.diffusion.module.pretrained_vae import (
-#     JointImageVideoSharedJITTokenizer,
-#     VideoJITTokenizer,
-#     JITVAE,
-# )
-
-
 TOKENIZER_OPTIONS = {}
 
 
