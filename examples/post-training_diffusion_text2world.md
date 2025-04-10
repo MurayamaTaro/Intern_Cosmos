@@ -257,16 +257,16 @@ The output file is located at `outputs/diffusion-text2world-7b-post-trained.mp4`
 
 1. Copying checkpoint to the designated location.
 
-The merged post-trained checkpoint is compatible with base model inference scripts and can be copied to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt`
+The merged LoRA post-trained checkpoint is compatible with base model inference scripts and can be copied to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt`
 
 For example, if a merged post-trained checkpoint with 5000 iterations is to be used,
 ```bash
 # copy checkpoint to the designated location
-mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/
-cp checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/iter_000005000_merged.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt
+mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/
+cp checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/iter_000005000_merged.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt
 ```
 
-2. Running the inference
+2. Running the inference with LoRA merged checkpoint
 
 We will set the prompt with an environment variable first.
 ```bash
@@ -282,13 +282,49 @@ field that keeps the focus on the robot while subtly blurring the background for
 # Run the video generation command with a single gpu
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
     --checkpoint_dir checkpoints \
-    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained \
     --prompt "${PROMPT}" \
     --offload_prompt_upsampler \
     --video_save_name diffusion-text2world-7b-post-trained-lora
 ```
 
 The output file is located at `outputs/diffusion-text2world-7b-post-trained-lora.mp4`.
+
+
+3. Running the inference with full LoRA checkpoint
+
+The full LoRA post-trained checkpoint can also be used for inference by copying it to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt`
+
+For example, if a full LoRA post-trained checkpoint with 5000 iterations is to be used,
+```bash
+# copy checkpoint to the designated location
+mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/
+cp checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/iter_000005000_model.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained/model.pt
+```
+
+We will then set the prompt with an environment variable and run the inference command using `--with_lora` flag
+```bash
+PROMPT="A sleek, humanoid robot stands in a vast warehouse filled with neatly stacked cardboard boxes on industrial shelves. \
+The robot's metallic body gleams under the bright, even lighting, highlighting its futuristic design and intricate joints. \
+A glowing blue light emanates from its chest, adding a touch of advanced technology. The background is dominated by rows of boxes, \
+suggesting a highly organized storage system. The floor is lined with wooden pallets, enhancing the industrial setting. \
+The camera remains static, capturing the robot's poised stance amidst the orderly environment, with a shallow depth of \
+field that keeps the focus on the robot while subtly blurring the background for a cinematic effect."
+```
+
+```bash
+# Run the video generation command with a single gpu
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/text2world.py \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained \
+    --prompt "${PROMPT}" \
+    --offload_prompt_upsampler \
+    --video_save_name diffusion-text2world-7b-post-trained-lora \
+    --with_lora
+```
+
+The output file is located at `outputs/diffusion-text2world-7b-post-trained-lora.mp4`.
+
 
 ##### Cosmos-Predict1-14B-Text2World
 
