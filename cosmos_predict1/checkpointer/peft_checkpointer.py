@@ -33,10 +33,11 @@ class Checkpointer(DDPCheckpointer):
     - Fully Sharded Data Parallelism (FSDP) is not supported by this checkpointer.
     - Multi-GPU is not supported by this checkpointer.
     """
-    KEYS_TO_SAVE = ["model", "merged_model", "optim", "scheduler", "trainer"]
+    KEYS_TO_SAVE = ["model", "merged_model", "partial_model", "optim", "scheduler", "trainer"]
     KEYS_TO_POSTFIX = {
         "model": "model",
         "merged_model": "merged",
+        "partial_model": "partial",
         "optim": "optim",
         "scheduler": "scheduler",
         "trainer": "",
@@ -45,6 +46,7 @@ class Checkpointer(DDPCheckpointer):
         super().__init__(*args, **kwargs)
         if not self.broadcast_via_filesystem:
             raise ValueError("self.broadcast_via_filesystem=False is not implemented for PEFT checkpointer.")
+        self.base_model_state_dict = None # This will be instantiated once and assumed to remain constant across iterations
 
     def add_type_postfix_to_checkpoint_path(self, key: str, checkpoint_path: str, model: Model) -> str:
         """
@@ -138,13 +140,17 @@ class Checkpointer(DDPCheckpointer):
             model=model, optimizer=optimizer, scheduler=scheduler, grad_scaler=grad_scaler, iteration=iteration
         )
 
+        # This logic does not impact _model.pt 
         if self.rank_dp_w_cp == 0:
-            partial_model = self._filter_trainable_state_dict(model)["model"]
+            partial_model = self._filter_trainable_state_dict(model)["ema"]
             log.info(f"Partial model state dict has {len(partial_model)} keys")
-            customization_manager = CustomizationManager(model)
+            if self.base_model_state_dict is None:
+                self.base_model_state_dict = self._filter_base_model_state_dict(model)
+                log.info(f"Base model state dict has {len(self.base_model_state_dict)} keys")
+            customization_manager = CustomizationManager(model=None, base_model_dict=self.base_model_state_dict)
             peft_control = model.config.peft_control
             customization_type, scale = peft_control["customization_type"], peft_control["scale"]
-            merged_weights = customization_manager.get_customized_weights(model, partial_model, customization_type, scale)
+            merged_weights = customization_manager.get_customized_weights(self.base_model_state_dict, partial_model, customization_type, scale)
             state_dict["merged_model"] = merged_weights
             
         return state_dict
@@ -152,7 +158,7 @@ class Checkpointer(DDPCheckpointer):
     def _filter_trainable_state_dict(self, model):
         """returns state dict with trainable parameters only - used for peft"""
         trainable_param_names = {name for name, param in model.model.named_parameters() if param.requires_grad}
-        state_dict_keys = [k for k in model.state_dict().keys() if k in ["model", "trained_data_record"]] # add "ema" if needed
+        state_dict_keys = [k for k in model.state_dict().keys() if k in ["ema", "model", "trained_data_record"]]
         output_dict = OrderedDict({k: OrderedDict() for k in state_dict_keys})
         for state_dict_key in state_dict_keys:
             if state_dict_key == "trained_data_record":
@@ -162,4 +168,13 @@ class Checkpointer(DDPCheckpointer):
             for k, v in sub_state_dict.items():
                 if k in trainable_param_names or k.replace("-", ".") in trainable_param_names:
                     output_dict[state_dict_key][k] = v
+        return output_dict
+    
+    def _filter_base_model_state_dict(self, model):
+        """returns state dict with base model parameters only - used for peft"""
+        trainable_param_names = {name for name, param in model.model.named_parameters() if param.requires_grad}
+        output_dict = OrderedDict()
+        for k, v in model.state_dict()["model"].items():
+            if k not in trainable_param_names and k.replace("-", ".") not in trainable_param_names:
+                output_dict[k] = v
         return output_dict

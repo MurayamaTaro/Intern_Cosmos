@@ -25,7 +25,11 @@ from cosmos_predict1.diffusion.module.parallel import cat_outputs_cp, split_inpu
 from cosmos_predict1.diffusion.module.pretrained_vae import BaseVAE
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.lazy_config import instantiate as lazy_instantiate
-
+from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
+from cosmos_predict1.diffusion.training.utils.layer_control.peft_control_config_parser import LayerControlConfigParser
+from cosmos_predict1.diffusion.training.utils.peft.peft import add_lora_layers, get_all_lora_params, setup_lora_requires_grad
+from cosmos_predict1.diffusion.training.models.model_peft import PEFTVideoDiffusionModel
+from cosmos_predict1.utils.distributed import get_rank
 
 class DiffusionT2WModel(torch.nn.Module):
     """Text-to-world diffusion model that generates video frames from text descriptions.
@@ -168,7 +172,9 @@ class DiffusionT2WModel(torch.nn.Module):
         self.scheduler.set_timesteps(num_steps)
 
         xt = torch.randn(size=(n_sample,) + tuple(state_shape)) * self.scheduler.init_noise_sigma
-
+        # Dump model state_dict to debug_generate_{rank}.pt for debugging
+        torch.save(self.model.state_dict(), f"debug_generate_{get_rank()}.pt")
+        log.info(f"Model state_dict saved to debug_generate_{get_rank()}.pt")
         to_cp = self.net.is_context_parallel_enabled
         if to_cp:
             xt = split_inputs_cp(x=xt, seq_dim=2, cp_group=self.net.cp_group)
@@ -227,3 +233,34 @@ def broadcast_condition(condition: BaseVideoCondition, to_tp: bool = True, to_cp
         condition_kwargs[k] = parallel.broadcast(v, to_tp=to_tp, to_cp=to_cp)
     condition = type(condition)(**condition_kwargs)
     return condition
+
+
+class DiffusionT2WLoRAModel(DiffusionT2WModel):
+    @misc.timer("DiffusionModel: set_up_model")
+    def set_up_model(self, memory_format: torch.memory_format = torch.preserve_format):
+        """Initialize the core model components including network, conditioner and logvar."""
+        self.model = self.build_model()
+        config = self.config
+        peft_control_config_parser = LayerControlConfigParser(config=config.peft_control)
+        peft_control_config = peft_control_config_parser.parse()
+        self.model = self.build_model()
+        add_lora_layers(self.model, peft_control_config)
+        num_lora_params = setup_lora_requires_grad(self.model) #TODO: remove
+        self.model.requires_grad_(False)
+        if num_lora_params == 0:
+            raise ValueError("No LoRA parameters found. Please check the model configuration.")
+        self.model = self.model.to(memory_format=memory_format, **self.tensor_kwargs)
+
+
+# class DiffusionT2WLoRAModel(PEFTVideoDiffusionModel):
+#     @misc.timer("DiffusionModel: set_up_model")
+#     def set_up_model(self, memory_format: torch.memory_format = torch.preserve_format):
+#         """Initialize the core model components including network, conditioner and logvar."""
+#         super().set_up_model()
+#         self.model = self.model.to(memory_format=memory_format, **self.tensor_kwargs)
+        
+#     def set_up_tokenizer(self, tokenizer_dir: str):
+#         self.tokenizer: BaseVAE = lazy_instantiate(self.config.tokenizer)
+#         self.tokenizer.load_weights(tokenizer_dir)
+#         if hasattr(self.tokenizer, "reset_dtype"):
+#             self.tokenizer.reset_dtype()

@@ -43,7 +43,7 @@ def setup_lora_requires_grad(model):
         model.requires_grad_(False)
         log.info("Unfreezing LoRA parameters")
         for name, param in lora_params:
-            log.info(f"Unfreezing loRA : {name}")
+            # log.info(f"Unfreezing loRA : {name}")
             param.requires_grad_(True)
         num_param = count_params(model, verbose=True)
         log.critical(f"Model has {num_param * 1e-6:.2f}M parameters after freezing")

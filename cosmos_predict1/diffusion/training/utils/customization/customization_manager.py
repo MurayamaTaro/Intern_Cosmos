@@ -21,7 +21,7 @@ from enum import Enum
 import torch
 from typing import Dict, Any
 from cosmos_predict1.utils import log
-
+from typing import Optional
 
 class CustomizationType(Enum):
     LORA = 1
@@ -81,14 +81,18 @@ The class handles applying and bookkeeping these customizations per network.
 
 
 class CustomizationManager:
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: Optional[torch.nn.Module] = None, base_model_dict: Optional[OrderedDict] = None):
         # layer_name->tensor dict that stores the base model layer for any layer that is modified
         self.base_layer_cache = {}
-
         self.model = model
-        self.model_state_dict = model.state_dict()
-        if model.state_dict().get("model", None):
-            self.model_state_dict = model.state_dict()["model"]
+        assert model is not None or base_model_dict is not None, "model or base_model_dict must be provided"
+        if model is None:
+            self.model_state_dict = base_model_dict
+        else:
+            assert base_model_dict is None, "model and base_model_dict cannot both be provided"
+            self.model_state_dict = model.state_dict()
+            if model.state_dict().get("model", None):
+                self.model_state_dict = model.state_dict()["model"]
         # Use to keep track of the last customization applied
         self.last_customization_meta_id = None
 
@@ -201,11 +205,11 @@ class CustomizationManager:
 
         return self.model
 
-    def get_customized_weights(self, model: torch.nn.Module, partial_checkpoint: Dict[str, Any], customization_type: CustomizationType, scale: float):
+    def get_customized_weights(self, base_model_dict: OrderedDict[str, torch.Tensor], partial_checkpoint: Dict[str, Any], customization_type: CustomizationType, scale: float):
         """
             Get the new weights after applying the customization. Returns the new weights but does not apply them to the model.
         """
-        self.__init__(model)
+        self.__init__(model=None, base_model_dict=base_model_dict)
         self.set_apply_mode("clear")
         self.scale = scale
         if customization_type.lower() == "lora":
@@ -229,7 +233,12 @@ class CustomizationManager:
         else:
             raise Exception(f"No implementation for customization type: {self.customization_type}")
 
-        return weights_dict
+        # Copy base_model_dict and update with the modified layers
+        output_dict = base_model_dict.copy()
+        for layer_name in weights_dict:
+            output_dict[layer_name] = weights_dict[layer_name]
+
+        return output_dict
          
 
     def _dry_run_lora(self, checkpoint: OrderedDict) -> dict[str, torch.Tensor]:

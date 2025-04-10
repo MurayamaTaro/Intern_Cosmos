@@ -32,7 +32,7 @@ from cosmos_predict1.diffusion.inference.inference_utils import (
     load_network_model,
     load_tokenizer_model,
 )
-from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel
+from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel, DiffusionT2WLoRAModel
 from cosmos_predict1.diffusion.model.model_t2w_multiview import DiffusionMultiviewT2WModel
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
@@ -383,6 +383,13 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
 
         return video, prompt
 
+class DiffusionT2WLoRAGenerationPipeline(DiffusionText2WorldGenerationPipeline):
+    def _load_model(self):
+        self.model = load_model_by_config(
+            config_job_name=self.model_name,
+            config_file="cosmos_predict1/diffusion/config/config.py",
+            model_class=DiffusionT2WLoRAModel,
+        )
 
 class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeline):
     def __init__(

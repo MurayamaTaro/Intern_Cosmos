@@ -319,7 +319,21 @@ def load_network_model(model: DiffusionT2WModel, ckpt_path: str):
     except Exception:
         # Posttrained models can be loaded with weights_only=False
         net_state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    log.debug(non_strict_load_model(model.model, net_state_dict))
+    if "model" in net_state_dict:
+        model_state_dict = net_state_dict["model"]
+        if False: #"ema" in net_state_dict and model.config.peft_control.enabled:
+            ema_state_dict = net_state_dict["ema"]
+            # Convert ema state_dict to model state_dict by replacing "-" with "."
+            ema_state_dict = {k.replace("-", "."): v for k, v in ema_state_dict.items()}
+            model_state_dict.update(ema_state_dict)
+            net_state_dict = model_state_dict
+        else:
+            net_state_dict = model_state_dict
+    
+    nkeys = len(net_state_dict.keys())
+    if nkeys < 10:
+        raise ValueError(f"Checkpoint {ckpt_path} is not a valid model checkpoint. It has {nkeys} keys. {net_state_dict.keys()}")
+    log.info(non_strict_load_model(model.model, net_state_dict))
     model.cuda()
 
 
