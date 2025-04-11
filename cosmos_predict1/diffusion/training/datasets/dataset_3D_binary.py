@@ -129,14 +129,14 @@ class Dataset_3DBinary(Dataset_3D):
             if self.load_t5_embeddings:
                 t5_embedding_path = ann_file.replace(".json", ".pickle")
                 with open(t5_embedding_path, "rb") as f:
-                    data["t5_text_embeddings"] = torch.from_numpy(pickle.load(f)[0]).cuda()
+                    data["t5_text_embeddings"] = torch.from_numpy(pickle.load(f)[0])
             else:
-                data["t5_text_embeddings"] = torch.zeros(512, 1024, dtype=torch.bfloat16).cuda()
-            data["t5_text_mask"] = torch.ones(512, dtype=torch.int64).cuda()
+                data["t5_text_embeddings"] = torch.zeros(512, 1024, dtype=torch.bfloat16)
+            data["t5_text_mask"] = torch.ones(512, dtype=torch.int64)
             data["fps"] = 4
-            data["image_size"] = 256 * torch.ones(4).cuda()  # TODO: Does this matter?
+            data["image_size"] = 256 * torch.ones(4)  # TODO: Does this matter?
             data["num_frames"] = self.sequence_length
-            data["padding_mask"] = torch.zeros(1, 256, 256).cuda()
+            data["padding_mask"] = torch.zeros(1, 256, 256)
 
             return data
         except Exception:

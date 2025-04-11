@@ -163,12 +163,12 @@ class Dataset(Dataset):
             with open(sample["t5_embedding_path"], "rb") as f:
                 t5_embedding = pickle.load(f)[0]
 
-            data["t5_text_embeddings"] = torch.from_numpy(t5_embedding).cuda()
-            data["t5_text_mask"] = torch.ones(512, dtype=torch.int64).cuda()
+            data["t5_text_embeddings"] = torch.from_numpy(t5_embedding)
+            data["t5_text_mask"] = torch.ones(512, dtype=torch.int64)
             data["fps"] = fps
-            data["image_size"] = torch.tensor([704, 1280, 704, 1280]).cuda()
+            data["image_size"] = torch.tensor([704, 1280, 704, 1280])
             data["num_frames"] = self.sequence_length
-            data["padding_mask"] = torch.zeros(1, 704, 1280).cuda()
+            data["padding_mask"] = torch.zeros(1, 704, 1280)
 
             return data
         except Exception:
