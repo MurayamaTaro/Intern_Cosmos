@@ -825,7 +825,7 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=8,
+            context_parallel_size=16,
         ),
         model=dict(
             latent_shape=[
