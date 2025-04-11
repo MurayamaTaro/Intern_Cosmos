@@ -216,7 +216,7 @@ text2world_7b_example_hdvila = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=8,
+            context_parallel_size=1,
         ),
         model=dict(
             latent_shape=[
@@ -233,7 +233,7 @@ text2world_7b_example_hdvila = LazyDict(
             fsdp_enabled=True,
             fsdp=dict(
                 policy="block",
-                checkpoint=False,
+                checkpoint=True,
                 min_num_params=1024,
                 sharding_group_size=32,
                 sharding_strategy="hybrid",
@@ -421,7 +421,7 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=8,
+            context_parallel_size=1,
         ),
         model=dict(
             latent_shape=[
@@ -437,7 +437,7 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
             fsdp_enabled=True,
             fsdp=dict(
                 policy="block",
-                checkpoint=False,
+                checkpoint=True,
                 min_num_params=1024,
                 sharding_group_size=32,
                 sharding_strategy="hybrid",
@@ -449,7 +449,6 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
-                use_checkpoint=True
             ),
             vae=dict(pixel_chunk_duration=num_frames),
             conditioner=dict(text=dict(dropout_rate=0.0)),
