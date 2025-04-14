@@ -188,7 +188,7 @@ To run with 4 GPUs with H100/A100 80GB, run experiment `text2world_7b_example_co
 It trains with `cosmos_nemo_assets` data at 384x384 resolution, video length of 121 frames.
 
 ```bash
-torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
+torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=text2world_7b_example_cosmos_nemo_assets_4gpu_80gb
 ```
@@ -206,7 +206,7 @@ To run with 4 GPUs with A100 40GB, run experiment `text2world_7b_example_cosmos_
 It trains with `cosmos_nemo_assets` data at 384x384 resolution, video length of 17 frames.
 
 ```bash
-torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
+torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=text2world_7b_example_cosmos_nemo_assets_4gpu_40gb
 ```
