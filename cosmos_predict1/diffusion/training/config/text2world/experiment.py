@@ -111,12 +111,16 @@ dataloader_train_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 n_length_8gpu_40gb = 4
@@ -134,12 +138,16 @@ dataloader_train_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 
@@ -158,12 +166,16 @@ dataloader_train_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 text2world_7b_example_hdvila = LazyDict(
