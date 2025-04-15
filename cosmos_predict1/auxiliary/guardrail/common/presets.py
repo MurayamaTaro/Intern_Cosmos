@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from cosmos_predict1.auxiliary.guardrail.aegis.aegis import Aegis
+from cosmos_predict1.auxiliary.guardrail.llamaGuard3.llamaGuard3 import LlamaGuard3
 from cosmos_predict1.auxiliary.guardrail.blocklist.blocklist import Blocklist
 from cosmos_predict1.auxiliary.guardrail.common.core import GuardrailRunner
 from cosmos_predict1.auxiliary.guardrail.face_blur_filter.face_blur_filter import RetinaFaceFilter
@@ -30,7 +30,7 @@ from cosmos_predict1.utils import log
 
 def create_text_guardrail_runner(checkpoint_dir: str) -> GuardrailRunner:
     """Create the text guardrail runner."""
-    return GuardrailRunner(safety_models=[Blocklist(checkpoint_dir), Aegis(checkpoint_dir)])
+    return GuardrailRunner(safety_models=[Blocklist(checkpoint_dir), LlamaGuard3(checkpoint_dir)])
 
 
 def create_video_guardrail_runner(checkpoint_dir: str) -> GuardrailRunner:

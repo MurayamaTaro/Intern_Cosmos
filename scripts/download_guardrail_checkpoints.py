@@ -56,8 +56,7 @@ def download_guardrail_checkpoints(destination_root: str):
     """
     # List of models to download
     models_to_download = [
-        "nvidia/Aegis-AI-Content-Safety-LlamaGuard-Defensive-1.0",
-        "meta-llama/LlamaGuard-7b:3e764390d6b39028ddea5b20603c89476107b41e",
+        "meta-llama/Llama-Guard-3-8B",
         "nvidia/Cosmos-Guardrail1",
     ]
 
