@@ -73,7 +73,7 @@ base_4b_example_tealrobotsmall_tp1: LazyDict = LazyDict(
             distributed_parallelism="ddp",
             callbacks=dict(
                 vid_sampling_tf=dict(
-                    every_n=2,
+                    every_n=500,
                 ),
             ),
         ),
@@ -134,7 +134,7 @@ base_4b_example_tealrobot_tp4: LazyDict = LazyDict(
             distributed_parallelism="ddp",
             callbacks=dict(
                 vid_sampling_tf=dict(
-                    every_n=2,
+                    every_n=500,
                 ),
             ),
         ),
@@ -142,7 +142,7 @@ base_4b_example_tealrobot_tp4: LazyDict = LazyDict(
             load_path="checkpoints/Cosmos-Predict1-4B/model.pt",
             load_training_state=False,
             strict_resume=False,
-            save_iter=10,
+            save_iter=1000,
         ),
         model_parallel=create_model_parallel_config(),
     ),
