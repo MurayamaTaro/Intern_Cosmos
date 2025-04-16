@@ -110,12 +110,16 @@ dataloader_train_cosmos_nemo_assets_480_848 = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_480_848),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets_480_848 = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_480_848,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_480_848),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 n_length_4gpu_40gb = 2
@@ -952,6 +956,7 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
             load_training_state=False,
             strict_resume=False,
             keys_not_to_resume=[],
+            async_saving=False,
         ),
         trainer=dict(
             max_iter=5000,
