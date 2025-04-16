@@ -165,11 +165,11 @@ class Dataset(Dataset):
             n_tokens = t5_embedding.shape[0] 
             if n_tokens < 512:
                 t5_embedding = np.concatenate([t5_embedding, np.zeros((512 - n_tokens, 1024), dtype=np.float32)], axis=0)
-            t5_text_mask = np.zeros(512, dtype=np.int64)        
+            t5_text_mask = torch.zeros(512, dtype=torch.int64)        
             t5_text_mask[:n_tokens] = 1
 
             data["t5_text_embeddings"] = torch.from_numpy(t5_embedding).cuda()
-            data["t5_text_mask"] = torch.from_numpy(t5_text_mask).cuda()
+            data["t5_text_mask"] = t5_text_mask.cuda()
             data["fps"] = fps
             data["image_size"] = torch.tensor([704, 1280, 704, 1280]).cuda()
             data["num_frames"] = self.sequence_length

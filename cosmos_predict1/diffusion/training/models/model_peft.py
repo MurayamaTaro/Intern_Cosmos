@@ -18,6 +18,7 @@ from cosmos_predict1.diffusion.utils.customization.customization_manager import 
 from cosmos_predict1.utils.lazy_config import instantiate as lazy_instantiate
 from cosmos_predict1.utils import misc
 from cosmos_predict1.diffusion.training.models.model import DiffusionModel as VideoDiffusionModel
+from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.diffusion.training.utils.layer_control.peft_control_config_parser import (
     LayerControlConfigParser,
 )
@@ -61,3 +62,8 @@ def video_peft_decorator(base_class: Type[T]) -> Type[T]:
 @video_peft_decorator
 class PEFTVideoDiffusionModel(VideoDiffusionModel):
     pass
+
+@video_peft_decorator
+class PEFTExtendDiffusionModel(ExtendDiffusionModel):
+    pass
+

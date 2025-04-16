@@ -19,7 +19,7 @@ import os
 import torch
 
 from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, validate_args
-from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionText2WorldGenerationPipeline, DiffusionT2WLoRAGenerationPipeline
+from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionText2WorldGenerationPipeline
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
@@ -42,6 +42,7 @@ def parse_arguments() -> argparse.Namespace:
             "Cosmos-Predict1-14B-Text2World",
             "Cosmos-Predict1-7B-Text2World_post-trained",
             "Cosmos-Predict1-14B-Text2World_post-trained",
+            "Cosmos-Predict1-7B-Text2World_post-trained-lora",
         ],
     )
     parser.add_argument(
@@ -56,12 +57,6 @@ def parse_arguments() -> argparse.Namespace:
         type=int,
         default=250,
         help="Skip prompt upsampler for better robustness if the number of words in the prompt is greater than this value",
-    )
-    
-    parser.add_argument(
-        "--with_lora",
-        action="store_true",
-        help="Use LoRA model for text2world generation",
     )
 
     return parser.parse_args()
@@ -105,8 +100,7 @@ def demo(args):
         process_group = parallel_state.get_context_parallel_group()
 
     # Initialize text2world generation model pipeline
-    pipeline_class = DiffusionT2WLoRAGenerationPipeline if args.with_lora else DiffusionText2WorldGenerationPipeline
-    pipeline = pipeline_class(
+    pipeline = DiffusionText2WorldGenerationPipeline(
         inference_type=inference_type,
         checkpoint_dir=args.checkpoint_dir,
         checkpoint_name=args.diffusion_transformer_dir,

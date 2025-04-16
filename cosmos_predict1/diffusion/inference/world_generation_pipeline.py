@@ -32,7 +32,7 @@ from cosmos_predict1.diffusion.inference.inference_utils import (
     load_network_model,
     load_tokenizer_model,
 )
-from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel, DiffusionT2WLoRAModel
+from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel
 from cosmos_predict1.diffusion.model.model_t2w_multiview import DiffusionMultiviewT2WModel
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
@@ -59,6 +59,8 @@ MODEL_NAME_DICT = {
     "Cosmos-Predict1-14B-Text2World_post-trained": "Cosmos_Predict1_Text2World_14B_Post_trained",
     "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
     "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    "Cosmos-Predict1-7B-Text2World_post-trained-lora": "Cosmos_Predict1_Text2World_7B_Post_trained_lora",
+    "Cosmos-Predict1-7B-Video2World_post-trained-lora": "Cosmos_Predict1_Video2World_7B_Post_trained_lora",
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
 }
@@ -383,13 +385,6 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
 
         return video, prompt
 
-class DiffusionT2WLoRAGenerationPipeline(DiffusionText2WorldGenerationPipeline):
-    def _load_model(self):
-        self.model = load_model_by_config(
-            config_job_name=self.model_name,
-            config_file="cosmos_predict1/diffusion/config/config.py",
-            model_class=DiffusionT2WLoRAModel,
-        )
 
 class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeline):
     def __init__(

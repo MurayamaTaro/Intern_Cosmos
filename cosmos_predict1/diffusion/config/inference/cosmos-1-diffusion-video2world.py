@@ -18,6 +18,7 @@ from hydra.core.config_store import ConfigStore
 from cosmos_predict1.diffusion.networks.general_dit_video_conditioned import VideoExtendGeneralDIT
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
+from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 
 Cosmos_Predict1_Video2World_7B: LazyDict = LazyDict(
     dict(
@@ -90,7 +91,6 @@ Cosmos_Predict1_Video2World_7B_Post_trained: LazyDict = LazyDict(
     )
 )
 
-
 Cosmos_Predict1_Video2World_14B_Post_trained: LazyDict = LazyDict(
     dict(
         defaults=[
@@ -102,11 +102,26 @@ Cosmos_Predict1_Video2World_14B_Post_trained: LazyDict = LazyDict(
     )
 )
 
+Cosmos_Predict1_Video2World_7B_Post_trained_lora: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Video2World_7B_Post_trained",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Video2World_7B_Post_trained_lora",
+        ),
+        model=dict(
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+        )
+    )
+)
+
 cs = ConfigStore.instance()
 for _item in [
     Cosmos_Predict1_Video2World_7B,
     Cosmos_Predict1_Video2World_14B,
     Cosmos_Predict1_Video2World_7B_Post_trained,
     Cosmos_Predict1_Video2World_14B_Post_trained,
+    Cosmos_Predict1_Video2World_7B_Post_trained_lora,
 ]:
     cs.store(group="experiment", package="_global_", name=_item["job"]["name"], node=_item)
