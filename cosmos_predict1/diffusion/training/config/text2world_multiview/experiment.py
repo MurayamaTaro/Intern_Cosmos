@@ -151,12 +151,16 @@ text2world_multiview_7b_example_waymo = LazyDict(
             sampler=L(get_sampler)(dataset=example_multiview_dataset_waymo),
             batch_size=1,
             drop_last=True,
+            pin_memory=True,
+            num_workers=8
         ),
         dataloader_val=L(DataLoader)(
             dataset=example_multiview_dataset_waymo,
             sampler=L(get_sampler)(dataset=example_multiview_dataset_waymo),
             batch_size=1,
             drop_last=True,
+            pin_memory=True,
+            num_workers=8
         ),
     )
 )

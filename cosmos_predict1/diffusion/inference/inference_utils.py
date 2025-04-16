@@ -645,14 +645,16 @@ def compute_num_latent_frames(model: DiffusionV2WModel, num_input_frames: int, d
     Returns:
         int: number of latent frames
     """
+    # First find how many vae chunks are contained with in num_input_frames
     num_latent_frames = (
         num_input_frames
         // model.tokenizer.video_vae.pixel_chunk_duration
         * model.tokenizer.video_vae.latent_chunk_duration
     )
-    if num_input_frames % model.tokenizer.video_vae.latent_chunk_duration == 1:
+    # Then handle the remainder
+    if num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration == 1:
         num_latent_frames += 1
-    elif num_input_frames % model.tokenizer.video_vae.latent_chunk_duration > 1:
+    elif num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration > 1:
         assert (
             num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration - 1
         ) % downsample_factor == 0, f"num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration - 1 must be divisible by {downsample_factor}"

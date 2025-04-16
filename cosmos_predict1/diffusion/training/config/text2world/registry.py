@@ -157,28 +157,16 @@ def register_scheduler(cs):
 def register_configs():
     cs = ConfigStore.instance()
 
-    # register_training_and_val_data(cs)
-
     register_optimizer(cs)
     register_scheduler(cs)
 
     register_net(cs)
     register_conditioner(cs)
     register_vae(cs)
-    # register_tokenizer(cs)
 
     register_ema(cs)
-    # register_fsdp(cs)
-
-    # register_callbacks(cs)
-    # register_callback_lvg(cs)
 
     register_checkpoint_credential(cs)
     register_checkpointer(cs)
 
     register_experiments(cs)
-
-    # Register exra data
-    # register_training_and_val_3d_data(cs)
-
-    # register_vae_lvg(cs)

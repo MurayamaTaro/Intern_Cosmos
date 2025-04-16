@@ -57,12 +57,16 @@ dataloader_train = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset),
     batch_size=1,
     drop_last=True,
+    pin_memory=True,
+    num_workers=8
 )
 dataloader_val = L(DataLoader)(
     dataset=example_video_dataset,
     sampler=L(get_sampler)(dataset=example_video_dataset),
     batch_size=1,
     drop_last=True,
+    pin_memory=True,
+    num_workers=8
 )
 
 example_video_dataset_cosmos_nemo_assets = L(Dataset)(

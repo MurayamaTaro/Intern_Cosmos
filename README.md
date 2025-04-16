@@ -17,7 +17,6 @@ Cosmos-Predict1 includes the following:
 - **Autoregressive-based world foundation models** for Video2World generation, where a user can generate visual simulation based on video prompts and optional text prompts.
 - **Image and video tokenizers** for tokenizing videos into continuous tokens (latent vectors) and discrete tokens (integers) efficiently and effectively.
 - **Post-training scripts** for helping Physical AI builders post-train pre-trained Cosmos-Predict1 for their applications.
-- **Pre-training scripts** for helping Physical AI builders train their WFMs from scratch.
 
 ## Example Model Behavior
 

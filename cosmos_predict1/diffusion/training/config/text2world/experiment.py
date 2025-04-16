@@ -42,7 +42,8 @@ def get_sampler(dataset):
 
 cs = ConfigStore.instance()
 
-num_frames = 121
+n_length = 15
+num_frames = 8 * n_length + 1  # 121
 
 # HDVILA example
 example_video_dataset_hdvila = L(Dataset)(
@@ -58,12 +59,16 @@ dataloader_train_hdvila = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_hdvila),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_hdvila = L(DataLoader)(
     dataset=example_video_dataset_hdvila,
     sampler=L(get_sampler)(dataset=example_video_dataset_hdvila),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 # Cosmos-NeMo-Assets example
@@ -88,12 +93,16 @@ dataloader_train_cosmos_nemo_assets = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets,
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets),
     batch_size=1,
     drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 dataloader_train_cosmos_nemo_assets_480_848 = L(DataLoader)(
@@ -107,6 +116,88 @@ dataloader_val_cosmos_nemo_assets_480_848 = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_480_848),
     batch_size=1,
     drop_last=True,
+)
+
+n_length_4gpu_40gb = 2
+num_frames_4gpu_40gb = 8 * n_length_4gpu_40gb + 1  # 17
+example_video_dataset_cosmos_nemo_assets_4gpu_40gb = L(Dataset)(
+    dataset_dir="datasets/cosmos_nemo_assets",
+    sequence_interval=1,
+    num_frames=num_frames_4gpu_40gb,
+    video_size=(384, 384),  # a low-res example for lower VRAM utilization without considering aspect ratio.
+    start_frame_interval=1,
+)   
+
+dataloader_train_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
+)
+dataloader_val_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
+)
+
+n_length_8gpu_40gb = 4
+num_frames_8gpu_40gb = 8 * n_length_8gpu_40gb + 1  # 33
+example_video_dataset_cosmos_nemo_assets_8gpu_40gb = L(Dataset)(
+    dataset_dir="datasets/cosmos_nemo_assets",
+    sequence_interval=1,
+    num_frames=num_frames_8gpu_40gb,
+    video_size=(384, 384),  # a low-res example for lower VRAM utilization without considering aspect ratio.
+    start_frame_interval=1,
+)
+
+dataloader_train_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
+)
+dataloader_val_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
+)
+
+
+n_length_4gpu_80gb = 15
+num_frames_4gpu_80gb = 8 * n_length_4gpu_80gb + 1  # 121
+example_video_dataset_cosmos_nemo_assets_4gpu_80gb = L(Dataset)(
+    dataset_dir="datasets/cosmos_nemo_assets",
+    sequence_interval=1,
+    num_frames=num_frames_4gpu_80gb,
+    video_size=(384, 384),  # a low-res example for lower VRAM utilization without considering the content aspect ratio.
+    start_frame_interval=1,
+)
+
+dataloader_train_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
+)
+dataloader_val_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
+    dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb,
+    sampler=L(get_sampler)(dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True
 )
 
 text2world_7b_example_hdvila = LazyDict(
@@ -162,7 +253,6 @@ text2world_7b_example_hdvila = LazyDict(
             context_parallel_size=8,
         ),
         model=dict(
-            # Use 16x16x32x40 latent shape for training
             latent_shape=[
                 16,  # Latent channel dim
                 16,  # Latent temporal dim
@@ -191,6 +281,7 @@ text2world_7b_example_hdvila = LazyDict(
                 rope_t_extrapolation_ratio=2,
             ),
             vae=dict(pixel_chunk_duration=num_frames),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
         ),
         model_obj=L(FSDPDiffusionModel)(
             config=PLACEHOLDER,
@@ -262,7 +353,6 @@ text2world_14b_example_hdvila = LazyDict(
             context_parallel_size=8,
         ),
         model=dict(
-            # Use 16x16x32x40 latent shape for training
             latent_shape=[
                 16,  # Latent channel dim
                 16,  # Latent temporal dim
@@ -368,7 +458,6 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
             context_parallel_size=8,
         ),
         model=dict(
-            # Use 16x16x32x40 latent shape for training
             latent_shape=[
                 16,  # Latent channel dim
                 16,  # Latent temporal dim
@@ -394,8 +483,10 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
+                use_checkpoint=True
             ),
             vae=dict(pixel_chunk_duration=num_frames),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
         ),
         model_obj=L(FSDPDiffusionModel)(
             config=PLACEHOLDER,
@@ -411,6 +502,319 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
         ),
         dataloader_train=dataloader_train_cosmos_nemo_assets,
         dataloader_val=dataloader_val_cosmos_nemo_assets,
+    )
+)
+
+text2world_7b_example_cosmos_nemo_assets_4gpu_40gb = LazyDict(
+    dict(
+        defaults=[
+            {"override /net": "faditv2_7b"},
+            {"override /ckpt_klass": "fsdp"},
+            {"override /checkpoint": "local"},
+            {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+            {"override /conditioner": "add_fps_image_size_padding_mask"},
+            "_self_",
+        ],
+        job=dict(
+            project="posttraining",
+            group="diffusion_text2world",
+            name="text2world_7b_example_cosmos_nemo_assets_4gpu_40gb",
+        ),
+        optimizer=dict(
+            lr=2 ** (-14.3),  # 2**(-14.3) approx 5e-5
+            weight_decay=0.1,
+            betas=[0.9, 0.99],
+            eps=1e-10,
+        ),
+        checkpoint=dict(
+            save_iter=200,
+            broadcast_via_filesystem=False,
+            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_training_state=False,
+            strict_resume=False,
+            keys_not_to_resume=[],
+            async_saving=False,  # set to False to save memory
+        ),
+        trainer=dict(
+            max_iter=2000,
+            distributed_parallelism="fsdp",
+            logging_iter=200,
+            callbacks=dict(
+                grad_clip=L(GradClip)(
+                    model_key="model",
+                    fsdp_enabled=True,
+                ),
+                low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+                iter_speed=L(IterSpeed)(
+                    every_n=10,
+                    hit_thres=0,
+                ),
+                progress_bar=L(ProgressBarCallback)(),
+            ),
+        ),
+        model_parallel=dict(
+            sequence_parallel=False,
+            tensor_model_parallel_size=1,
+            context_parallel_size=1,
+        ),
+        model=dict(
+            latent_shape=[
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+                # 24,  # Latent height dim
+                # 24,  # Latent width dim
+                # 12,  # Latent height dim
+                # 12,  # Latent width dim
+            ],
+            loss_reduce="mean",
+            ema=dict(
+                enabled=False,
+            ),
+            fsdp_enabled=True,
+            fsdp=dict(
+                policy="block",
+                checkpoint=True,
+                min_num_params=1024,
+                sharding_group_size=32,
+                sharding_strategy="hybrid",
+            ),
+            net=dict(
+                in_channels=16,
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
+                rope_h_extrapolation_ratio=1,
+                rope_w_extrapolation_ratio=1,
+                rope_t_extrapolation_ratio=2,
+                use_memory_save=False,
+            ),
+            vae=dict(
+                pixel_chunk_duration=num_frames_4gpu_40gb,
+                spatial_resolution="384",
+            ),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
+        ),
+        model_obj=L(FSDPDiffusionModel)(
+            config=PLACEHOLDER,
+            fsdp_checkpointer=PLACEHOLDER,
+        ),
+        # warming up for first 2500 steps~(when resume from 310000)
+        scheduler=dict(
+            warm_up_steps=[2500],
+            cycle_lengths=[10000000000000],
+            f_start=[1.0e-6],
+            f_max=[1.0],
+            f_min=[1.0],
+        ),
+        dataloader_train=dataloader_train_cosmos_nemo_assets_4gpu_40gb,
+        dataloader_val=dataloader_val_cosmos_nemo_assets_4gpu_40gb,
+    )
+)
+
+
+text2world_7b_example_cosmos_nemo_assets_8gpu_40gb = LazyDict(
+    dict(
+        defaults=[
+            {"override /net": "faditv2_7b"},
+            {"override /ckpt_klass": "fsdp"},
+            {"override /checkpoint": "local"},
+            {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+            {"override /conditioner": "add_fps_image_size_padding_mask"},
+            "_self_",
+        ],
+        job=dict(
+            project="posttraining",
+            group="diffusion_text2world",
+            name="text2world_7b_example_cosmos_nemo_assets_8gpu_40gb",
+        ),
+        optimizer=dict(
+            lr=2 ** (-14.3),  # 2**(-14.3) approx 5e-5
+            weight_decay=0.1,
+            betas=[0.9, 0.99],
+            eps=1e-10,
+        ),
+        checkpoint=dict(
+            save_iter=200,
+            broadcast_via_filesystem=False,
+            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_training_state=False,
+            strict_resume=False,
+            keys_not_to_resume=[],
+            async_saving=False,  # set to False to save memory
+        ),
+        trainer=dict(
+            max_iter=2000,
+            distributed_parallelism="fsdp",
+            logging_iter=200,
+            callbacks=dict(
+                grad_clip=L(GradClip)(
+                    model_key="model",
+                    fsdp_enabled=True,
+                ),
+                low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+                iter_speed=L(IterSpeed)(
+                    every_n=10,
+                    hit_thres=0,
+                ),
+                progress_bar=L(ProgressBarCallback)(),
+            ),
+        ),
+        model_parallel=dict(
+            sequence_parallel=False,
+            tensor_model_parallel_size=1,
+            context_parallel_size=1,
+        ),
+        model=dict(
+            latent_shape=[
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+            ],
+            loss_reduce="mean",
+            ema=dict(
+                enabled=False,
+            ),
+            fsdp_enabled=True,
+            fsdp=dict(
+                policy="block",
+                checkpoint=True,
+                min_num_params=1024,
+                sharding_group_size=32,
+                sharding_strategy="hybrid",
+            ),
+            net=dict(
+                in_channels=16,
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
+                rope_h_extrapolation_ratio=1,
+                rope_w_extrapolation_ratio=1,
+                rope_t_extrapolation_ratio=2,
+                use_memory_save=False,
+            ),
+            vae=dict(
+                pixel_chunk_duration=num_frames_8gpu_40gb,
+                spatial_resolution="384",
+            ),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
+        ),
+        model_obj=L(FSDPDiffusionModel)(
+            config=PLACEHOLDER,
+            fsdp_checkpointer=PLACEHOLDER,
+        ),
+        # warming up for first 2500 steps~(when resume from 310000)
+        scheduler=dict(
+            warm_up_steps=[2500],
+            cycle_lengths=[10000000000000],
+            f_start=[1.0e-6],
+            f_max=[1.0],
+            f_min=[1.0],
+        ),
+        dataloader_train=dataloader_train_cosmos_nemo_assets_8gpu_40gb,
+        dataloader_val=dataloader_val_cosmos_nemo_assets_8gpu_40gb,
+    )
+)
+
+text2world_7b_example_cosmos_nemo_assets_4gpu_80gb = LazyDict(
+    dict(
+        defaults=[
+            {"override /net": "faditv2_7b"},
+            {"override /ckpt_klass": "fsdp"},
+            {"override /checkpoint": "local"},
+            {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+            {"override /conditioner": "add_fps_image_size_padding_mask"},
+            "_self_",
+        ],
+        job=dict(
+            project="posttraining",
+            group="diffusion_text2world",
+            name="text2world_7b_example_cosmos_nemo_assets_4gpu_80gb",
+        ),
+        optimizer=dict(
+            lr=2 ** (-14.3),  # 2**(-14.3) approx 5e-5
+            weight_decay=0.1,
+            betas=[0.9, 0.99],
+            eps=1e-10,
+        ),
+        checkpoint=dict(
+            save_iter=200,
+            broadcast_via_filesystem=False,
+            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_training_state=False,
+            strict_resume=False,
+            keys_not_to_resume=[],
+        ),
+        trainer=dict(
+            max_iter=2000,
+            distributed_parallelism="fsdp",
+            logging_iter=200,
+            callbacks=dict(
+                grad_clip=L(GradClip)(
+                    model_key="model",
+                    fsdp_enabled=True,
+                ),
+                low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+                iter_speed=L(IterSpeed)(
+                    every_n=10,
+                    hit_thres=0,
+                ),
+                progress_bar=L(ProgressBarCallback)(),
+            ),
+        ),
+        model_parallel=dict(
+            sequence_parallel=False,
+            tensor_model_parallel_size=1,
+            context_parallel_size=4,
+        ),
+        model=dict(
+            latent_shape=[
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+            ],
+            loss_reduce="mean",
+            ema=dict(
+                enabled=True,
+            ),
+            fsdp_enabled=True,
+            fsdp=dict(
+                policy="block",
+                checkpoint=False,
+                min_num_params=1024,
+                sharding_group_size=32,
+                sharding_strategy="hybrid",
+            ),
+            net=dict(
+                in_channels=16,
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
+                rope_h_extrapolation_ratio=1,
+                rope_w_extrapolation_ratio=1,
+                rope_t_extrapolation_ratio=2,
+                use_memory_save=False,
+            ),
+            vae=dict(
+                pixel_chunk_duration=num_frames_4gpu_80gb,
+                spatial_resolution="384",
+            ),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
+        ),
+        model_obj=L(FSDPDiffusionModel)(
+            config=PLACEHOLDER,
+            fsdp_checkpointer=PLACEHOLDER,
+        ),
+        # warming up for first 2500 steps~(when resume from 310000)
+        scheduler=dict(
+            warm_up_steps=[2500],
+            cycle_lengths=[10000000000000],
+            f_start=[1.0e-6],
+            f_max=[1.0],
+            f_min=[1.0],
+        ),
+        dataloader_train=dataloader_train_cosmos_nemo_assets_4gpu_80gb,
+        dataloader_val=dataloader_val_cosmos_nemo_assets_4gpu_80gb,
     )
 )
 
@@ -464,10 +868,9 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=8,
+            context_parallel_size=16,
         ),
         model=dict(
-            # Use 16x16x32x40 latent shape for training
             latent_shape=[
                 16,  # Latent channel dim
                 16,  # Latent temporal dim
@@ -608,7 +1011,7 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
     )
 )
 
-def register_experiments(cs):
+def register_experiments(cs: ConfigStore) -> None:
     # Register the experiments
     for _item in [
         text2world_7b_example_hdvila,
@@ -616,6 +1019,9 @@ def register_experiments(cs):
         text2world_7b_example_cosmos_nemo_assets,
         text2world_14b_example_cosmos_nemo_assets,
         text2world_7b_lora_example_cosmos_nemo_assets,
+        text2world_7b_example_cosmos_nemo_assets_4gpu_80gb,
+        text2world_7b_example_cosmos_nemo_assets_8gpu_40gb,
+        text2world_7b_example_cosmos_nemo_assets_4gpu_40gb,
     ]:
         experiment_name = _item["job"]["name"]
         log.info(f"Registering experiment: {experiment_name}")

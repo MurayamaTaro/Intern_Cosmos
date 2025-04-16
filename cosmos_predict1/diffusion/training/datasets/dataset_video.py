@@ -168,12 +168,12 @@ class Dataset(Dataset):
             t5_text_mask = torch.zeros(512, dtype=torch.int64)        
             t5_text_mask[:n_tokens] = 1
 
-            data["t5_text_embeddings"] = torch.from_numpy(t5_embedding).cuda()
-            data["t5_text_mask"] = t5_text_mask.cuda()
+            data["t5_text_embeddings"] = torch.from_numpy(t5_embedding)
+            data["t5_text_mask"] = t5_text_mask
             data["fps"] = fps
-            data["image_size"] = torch.tensor([704, 1280, 704, 1280]).cuda()
+            data["image_size"] = torch.tensor([704, 1280, 704, 1280])
             data["num_frames"] = self.sequence_length
-            data["padding_mask"] = torch.zeros(1, 704, 1280).cuda()
+            data["padding_mask"] = torch.zeros(1, 704, 1280)
 
             return data
         except Exception:

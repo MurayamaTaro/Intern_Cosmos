@@ -242,6 +242,7 @@ class CheckpointConfig:
     # Whether to use the local filesystem for broadcasting checkpoint data (used for Tensor Parallel Checkpointer).
     broadcast_via_filesystem: bool = False
     load_ema_to_reg: bool = False
+    async_saving: bool = True
 
 
 @make_freezable
