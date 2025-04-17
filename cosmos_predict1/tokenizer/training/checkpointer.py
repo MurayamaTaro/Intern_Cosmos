@@ -47,6 +47,7 @@ class TokenizerCheckpointer(Checkpointer):
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         grad_scaler: torch.amp.GradScaler,
         iteration: int = -1,
+        **ignore_kwargs,
     ) -> None:
         """Saves network weights, optimizer parameters, scheduler parameters to a checkpoint.
 
