@@ -261,7 +261,7 @@ video2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
             context_parallel_size=4,
         ),
         model=dict(
-            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
             latent_shape=[
                 16,
                 16,

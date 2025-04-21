@@ -35,11 +35,11 @@ from cosmos_predict1.diffusion.training.utils.peft.peft import add_lora_layers
 class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
-        minier_net = copy.deepcopy(FADITV2Config)
-        minier_net.num_blocks = 2
-        minier_net.model_channels = 256
-        minier_net.num_heads = 8
-        self.net = instantiate(minier_net).cuda()
+        dummy_net = copy.deepcopy(FADITV2Config)
+        dummy_net.num_blocks = 2
+        dummy_net.model_channels = 256
+        dummy_net.num_heads = 8
+        self.net = instantiate(dummy_net).cuda()
 
 @pytest.fixture()
 def block1_peft_control():

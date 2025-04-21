@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1):
+def get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1):
     """
     Get a LoRA configuration for the Self-Attention (FA) and Cross-Attention (CA) blocks in the model.
     This LoRA configuration is used to inject LoRA parameters into the model.

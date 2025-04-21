@@ -20,7 +20,7 @@ from transformer_engine.pytorch.attention import apply_rotary_pos_emb
 
 from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
 from cosmos_predict1.diffusion.training.utils.peft.lora_net import LoRALinearLayer, TELoRALinearLayer
-
+from cosmos_predict1.diffusion.module.attention import Attention
 try:
     from megatron.core import parallel_state
 
@@ -29,7 +29,14 @@ except ImportError:
     USE_MEGATRON = False
 
 
-def enable_attn_lora(attn, peft_control):
+def enable_attn_lora(attn: Attention, peft_control: dict) -> None:
+    """
+    Enable LoRA for the attention block based on the peft_control dictionary.
+
+    Args:
+        attn (Attention): The attention block to configure.
+        peft_control (dict): Dictionary containing PEFT configuration.
+    """
     attn.peft_lora_enabled = False
     if peft_control:
         try:
@@ -41,7 +48,14 @@ def enable_attn_lora(attn, peft_control):
             raise KeyError(f"peft_control dictionary expected to have attribute {e.args[0]}.")
 
 
-def configure_attn_lora(attn, peft_control):
+def configure_attn_lora(attn: Attention, peft_control: dict) -> None:
+    """
+    Configure LoRA for the attention block based on the peft_control dictionary.
+
+    Args:
+        attn (Attention): The attention block to configure.
+        peft_control (dict): Dictionary containing PEFT configuration.
+    """
     try:
         attn.q_lora_enabled = peft_control.get("to_q", {}).get("activate", False)
         attn.k_lora_enabled = peft_control.get("to_k", {}).get("activate", False)
@@ -66,19 +80,22 @@ def configure_attn_lora(attn, peft_control):
 
 
 def cal_qkv_lora(
-    self, x, context=None, mask=None, rope_emb=None, **kwargs
+    self, x: torch.Tensor, context: torch.Tensor = None, mask: torch.Tensor = None, rope_emb: torch.Tensor = None, **kwargs
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     del kwargs
+    """
+    Calculate the Q, K, V matrices with LoRA adjustments. Derived from cosmos_predict1/diffusion/module/attention.py cal_qkv.
 
+    Args:
+        x (torch.Tensor): Input tensor.
+        context (torch.Tensor, optional): Context tensor
+        mask (torch.Tensor, optional): Mask tensor
+        rope_emb (torch.Tensor, optional): Rotary positional embedding
+
+    Returns:
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor]: The Q, K, V matrices.
     """
-    # Derived from projects/edify_image/v4/module/attention.py cal_qkv. Modified to add LoRA finetuning
-    self.to_q, self.to_k, self.to_v are nn.Sequential with projection + normalization layers.
-    Before 07/24/2024, these modules normalize across all heads.
-    After 07/24/2024, to support tensor parallelism and follow the common practice in the community,
-    we support to normalize per head.
-    To keep the checkpoint copatibility with the previous code,
-    we keep the nn.Sequential but call the projection and the normalization layers separately.
-    """
+
     q = self.to_q[0](x)
     context = x if context is None else context
     k = self.to_k[0](context)
@@ -117,7 +134,19 @@ def cal_qkv_lora(
     return q, k, v
 
 
-def cal_attn_lora(self, q, k, v, mask=None):
+def cal_attn_lora(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+    """
+    Calculate the attention output with LoRA adjustments. Derived from cosmos_predict1/diffusion/module/attention.py cal_attn.
+
+    Args:
+        q (torch.Tensor): Query tensor.
+        k (torch.Tensor): Key tensor.
+        v (torch.Tensor): Value tensor.
+        mask (torch.Tensor, optional): Mask tensor.
+
+    Returns:
+        torch.Tensor: The attention output.
+    """
     if self.backend == "transformer_engine":
         seq_dim = self.qkv_format.index("s")
         assert (
@@ -151,7 +180,14 @@ def cal_attn_lora(self, q, k, v, mask=None):
         raise ValueError(f"Backend {self.backend} not found")
 
 
-def build_attn_lora(attn, peft_control):
+def build_attn_lora(attn: Attention, peft_control: dict) -> None:
+    """
+    Configure, build and add LoRA layers to the attention block.
+
+    Args:
+        attn (Attention): The attention block to add LoRA layers to.
+        peft_control (dict): Dictionary containing PEFT configuration.
+    """
     enable_attn_lora(attn, peft_control)
     configure_attn_lora(attn, peft_control)
     if attn.peft_lora_enabled:

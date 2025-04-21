@@ -21,7 +21,10 @@ from cosmos_predict1.utils import distributed, log
 
 class Checkpointer(DDPCheckpointer):
     """
-    Checkpointer class for PEFT in distributed training.
+    Checkpointer class for PEFT in distributed training. This class is similar to the DDP checkpointer,
+    with the exception that the `broadcast_via_filesystem` functionality is not supported, and it supports
+    loading pre-trained model without any postfix.
+    
     Note:
     - Fully Sharded Data Parallelism (FSDP) is not supported by this checkpointer.
     """
@@ -40,6 +43,20 @@ class Checkpointer(DDPCheckpointer):
         return checkpoint_path
     
     def load_broadcast_state_dict(self, checkpoint_path: str, model: Model, resume_keys: Set) -> dict[str, Any]:
+        """
+        Load state_dict and broadcast for PEFT checkpointer.
+
+        This function is identical to the `load_broadcast_state_dict` function of the base class (DDP checkpointer),
+        with the exception that the `broadcast_via_filesystem` functionality is not supported.
+
+        Args:
+            checkpoint_path (str): The base path of the checkpoint.
+            model (Model): The model being loaded.
+            resume_keys (Set): Set of keys to resume from the checkpoint.
+
+        Returns:
+            dict[str, Any]: A dictionary containing the loaded state for each resumed key.
+        """
         state_dict = {}
         sorted_resume_keys = sorted(resume_keys)
         # Step 1: Download checkpoints for every GPU of DDP-rank 0 and CP-rank 0.

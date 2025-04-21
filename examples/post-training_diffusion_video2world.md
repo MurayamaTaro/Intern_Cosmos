@@ -158,7 +158,7 @@ torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=video2world_7b_lora_example_cosmos_nemo_assets
 ```
-See the config `video2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/video2world/experiment.py` to understand how LoRA is enabled. 
+See the config `video2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/video2world/experiment.py` and `cosmos_predict1/diffusion/training/utils/layer_control/peft_control_config_parser.py` to understand how LoRA is enabled. 
 ```python
 video2world_7b_example_cosmos_nemo_assets = LazyDict(
     dict(
@@ -174,7 +174,7 @@ video2world_7b_example_cosmos_nemo_assets = LazyDict(
         )
         model=dict(
             ...
-            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
             ...
         ),
     )

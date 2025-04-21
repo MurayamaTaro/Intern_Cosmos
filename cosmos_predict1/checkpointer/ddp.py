@@ -113,7 +113,7 @@ class Checkpointer(AbstractCheckpointer):
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         grad_scaler: torch.amp.GradScaler,
         iteration: int,
-        async_saving: bool = False,
+        **ignore_kwargs,
     ) -> None:
         """Save network weights, optimizer parameters, scheduler parameters to a checkpoint.
 
@@ -124,8 +124,6 @@ class Checkpointer(AbstractCheckpointer):
             grad_scaler (torch.amp.GradScaler): The gradient scaler (for mixed precision training).
             iteration (int): Current iteration number.
         """
-        if async_saving:
-            raise ValueError("Async saving is not supported in DDP checkpointer.")
         self.callbacks.on_save_checkpoint_start(model, iteration)
 
         checkpoint_file = self.format_checkpoint_filename(model, iteration)

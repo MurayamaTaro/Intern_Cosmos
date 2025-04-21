@@ -32,29 +32,31 @@ class LayerControlConfigParser:
         See: cosmos_predict1/diffusion/training/utils/peft/lora_config.py and LoRA diffusion post-training for an example of how to create and use a LoRA config.
         The input config is a dictionary with the following keys:
         - enabled: whether to apply the PEFT
-        - customization_type: the default/global type of PEFT to apply (LoRA, unfreeze, etc.) - used if no edit-specific customization_type is provided
-        - rank: LoRA rank (only used if customization_type is LoRA)
-        - scale: LoRA scale (only used if customization_type is LoRA)
-        - edits: a list of model edits to apply
+        - customization_type: default/global type of PEFT to apply (LoRA, unfreeze, etc.) 
+        - rank: default/global LoRA rank
+        - scale: default/global LoRA scale 
+        - edits: a list of model edits to apply. 
             - blocks: a regex to select the blocks to apply the edit to: eg: r'\b(0|1|25|26)\b'
-            - block_edit: a list of subblocks to apply the edit to: eg: ["FA[to_q, to_v]", "CA[to_q, to_v]"]
-            - customization_type: the type of PEFT to apply for the edit (LoRA, unfreeze, etc.) - overrides the global customization_type if provided
-            - rank: LoRA rank (only used if customization_type is LoRA)
-            - scale: LoRA scale (only used if customization_type is LoRA)
+            - block_edit: a list of subblocks to apply the edit to: eg: ["FA[to_q, to_v]", "CA[to_q, to_v]"]. 
+              Subblock names correspond to FA (Full-Attention), CA (Cross-Attention), FL (FinalLayer), and MLP modules as defined in general_dit.py, 
+              and the layers (i.e to_q, to_k, to_v, etc.) are defined in corresponding modules in attention.py.
+            - customization_type: type of PEFT to apply for the edit (LoRA, unfreeze, etc.) - overrides the global customization_type if provided
+            - rank: LoRA rank - overrides the global rank for target blocks and subblocks if provided
+            - scale: LoRA scale - overrides the global scale for target blocks and subblocks if provided
     """
     SUBBLOCK_PATTERN = r"^(?P<subblock>.+?)\[(?P<parameters>[^\]]+)\]$"  # determines the subblock type (i.e. "FA[...]")
     LAYER_PATTERN = r"^(?P<layer>.+?)(?::(?P<rank>.+?))?(?::(?P<scale>[\d\.]+))?$"  # determines the layer details (i.e. to_q:8:0.6 or to_q)
     FINAL_LAYER_NAME = "final_layer"
-
     DEFAULT_ALLOWED_TYPES = {  # subblock type to layer types
         "FA": {"to_q", "to_k", "to_v", "to_out", "ada1", "ada2"},
         "CA": {"to_q", "to_k", "to_v", "to_out", "ada1", "ada2"},
         "MLP": {"l1", "l2", "ada1", "ada2"},
     }
-    DEFAULT_VALUE_CONSTRAINTS = {  # field to allowed ranges
+    
+    DEFAULT_VALUE_CONSTRAINTS = {  # field to allowed ranges. these ranges are not prescriptive and can be adjusted as needed.
         "blocks": {"min": 0, "max": 27},
-        "rank": {"min": 4, "max": 512},
-        "scale": {"min": 0.5, "max": 64},
+        "rank": {"min": 1, "max": 512},
+        "scale": {"min": 1e-5, "max": 64},
     }
     ALLOWED_TYPES_FINAL_LAYER = {"FL": {"l1", "ada1", "ada2"}}
 
@@ -78,7 +80,7 @@ class LayerControlConfigParser:
         )
         self.allowed_types_final_layer = self.ALLOWED_TYPES_FINAL_LAYER
 
-        self._get_validators()
+        self._set_validators()
 
         self.all_blocks_str = (
             ",".join(
@@ -93,8 +95,13 @@ class LayerControlConfigParser:
 
         self.edits_per_block = defaultdict(lambda: None)
 
-    def _get_validators(self):
-        """Sets validators for blocks, subblocks, rank, and scale."""
+    def _set_validators(self):
+        """
+        Sets validators for blocks, subblocks, rank, and scale.
+        
+        Raises:
+            AttributeError: If value constraints are not properly defined.
+        """
         self.subblock_validator = OneOf(default="", options=self.allowed_types.keys())
         self.final_layer_validator = OneOf(default="", options=self.allowed_types_final_layer.keys())
         self.rank_validator = None
@@ -116,7 +123,19 @@ class LayerControlConfigParser:
             )
 
     def _config_to_dict(self, config):
-        """Convert the given config into a dict if provided as string."""
+        """
+        Convert the given config into a dictionary if provided as a string.
+
+        Args:
+            config (Union[str, dict]): The configuration as a JSON string or dictionary.
+
+        Returns:
+            dict: The configuration as a dictionary.
+
+        Raises:
+            ValueError: If the JSON string is invalid.
+            TypeError: If the config is not a string or dictionary.
+        """
         if isinstance(config, str):
             try:
                 config = json.loads(config)
@@ -127,8 +146,19 @@ class LayerControlConfigParser:
         return config
 
     def _parse_blocks_regex(self, regex):
-        """Parse user-provided 'blocks' regex and return a set of matching block numbers.
+        """
+        Parse the 'blocks' regex and return a set of matching block numbers.
         Allowed block numbers: defined in value_constraints, plus 'final_layer'
+
+        Args:
+            regex (str): The regex pattern to match block numbers.
+
+        Returns:
+            set: A set of block numbers that match the regex.
+
+        Raises:
+            ValueError: If the regex pattern is invalid or matches invalid block numbers.
+            Exception: If 'final_layer' is defined with other blocks.
         """
         try:
             block_matches = re.findall(regex, self.all_blocks_str)
@@ -151,8 +181,24 @@ class LayerControlConfigParser:
 
         return block_numbers
 
-    def _parse_subblocks(self, block_edit, customization_type, rank, scale, is_final_layer=False):
-        """Generate dictionary of edits by subblock."""
+    def _parse_subblocks(self, block_edit: list | ListConfig, customization_type: str, rank: int, scale: float, is_final_layer: bool = False):
+        """Generate a dictionary of edits config by subblock.
+
+        Args:
+            block_edit (list): List of representing subblocks to apply the edit to (i.e  ["FA[to_q, to_v]", "CA[to_q, to_v]"])
+            customization_type (str): The type of PEFT to apply.
+            rank (int): The LoRA rank.
+            scale (float): The LoRA scale.
+            is_final_layer (bool): Indicates if this edit is for the final layer.
+
+        Returns:
+            defaultdict: A dictionary of subblock edits configs.
+
+        Raises:
+            TypeError: If block_edit is not a list.
+            AttributeError: If subblock format is incorrect or layer format is invalid.
+            ValueError: If rank and scale values are not provided.
+        """
         sb_dict = defaultdict(lambda: None)
 
         if not isinstance(block_edit, (list, ListConfig)):
@@ -203,7 +249,15 @@ class LayerControlConfigParser:
         return sb_dict
 
     def parse(self):
-        """Parse the loaded config into a dictionary of edits by block number."""
+        """
+        Parse the loaded config into a dictionary of edit configs by block number.
+
+        Returns:
+            dict: A dictionary of edit configs applied to each block.
+
+        Raises:
+            Exception: If more than one edit is specified for a block.
+        """
         if not self.enabled:
             return {}
 
