@@ -606,8 +606,11 @@ class DiffusionModel(Model):
             from cosmos_predict1.diffusion.training.utils.checkpointer import non_strict_load_model
 
             log.critical("load model in non-strict mode")
-            log.critical(non_strict_load_model(self.model, state_dict["model"]), rank0_only=False)
-            if self.config.ema.enabled and state_dict["ema"] is not None:
+            if "model" in state_dict:
+                log.critical(non_strict_load_model(self.model, state_dict["model"]), rank0_only=False)
+            else:
+                log.critical(non_strict_load_model(self.model, state_dict), rank0_only=False)
+            if self.config.ema.enabled and "ema" in state_dict and state_dict["ema"] is not None:
                 log.critical("load ema model in non-strict mode")
                 log.critical(non_strict_load_model(self.model_ema, state_dict["ema"]), rank0_only=False)
 

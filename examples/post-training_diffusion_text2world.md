@@ -23,11 +23,10 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
    ```bash
    huggingface-cli login
    ```
-3. Accept the [LlamaGuard-7b terms](https://huggingface.co/meta-llama/LlamaGuard-7b)
 
-4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
+3. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Text2World --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B 14B --model_types Text2World
    ```
 
 ### Examples
@@ -211,6 +210,47 @@ torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
     -- experiment=text2world_7b_example_cosmos_nemo_assets_4gpu_40gb
 ```
 
+##### Cosmos-Predict1-7B-Text2World with LoRA
+
+Run the following command to execute an example LoRA post-training job with `cosmos_nemo_assets` data.
+```bash
+export OUTPUT_ROOT=checkpoints # default value
+torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
+```
+See the config `text2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/text2world/experiment.py` and `cosmos_predict1/diffusion/training/utils/layer_control/peft_control_config_parser.py` to understand how LoRA is enabled. 
+```python
+text2world_7b_example_cosmos_nemo_assets = LazyDict(
+    dict(
+        defaults=[
+            ...
+            {"override /ckpt_klass": "peft"},
+            ...
+        ],
+        trainer=dict(
+            ...
+            distributed_parallelism="ddp",
+            ...
+        )
+        model=dict(
+            ...
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
+            ...
+        ),
+    )
+)
+```
+
+During the training, the checkpoints will be saved in the below structure.
+```
+checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/
+├── iter_{NUMBER}_model.pt
+```
+
+`iter_{NUMBER}_model.pt` contains all weights (base model weights and LoRA weights tensors). When `ema=True`, the checkpoint will contain both regular and ema weights.
+
+
 ##### Cosmos-Predict1-14B-Text2World
 
 Run the following command to execute an example post-training job with `cosmos_nemo_assets` data.
@@ -269,6 +309,41 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
 ```
 
 The output file is located at `outputs/diffusion-text2world-7b-post-trained.mp4`.
+
+
+##### Cosmos-Predict1-7B-Text2World with LoRA
+
+1. Copying checkpoint to the designated location.
+
+The LoRA post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt`
+
+For example, if a LoRA post-trained checkpoint with 5000 iterations is to be used,
+```bash
+# copy checkpoint to the designated location
+mkdir checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/
+cp checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_example_cosmos_nemo_assets/checkpoints/iter_000005000_model.pt checkpoints/Cosmos-Predict1-7B-Text2World_post-trained-lora/model.pt
+```
+
+2. Running the inference
+
+We will set the example prompt (used for all videos in example dataset) as input and run the inference command with disabled prompt upsampler.
+```bash
+PROMPT="A video of sks teal robot."
+```
+
+```bash
+# Run the video generation command
+NUM_GPUS=4
+CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/diffusion/inference/text2world.py \
+    --num_gpus ${NUM_GPUS} \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
+    --prompt "${PROMPT}" \
+    --disable_prompt_upsampler \
+    --video_save_name diffusion-text2world-7b-post-trained-lora
+```
+
+The output file is located at `outputs/diffusion-text2world-7b-post-trained-lora.mp4`.
 
 
 ##### Cosmos-Predict1-14B-Text2World

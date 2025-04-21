@@ -29,6 +29,7 @@ class DefaultModelConfig:
     precision: str = "bfloat16"
     input_data_key: str = "video"  # key to fetch input data from data_batch
     latent_shape: List[int] = [16, 24, 44, 80]  # 24 corresponig to 136 frames
+    peft_control: LazyDict | None = None
 
 
 @attrs.define(slots=False)
