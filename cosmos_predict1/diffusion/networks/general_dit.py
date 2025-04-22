@@ -111,8 +111,8 @@ class GeneralDIT(nn.Module):
         rope_h_extrapolation_ratio: float = 1.0,
         rope_w_extrapolation_ratio: float = 1.0,
         rope_t_extrapolation_ratio: float = 1.0,
-        extra_per_block_abs_pos_emb: bool = False,
-        extra_per_block_abs_pos_emb_type: str = "sincos",
+        extra_per_block_abs_pos_emb: bool = True,
+        extra_per_block_abs_pos_emb_type: str = "learnable",
         extra_h_extrapolation_ratio: float = 1.0,
         extra_w_extrapolation_ratio: float = 1.0,
         extra_t_extrapolation_ratio: float = 1.0,
@@ -258,6 +258,8 @@ class GeneralDIT(nn.Module):
             **kwargs,
         )
 
+        assert self.extra_per_block_abs_pos_emb is True, "extra_per_block_abs_pos_emb must be True"
+
         if self.extra_per_block_abs_pos_emb:
             assert self.extra_per_block_abs_pos_emb_type in [
                 "learnable",
@@ -265,9 +267,7 @@ class GeneralDIT(nn.Module):
             kwargs["h_extrapolation_ratio"] = self.extra_h_extrapolation_ratio
             kwargs["w_extrapolation_ratio"] = self.extra_w_extrapolation_ratio
             kwargs["t_extrapolation_ratio"] = self.extra_t_extrapolation_ratio
-            self.extra_pos_embedder = LearnablePosEmbAxis(
-                **kwargs,
-            )
+            self.extra_pos_embedder = LearnablePosEmbAxis(**kwargs)
 
     def prepare_embedded_sequence(
         self,

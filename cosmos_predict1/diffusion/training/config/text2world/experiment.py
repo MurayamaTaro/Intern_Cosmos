@@ -30,6 +30,7 @@ from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 
+
 def get_sampler(dataset):
     return DistributedSampler(
         dataset,
@@ -60,7 +61,7 @@ dataloader_train_hdvila = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_hdvila = L(DataLoader)(
     dataset=example_video_dataset_hdvila,
@@ -68,7 +69,7 @@ dataloader_val_hdvila = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 # Cosmos-NeMo-Assets example
@@ -94,7 +95,7 @@ dataloader_train_cosmos_nemo_assets = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets,
@@ -102,7 +103,7 @@ dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 dataloader_train_cosmos_nemo_assets_480_848 = L(DataLoader)(
@@ -111,7 +112,7 @@ dataloader_train_cosmos_nemo_assets_480_848 = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_cosmos_nemo_assets_480_848 = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_480_848,
@@ -119,7 +120,7 @@ dataloader_val_cosmos_nemo_assets_480_848 = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 n_length_4gpu_40gb = 2
@@ -130,7 +131,7 @@ example_video_dataset_cosmos_nemo_assets_4gpu_40gb = L(Dataset)(
     num_frames=num_frames_4gpu_40gb,
     video_size=(384, 384),  # a low-res example for lower VRAM utilization without considering aspect ratio.
     start_frame_interval=1,
-)   
+)
 
 dataloader_train_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb,
@@ -138,7 +139,7 @@ dataloader_train_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_4gpu_40gb,
@@ -146,7 +147,7 @@ dataloader_val_cosmos_nemo_assets_4gpu_40gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 n_length_8gpu_40gb = 4
@@ -165,7 +166,7 @@ dataloader_train_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_8gpu_40gb,
@@ -173,7 +174,7 @@ dataloader_val_cosmos_nemo_assets_8gpu_40gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 
@@ -193,7 +194,7 @@ dataloader_train_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 dataloader_val_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
     dataset=example_video_dataset_cosmos_nemo_assets_4gpu_80gb,
@@ -201,7 +202,7 @@ dataloader_val_cosmos_nemo_assets_4gpu_80gb = L(DataLoader)(
     batch_size=1,
     drop_last=True,
     num_workers=8,
-    pin_memory=True
+    pin_memory=True,
 )
 
 text2world_7b_example_hdvila = LazyDict(
@@ -278,8 +279,6 @@ text2world_7b_example_hdvila = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -379,7 +378,6 @@ text2world_14b_example_hdvila = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
                 rope_h_extrapolation_ratio=2.0,
                 rope_t_extrapolation_ratio=2.0,
                 rope_w_extrapolation_ratio=2.0,
@@ -387,7 +385,6 @@ text2world_14b_example_hdvila = LazyDict(
                 extra_t_extrapolation_ratio=2.0,
                 extra_w_extrapolation_ratio=2.0,
                 use_memory_save=True,
-                extra_per_block_abs_pos_emb_type="learnable",
             ),
             adjust_video_noise=True,
             vae=dict(pixel_chunk_duration=num_frames),
@@ -482,11 +479,10 @@ text2world_7b_example_cosmos_nemo_assets = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
+                use_checkpoint=True,
             ),
             vae=dict(pixel_chunk_duration=num_frames),
             conditioner=dict(text=dict(dropout_rate=0.0)),
@@ -585,8 +581,6 @@ text2world_7b_example_cosmos_nemo_assets_4gpu_40gb = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -689,8 +683,6 @@ text2world_7b_example_cosmos_nemo_assets_8gpu_40gb = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -791,8 +783,6 @@ text2world_7b_example_cosmos_nemo_assets_4gpu_80gb = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -896,7 +886,6 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
             ),
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
                 rope_h_extrapolation_ratio=2.0,
                 rope_t_extrapolation_ratio=2.0,
                 rope_w_extrapolation_ratio=2.0,
@@ -904,7 +893,6 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
                 extra_t_extrapolation_ratio=2.0,
                 extra_w_extrapolation_ratio=2.0,
                 use_memory_save=True,
-                extra_per_block_abs_pos_emb_type="learnable",
             ),
             adjust_video_noise=True,
             vae=dict(pixel_chunk_duration=num_frames),
@@ -995,8 +983,6 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
             fsdp_enabled=False,
             net=dict(
                 in_channels=16,
-                extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
@@ -1014,6 +1000,7 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
         dataloader_val=dataloader_val_cosmos_nemo_assets_480_848,
     )
 )
+
 
 def register_experiments(cs: ConfigStore) -> None:
     # Register the experiments
