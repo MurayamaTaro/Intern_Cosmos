@@ -319,6 +319,17 @@ def load_network_model(model: DiffusionT2WModel, ckpt_path: str):
     except Exception:
         # Posttrained models can be loaded with weights_only=False
         net_state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    if "model" in net_state_dict:
+        model_state_dict = net_state_dict["model"]
+        if "ema" in net_state_dict and model.config.peft_control and model.config.peft_control.enabled:
+            ema_state_dict = net_state_dict["ema"]
+            # Convert ema state_dict to model state_dict by replacing "-" with "."
+            ema_state_dict = {k.replace("-", "."): v for k, v in ema_state_dict.items()}
+            model_state_dict.update(ema_state_dict)
+            net_state_dict = model_state_dict
+        else:
+            net_state_dict = model_state_dict
+    
     log.debug(non_strict_load_model(model.model, net_state_dict))
     model.cuda()
 
@@ -814,7 +825,7 @@ def check_input_frames(input_path: str, required_frames: int) -> bool:
         required_frames: Number of required frames
 
     Returns:
-        np.ndarray of frames if valid, None if invalid
+        bool: True if input has sufficient frames, False otherwise
     """
     if input_path.endswith((".jpg", ".jpeg", ".png")):
         if required_frames > 1:
@@ -834,3 +845,31 @@ def check_input_frames(input_path: str, required_frames: int) -> bool:
     except Exception as e:
         log.error(f"Error reading video file {input_path}: {e}")
         return False
+
+
+def get_input_sizes(input_path: str) -> tuple[int, int]:
+    """Get the height and width of input video or image.
+
+    Args:
+        input_path: Path to input video or image file
+
+    Returns:
+        tuple: (height, width) dimensions of the input
+    """
+    if input_path.endswith((".jpg", ".jpeg", ".png")):
+        # For image input
+        try:
+            img = imageio.imread(input_path)
+            return img.shape[0], img.shape[1]
+        except Exception as e:
+            log.error(f"Error reading image file {input_path}: {e}")
+            raise
+    else:
+        # For video input
+        try:
+            vid = imageio.get_reader(input_path, "ffmpeg")
+            first_frame = vid.get_data(0)
+            return first_frame.shape[0], first_frame.shape[1]
+        except Exception as e:
+            log.error(f"Error reading video file {input_path}: {e}")
+            raise

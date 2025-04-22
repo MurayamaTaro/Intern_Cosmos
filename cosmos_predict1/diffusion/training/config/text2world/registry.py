@@ -19,6 +19,7 @@ from typing import Dict
 from hydra.core.config_store import ConfigStore
 
 from cosmos_predict1.diffusion.checkpointers.ema_fsdp_checkpointer import CheckpointConfig, FSDPCheckpointer
+from cosmos_predict1.checkpointer.peft_checkpointer import Checkpointer as PEFTCheckpointer
 from cosmos_predict1.diffusion.conditioner import VideoExtendConditioner
 from cosmos_predict1.diffusion.config.base.conditioner import (
     FPSConfig,
@@ -39,6 +40,7 @@ from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 
 FSDP_CHECKPOINTER: Dict[str, str] = L(FSDPCheckpointer)()
+PEFT_CHECKPOINTER: Dict[str, str] = L(PEFTCheckpointer)()
 VideoExtendConditionerConfig: LazyDict = L(VideoExtendConditioner)(
     text=TextConfig(),
     fps=FPSConfig(),
@@ -87,7 +89,7 @@ def register_checkpoint_credential(cs):
 
 def register_checkpointer(cs):
     cs.store(group="ckpt_klass", package="checkpoint.type", name="fsdp", node=FSDP_CHECKPOINTER)
-
+    cs.store(group="ckpt_klass", package="checkpoint.type", name="peft", node=PEFT_CHECKPOINTER)
 
 FADITV2Config: LazyDict = L(GeneralDIT)(
     max_img_h=240,
@@ -155,28 +157,16 @@ def register_scheduler(cs):
 def register_configs():
     cs = ConfigStore.instance()
 
-    # register_training_and_val_data(cs)
-
     register_optimizer(cs)
     register_scheduler(cs)
 
     register_net(cs)
     register_conditioner(cs)
     register_vae(cs)
-    # register_tokenizer(cs)
 
     register_ema(cs)
-    # register_fsdp(cs)
-
-    # register_callbacks(cs)
-    # register_callback_lvg(cs)
 
     register_checkpoint_credential(cs)
     register_checkpointer(cs)
 
     register_experiments(cs)
-
-    # Register exra data
-    # register_training_and_val_3d_data(cs)
-
-    # register_vae_lvg(cs)

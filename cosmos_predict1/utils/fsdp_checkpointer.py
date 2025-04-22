@@ -169,6 +169,7 @@ class FSDPCheckpointer:
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         grad_scaler: torch.amp.GradScaler,
         iteration: int,
+        async_saving: bool = True,
     ) -> None:
         """Save network weights, optimizer parameters, scheduler parameters to a checkpoint.
 
@@ -200,19 +201,30 @@ class FSDPCheckpointer:
             return
 
         checkpoint_file = f"iter_{iteration:09}{postfix}.pt"
-        # Wait for previous saver thread to end.
-        if self.save_thread:
-            self.save_thread.join()
-        # Run the checkpoint saver in a separate thread.
-        self.save_thread = threading.Thread(
-            target=self._save_worker_local,
-            daemon=False,
-            args=(model_state_dict, optim_scheduler_state_dict, state_dict, checkpoint_file, distributed.get_rank()),
-        )
-        self.save_thread.start()
-
-        # Note: Checkpoints are saved on a separate thread and this callback is not accurate.
-        # Please check logs from on_save_checkpoint_success() for better accuracy
+        if async_saving:
+            # Wait for previous saver thread to end.
+            if self.save_thread:
+                self.save_thread.join()
+            # Run the checkpoint saver in a separate thread.
+            self.save_thread = threading.Thread(
+                target=self._save_worker_local,
+                daemon=False,
+                args=(
+                    model_state_dict,
+                    optim_scheduler_state_dict,
+                    state_dict,
+                    checkpoint_file,
+                    distributed.get_rank(),
+                ),
+            )
+            self.save_thread.start()
+            log.info("checkpoint saving from an async thread")
+        else:
+            # Run the checkpoint saver in the current thread.
+            self._save_worker_local(
+                model_state_dict, optim_scheduler_state_dict, state_dict, checkpoint_file, distributed.get_rank()
+            )
+            log.info("checkpoint saved within the main thread")
         self.callbacks.on_save_checkpoint_end(model=None, iteration=iteration)
 
     @misc.timer("checkpoint saving (local)")
