@@ -351,6 +351,7 @@ class FSDPCheckpointer:
         if not os.path.exists(checkpoint_path):
             if is_raise:
                 raise FileNotFoundError(f"File not found (local): {checkpoint_path}")
+            return False
         return True
 
     def finalize(self) -> None:
