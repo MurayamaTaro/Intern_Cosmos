@@ -26,7 +26,7 @@ from huggingface_hub import snapshot_download
 from safetensors.torch import load_file
 
 from scripts.download_guardrail_checkpoints import download_guardrail_checkpoints
-
+import 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Download NVIDIA Cosmos Predict1 diffusion models from Hugging Face")
@@ -238,6 +238,18 @@ MD5_CHECKSUM_LOOKUP = {
 
 def get_md5_checksum(checkpoints_dir, model_name):
     print("---------------------")
+    # Check if there are any expected files for this model
+    expected_files = [key for key in MD5_CHECKSUM_LOOKUP if key.startswith(model_name + "/")]
+    if not expected_files:
+        # No expected files in MD5_CHECKSUM_LOOKUP, check if the directory exists and has content
+        model_dir = checkpoints_dir / model_name
+        if not model_dir.exists() or not any(model_dir.iterdir()):
+            print(f"Directory for {model_name} does not exist or is empty. Download required.")
+            return False
+        else:
+            print(f"Directory for {model_name} exists and contains files. Assuming download is complete.")
+            return True
+    # Proceed with checksum verification for models with expected files
     for key, value in MD5_CHECKSUM_LOOKUP.items():
         if key.startswith(model_name + "/"):
             print(f"Verifying checkpoint {key}...")
@@ -246,7 +258,7 @@ def get_md5_checksum(checkpoints_dir, model_name):
             if not Path(file_path).exists():
                 print(f"Checkpoint {key} does not exist.")
                 return False
-            # File must match give MD5 checksum
+            # File must match given MD5 checksum
             with open(file_path, "rb") as f:
                 file_md5 = hashlib.md5(f.read()).hexdigest()
             if file_md5 != value:
@@ -273,6 +285,10 @@ def main(args):
 
     if "Text2World" in args.model_types:
         extra_models.append("Cosmos-UpsamplePrompt1-12B-Text2World")
+    
+    # Add interpolator if 7B model is selected
+    if "7B" in args.model_sizes:
+        extra_models.append("Cosmos-Predict1-7B-WorldInterpolator")
 
     # Create local checkpoints folder
     checkpoints_dir = Path(args.checkpoint_dir)
