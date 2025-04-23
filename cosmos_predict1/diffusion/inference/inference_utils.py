@@ -420,13 +420,20 @@ def get_video_batch(model, prompt_embedding, negative_prompt_embedding, height, 
         prompt_embedding=prompt_embedding,
         negative_prompt_embedding=negative_prompt_embedding,
     )
-
-    state_shape = [
-        model.tokenizer.channel,
-        model.tokenizer.get_latent_num_frames(num_video_frames - 1) + 1,  # +1 for the last frame
-        height // model.tokenizer.spatial_compression_factor,
-        width // model.tokenizer.spatial_compression_factor,
-    ]
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        state_shape = [
+            model.tokenizer.channel,
+            model.tokenizer.get_latent_num_frames(num_video_frames - 1) + 1,  # +1 for the last frame
+            height // model.tokenizer.spatial_compression_factor,
+            width // model.tokenizer.spatial_compression_factor,
+        ]
+    else:
+        state_shape = [
+            model.tokenizer.channel,
+            model.tokenizer.get_latent_num_frames(num_video_frames),
+            height // model.tokenizer.spatial_compression_factor,
+            width // model.tokenizer.spatial_compression_factor,
+        ]
 
     return raw_video_batch, state_shape
 
