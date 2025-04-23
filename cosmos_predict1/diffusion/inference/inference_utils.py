@@ -32,7 +32,7 @@ from cosmos_predict1.utils import log
 from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.io import load_from_fileobj
 from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
-
+from omegaconf import OmegaConf
 TORCH_VERSION: Tuple[int, ...] = tuple(int(x) for x in torch.__version__.split(".")[:2])
 if TORCH_VERSION >= (1, 11):
     from torch.ao import quantization
@@ -420,7 +420,8 @@ def get_video_batch(model, prompt_embedding, negative_prompt_embedding, height, 
         prompt_embedding=prompt_embedding,
         negative_prompt_embedding=negative_prompt_embedding,
     )
-    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+    condition_location = OmegaConf.select(model.config, 'conditioner.video_cond_bool.condition_location', default=None)
+    if condition_location == "first_and_last_1":
         state_shape = [
             model.tokenizer.channel,
             model.tokenizer.get_latent_num_frames(num_video_frames - 1) + 1,  # +1 for the last frame
