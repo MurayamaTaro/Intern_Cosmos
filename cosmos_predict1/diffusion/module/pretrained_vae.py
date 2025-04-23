@@ -449,10 +449,8 @@ class BasePretrainedVideoTokenizer(ABC):
     def get_latent_num_frames(self, num_pixel_frames: int) -> int:
         if num_pixel_frames == 1:
             return 1
-        assert (
-            num_pixel_frames % self.pixel_chunk_duration == 0
-        ), f"Temporal dimension {num_pixel_frames} is not divisible by chunk_length {self.pixel_chunk_duration}"
-        return num_pixel_frames // self.pixel_chunk_duration * self.latent_chunk_duration
+        num_chunks = (num_pixel_frames + self.pixel_chunk_duration - 1) // self.pixel_chunk_duration
+        return num_chunks * self.latent_chunk_duration
 
     def get_pixel_num_frames(self, num_latent_frames: int) -> int:
         if num_latent_frames == 1:
