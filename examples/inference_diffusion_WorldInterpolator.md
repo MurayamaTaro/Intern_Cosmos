@@ -56,7 +56,7 @@ CUDA_VISIBLE_DEVICES=1 python3 -m cosmos_predict1.diffusion.inference.world_inte
     --num_input_frames 1 \
     --offload_prompt_upsampler \
     --video_save_name diffusion-world-interpolator-7b \
-    --num_video_frames 117 \
+    --num_video_frames 10 \
     --num_frame_pairs 2
 
 ```
