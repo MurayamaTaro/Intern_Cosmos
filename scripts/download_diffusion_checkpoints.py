@@ -294,7 +294,7 @@ def main(args):
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
     download_kwargs = dict(
-        allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit", "guardrail/*"]
+        allow_patterns=["README.md", "model.pt", "mean_std.pt", "image_mean_std.pt", "config.json", "*.jit", "guardrail/*"]
     )
 
     # Download the requested diffusion models
