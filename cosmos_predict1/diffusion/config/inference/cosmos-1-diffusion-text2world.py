@@ -15,8 +15,8 @@
 
 from hydra.core.config_store import ConfigStore
 
-from cosmos_predict1.utils.lazy_config import LazyDict
 from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
+from cosmos_predict1.utils.lazy_config import LazyDict
 
 Cosmos_Predict1_Text2World_7B: LazyDict = LazyDict(
     dict(
@@ -45,7 +45,6 @@ Cosmos_Predict1_Text2World_7B: LazyDict = LazyDict(
         ),
     )
 )
-
 
 Cosmos_Predict1_Text2World_14B: LazyDict = LazyDict(
     dict(
@@ -89,7 +88,6 @@ Cosmos_Predict1_Text2World_7B_Post_trained: LazyDict = LazyDict(
     )
 )
 
-
 Cosmos_Predict1_Text2World_14B_Post_trained: LazyDict = LazyDict(
     dict(
         defaults=[
@@ -97,6 +95,22 @@ Cosmos_Predict1_Text2World_14B_Post_trained: LazyDict = LazyDict(
         ],
         job=dict(
             name="Cosmos_Predict1_Text2World_14B_Post_trained",
+        ),
+    )
+)
+
+Cosmos_Predict1_Text2World_7B_Post_trained_2sec: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Text2World_7B",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Text2World_7B_Post_trained_2sec",
+        ),
+        model=dict(
+            tokenizer=dict(
+                video_vae=dict(pixel_chunk_duration=57),  # 8 * 7 + 1, roughly 2 seconds at 30fps.
+            )
         ),
     )
 )
@@ -122,6 +136,7 @@ for _item in [
     Cosmos_Predict1_Text2World_14B,
     Cosmos_Predict1_Text2World_7B_Post_trained,
     Cosmos_Predict1_Text2World_14B_Post_trained,
+    Cosmos_Predict1_Text2World_7B_Post_trained_2sec,
     Cosmos_Predict1_Text2World_7B_Post_trained_lora,
 ]:
     cs.store(group="experiment", package="_global_", name=_item["job"]["name"], node=_item)
