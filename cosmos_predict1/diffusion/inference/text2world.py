@@ -42,7 +42,9 @@ def parse_arguments() -> argparse.Namespace:
             "Cosmos-Predict1-14B-Text2World",
             "Cosmos-Predict1-7B-Text2World_post-trained",
             "Cosmos-Predict1-14B-Text2World_post-trained",
-            "Cosmos-Predict1-7B-Text2World_post-trained-2sec",
+            "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_80gb",
+            "Cosmos-Predict1-7B-Text2World_post-trained-8gpu_40gb",
+            "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_40gb",
             "Cosmos-Predict1-7B-Text2World_post-trained-lora",
         ],
     )
