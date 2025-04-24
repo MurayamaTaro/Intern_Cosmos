@@ -117,7 +117,11 @@ def add_common_arguments(parser):
     parser.add_argument("--num_steps", type=int, default=35, help="Number of diffusion sampling steps")
     parser.add_argument("--guidance", type=float, default=7, help="Guidance scale value")
     parser.add_argument(
-        "--num_video_frames", type=int, default=121, choices=[121, 117, 10], help="Number of video frames to sample"
+        "--num_video_frames",
+        type=int,
+        default=121,
+        choices=[8 * n + 1 for n in range(16)] + [10, 117],
+        help="Number of video frames to sample",
     )
     parser.add_argument("--height", type=int, default=704, help="Height of video to sample")
     parser.add_argument("--width", type=int, default=1280, help="Width of video to sample")
@@ -333,7 +337,7 @@ def load_network_model(model: DiffusionT2WModel, ckpt_path: str):
             net_state_dict = model_state_dict
         else:
             net_state_dict = model_state_dict
-    
+
     log.debug(non_strict_load_model(model.model, net_state_dict))
     model.cuda()
 
