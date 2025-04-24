@@ -13,17 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# conda env create --file cosmos-predict1.yaml
-name: cosmos-predict1
-channels:
-  - conda-forge
-dependencies:
-  - python=3.10
-  - pip=25.0
-  - cmake
-  - ninja
-  - gcc=12.4.0
-  - gxx=12.4.0
-  - cuda=12.4
-  - cuda-nvcc=12.4
-  - cuda-toolkit=12.4
+from hydra.core.config_store import ConfigStore
+
+from cosmos_predict1.diffusion.training.config.world_interpolator.experiment import register_experiments
+
+
+def register_configs():
+    cs = ConfigStore.instance()
+
+    register_experiments(cs)

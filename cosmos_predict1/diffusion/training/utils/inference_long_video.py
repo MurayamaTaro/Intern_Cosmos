@@ -43,6 +43,8 @@ def switch_config_for_inference(model):
     """
     # Store the current condition_location
     current_condition_location = model.config.conditioner.video_cond_bool.condition_location
+    if current_condition_location != "first_n" and current_condition_location != "first_and_last_1":
+        current_condition_location = "first_n"
     current_apply_corruption_to_condition_region = (
         model.config.conditioner.video_cond_bool.apply_corruption_to_condition_region
     )
@@ -51,7 +53,7 @@ def switch_config_for_inference(model):
             "Change the condition_location to 'first_n' for inference, and apply_corruption_to_condition_region to False"
         )
         # Change the condition_location to "first_n" for inference
-        model.config.conditioner.video_cond_bool.condition_location = "first_n"
+        model.config.conditioner.video_cond_bool.condition_location = current_condition_location
         if current_apply_corruption_to_condition_region == "gaussian_blur":
             model.config.conditioner.video_cond_bool.apply_corruption_to_condition_region = "clean"
         elif current_apply_corruption_to_condition_region == "noise_with_sigma":
@@ -124,27 +126,31 @@ def visualize_tensor_bcthw(tensor: torch.Tensor, nrow=4, save_fig_path=None):
     plt.show()
 
 
-def compute_num_frames_condition(model: ExtendDiffusionModel, num_of_latent_overlap: int, downsample_factor=8) -> int:
+def compute_num_frames_condition(model: 'ExtendDiffusionModel', num_of_latent_overlap: int, downsample_factor=8) -> int:
     """This function computes the number of condition pixel frames given the number of latent frames to overlap.
     Args:
-        model (ExtendDiffusionModel): video generation model
-        num_of_latent_overlap (int): number of latent frames to overlap
-        downsample_factor (int): downsample factor for temporal reduce
+        model (ExtendDiffusionModel): Video generation model
+        num_of_latent_overlap (int): Number of latent frames to overlap
+        downsample_factor (int): Downsample factor for temporal reduce
     Returns:
-        int: number of condition frames in output space
+        int: Number of condition frames in output space
     """
-    if getattr(model.vae.video_vae, "is_casual", True):
-        # For casual model
+    # Access the VAE: use tokenizer.video_vae if it exists, otherwise use tokenizer directly
+    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, 'video_vae') else model.tokenizer
+    
+    # Check if the VAE is causal (default to True if attribute not found)
+    if getattr(vae, "is_casual", True):
+        # For causal model
         num_frames_condition = (
             num_of_latent_overlap
-            // model.vae.video_vae.latent_chunk_duration
-            * model.vae.video_vae.pixel_chunk_duration
+            // vae.latent_chunk_duration
+            * vae.pixel_chunk_duration
         )
-        if num_of_latent_overlap % model.vae.video_vae.latent_chunk_duration == 1:
+        if num_of_latent_overlap % vae.latent_chunk_duration == 1:
             num_frames_condition += 1
-        elif num_of_latent_overlap % model.vae.video_vae.latent_chunk_duration > 1:
+        elif num_of_latent_overlap % vae.latent_chunk_duration > 1:
             num_frames_condition += (
-                1 + (num_of_latent_overlap % model.vae.video_vae.latent_chunk_duration - 1) * downsample_factor
+                1 + (num_of_latent_overlap % vae.latent_chunk_duration - 1) * downsample_factor
             )
     else:
         num_frames_condition = num_of_latent_overlap * downsample_factor
@@ -222,16 +228,16 @@ def create_condition_latent_from_input_frames(
 ):
     """Create condition latent for video generation. It will take the last num_frames_condition frames from the input frames as condition latent.
     Args:
-        model (ExtendDiffusionModel): video generation model
-        input_frames (torch.Tensor): video tensor in shape (1,C,T,H,W), range [-1, 1]
-        num_frames_condition (int): number of condition frames
+        model (ExtendDiffusionModel): Video generation model
+        input_frames (torch.Tensor): Video tensor in shape (1,C,T,H,W), range [-1, 1]
+        num_frames_condition (int): Number of condition frames
     Returns:
-        torch.Tensor: condition latent in shape B,C,T,H,W
+        torch.Tensor: Condition latent in shape B,C,T,H,W
     """
     B, C, T, H, W = input_frames.shape
-    num_frames_encode = (
-        model.vae.pixel_chunk_duration
-    )  # (model.state_shape[1] - 1) / model.vae.pixel_chunk_duration + 1
+    # Dynamically access the VAE: use tokenizer.video_vae if it exists, otherwise use tokenizer directly
+    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, 'video_vae') else model.tokenizer
+    num_frames_encode = vae.pixel_chunk_duration  # Access pixel_chunk_duration from the VAE
     log.info(
         f"num_frames_encode not set, set it based on pixel chunk duration and model state shape: {num_frames_encode}"
     )
@@ -242,22 +248,33 @@ def create_condition_latent_from_input_frames(
 
     assert (
         input_frames.shape[2] >= num_frames_condition
-    ), f"input_frames not enought for condition, require at least {num_frames_condition}, get {input_frames.shape[2]}, {input_frames.shape}"
+    ), f"input_frames not enough for condition, require at least {num_frames_condition}, got {input_frames.shape[2]}, {input_frames.shape}"
     assert (
         num_frames_encode >= num_frames_condition
-    ), f"num_frames_encode should be larger than num_frames_condition, get {num_frames_encode}, {num_frames_condition}"
+    ), f"num_frames_encode should be larger than num_frames_condition, got {num_frames_encode}, {num_frames_condition}"
 
-    # Put the conditioal frames to the begining of the video, and pad the end with zero
-    condition_frames = input_frames[:, :, -num_frames_condition:]
-    padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
-    encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
+    # Put the conditional frames at the beginning of the video, and pad the end with zeros
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        condition_frames_first = input_frames[:, :, :num_frames_condition]
+        condition_frames_last = input_frames[:, :, -num_frames_condition:]
+        padding_frames = condition_frames_first.new_zeros(B, C, num_frames_encode + 1 - 2 * num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames_first, padding_frames, condition_frames_last], dim=2)
+    else:
+        condition_frames = input_frames[:, :, -num_frames_condition:]
+        padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
 
     log.info(
         f"create latent with input shape {encode_input_frames.shape} including padding {num_frames_encode - num_frames_condition} at the end"
     )
     if hasattr(model, "n_views"):
         encode_input_frames = einops.rearrange(encode_input_frames, "(B V) C T H W -> B C (V T) H W", V=model.n_views)
-    latent = model.encode(encode_input_frames)
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        latent1 = model.encode(encode_input_frames[:, :, :num_frames_encode])  # BCTHW
+        latent2 = model.encode(encode_input_frames[:, :, num_frames_encode:])
+        latent = torch.cat([latent1, latent2], dim=2)  # BCTHW
+    else:
+        latent = model.encode(encode_input_frames)
     return latent, encode_input_frames
 
 
@@ -267,6 +284,8 @@ def get_condition_latent(
     num_of_latent_condition: int = 4,
     state_shape: list[int] = None,
     input_path_format: str = None,
+    frame_index: int = 0,
+    frame_stride: int = 1,
 ):
     if state_shape is None:
         state_shape = model.state_shape
@@ -294,6 +313,13 @@ def get_condition_latent(
         H=H,
         W=W,
     )
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        start_frame = frame_index * frame_stride
+        end_frame = (frame_index + 1) * frame_stride
+        input_frames = torch.cat(
+            [input_frames[:, :, start_frame : start_frame + 1], input_frames[:, :, end_frame : end_frame + 1]], dim=2
+        ).contiguous()  # BCTHW
+
     num_frames_condition = compute_num_frames_condition(
         model, num_of_latent_condition, downsample_factor=model.vae.temporal_compression_factor
     )
@@ -364,6 +390,12 @@ def generate_video_from_batch_with_loop(
     sample_latent = []
     grid_list = []
 
+    augment_sigma_list = (
+        model.config.conditioner.video_cond_bool.apply_corruption_to_condition_region_sigma_value
+        if augment_sigma_list is None
+        else augment_sigma_list
+    )
+
     for i in range(num_of_loops):
         num_of_latent_overlap_i = num_of_latent_overlap_list[i]
         num_of_latent_overlap_i_plus_1 = (
@@ -394,17 +426,14 @@ def generate_video_from_batch_with_loop(
 
         condition_latent_list.append(condition_latent)
 
-        augment_sigma_list = (
-            model.config.conditioner.video_cond_bool.apply_corruption_to_condition_region_sigma_value
-            if augment_sigma_list is None
-            else augment_sigma_list
-        )
         if i < len(augment_sigma_list):
             condition_video_augment_sigma_in_inference = augment_sigma_list[i]
             log.info(f"condition_video_augment_sigma_in_inference {condition_video_augment_sigma_in_inference}")
         else:
             condition_video_augment_sigma_in_inference = augment_sigma_list[-1]
         assert not add_input_frames_guidance, "add_input_frames_guidance should be False, not supported"
+        
+
         sample = model.generate_samples_from_batch(
             data_batch_list[i],
             guidance=guidance,
@@ -417,6 +446,7 @@ def generate_video_from_batch_with_loop(
             condition_video_augment_sigma_in_inference=condition_video_augment_sigma_in_inference,
             return_noise=return_noise,
         )
+
 
         if return_noise:
             sample, noise = sample
@@ -445,7 +475,13 @@ def generate_video_from_batch_with_loop(
             else:
                 decode_latent_list.append(sample[:, :, num_of_latent_overlap_i:])
         else:
-            grid_BCTHW = (1.0 + model.decode(sample)).clamp(0, 2) / 2  # [B, 3, T, H, W], [0, 1]
+            # Interpolator mode. Decode the first and last as an image.
+            if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+                grid_BCTHW_1 = (1.0 + model.decode(sample[:, :, :-1, ...])).clamp(0, 2) / 2  # [B, 3, T-1, H, W], [0, 1]
+                grid_BCTHW_2 = (1.0 + model.decode(sample[:, :, -1:, ...])).clamp(0, 2) / 2  # [B, 3, 1, H, W], [0, 1]
+                grid_BCTHW = torch.cat([grid_BCTHW_1, grid_BCTHW_2], dim=2)  # [B, 3, T, H, W], [0, 1]
+            else:
+                grid_BCTHW = (1.0 + model.decode(sample)).clamp(0, 2) / 2  # [B, 3, T, H, W], [0, 1]
 
             if visualize:
                 log.info(f"Visualize grid {i}")
@@ -458,7 +494,7 @@ def generate_video_from_batch_with_loop(
 
             # Post-process the output: cut the conditional frames from the output if it's not the first loop
             num_cond_frames = compute_num_frames_condition(
-                model, num_of_latent_overlap_i_plus_1, downsample_factor=model.vae.temporal_compression_factor
+                model, num_of_latent_overlap_i_plus_1, downsample_factor=model.tokenizer.temporal_compression_factor
             )
             if i == 0:
                 new_grid_np_THWC = grid_np_THWC  # First output, dont cut the conditional frames
