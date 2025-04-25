@@ -24,6 +24,9 @@ from cosmos_predict1.diffusion.training.config.text2world.registry import (
 from cosmos_predict1.diffusion.training.config.text2world_multiview.registry import (
     register_configs as register_configs_text2world_multiview,
 )
+from cosmos_predict1.diffusion.training.config.text2world_singletomultiview.registry import (
+    register_configs as register_configs_text2world_singletomultiview,
+)
 from cosmos_predict1.diffusion.training.config.video2world.registry import (
     register_configs as register_configs_video2world,
 )
@@ -95,6 +98,7 @@ def make_config():
     register_configs_text2world()
     register_configs_video2world()
     register_configs_text2world_multiview()
+    register_configs_text2world_singletomultiview()
     register_configs_video2world_multiview()
 
     # experiment config are defined in the experiment folder
@@ -102,6 +106,7 @@ def make_config():
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world_multiview", reload=True)
+    import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world_singletomultiview", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_multiview", reload=True)
 
     return c
