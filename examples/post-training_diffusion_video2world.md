@@ -41,7 +41,7 @@ The first step is to download a dataset with videos and captions.
 
 You must provide a folder containing a collection of videos in **MP4 format**, preferably 720p. These videos should focus on the subject throughout the entire video so that each video chunk contains the subject.
 
-Example 1. You can use [nvidia/Cosmos-NeMo-Assets](https://huggingface.co/datasets/nvidia/Cosmos-NeMo-Assets) for post-training.
+You can use [nvidia/Cosmos-NeMo-Assets](https://huggingface.co/datasets/nvidia/Cosmos-NeMo-Assets) for post-training.
 
 ```bash
 mkdir -p datasets/cosmos_nemo_assets/

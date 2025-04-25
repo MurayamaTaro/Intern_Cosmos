@@ -50,6 +50,9 @@ from cosmos_predict1.diffusion.prompt_upsampler.video2world_prompt_upsampler_inf
 )
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.base_world_generation_pipeline import BaseWorldGenerationPipeline
+from cosmos_predict1.diffusion.model.model_world_interpolator import DiffusionWorldInterpolatorWModel
+from cosmos_predict1.diffusion.training.utils.inference_long_video import generate_video_from_batch_with_loop
+from cosmos_predict1.diffusion.inference.inference_utils import read_video_or_image_into_frames_BCTHW
 
 MODEL_NAME_DICT = {
     "Cosmos-Predict1-7B-Text2World": "Cosmos_Predict1_Text2World_7B",
@@ -60,10 +63,14 @@ MODEL_NAME_DICT = {
     "Cosmos-Predict1-14B-Text2World_post-trained": "Cosmos_Predict1_Text2World_14B_Post_trained",
     "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
     "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_80gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb",
+    "Cosmos-Predict1-7B-Text2World_post-trained-8gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb",
+    "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb",
     "Cosmos-Predict1-7B-Text2World_post-trained-lora": "Cosmos_Predict1_Text2World_7B_Post_trained_lora",
     "Cosmos-Predict1-7B-Video2World_post-trained-lora": "Cosmos_Predict1_Video2World_7B_Post_trained_lora",
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
+    "Cosmos-Predict1-7B-WorldInterpolator": "Cosmos_Predict1_WorldInterpolator_7B",
     "sv2mv_t2v": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
     "sv2mv_i2v": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
 }
@@ -118,6 +125,7 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
         assert inference_type in [
             "text2world",
             "video2world",
+            "world_interpolator",
         ], "Invalid inference_type, must be 'text2world' or 'video2world'"
 
         self.model_name = MODEL_NAME_DICT[checkpoint_name]
@@ -1085,6 +1093,367 @@ class DiffusionVideo2WorldMultiviewGenerationPipeline(DiffusionText2WorldMultivi
             image_or_video_path=image_or_video_path,
         )
         log.info("Finish generation")
+
+        return video, prompt
+
+
+class DiffusionWorldInterpolatorGenerationPipeline(DiffusionVideo2WorldGenerationPipeline):
+    def __init__(
+        self,
+        inference_type: str,
+        checkpoint_dir: str,
+        checkpoint_name: str,
+        prompt_upsampler_dir: Optional[str] = None,
+        enable_prompt_upsampler: bool = True,
+        has_text_input: bool = True,
+        offload_network: bool = False,
+        offload_tokenizer: bool = False,
+        offload_text_encoder_model: bool = False,
+        offload_prompt_upsampler: bool = False,
+        offload_guardrail_models: bool = False,
+        disable_guardrail: bool = False,
+        guidance: float = -1.0,
+        num_steps: int = 35,
+        height: int = 704,
+        width: int = 1280,
+        fps: int = 24,
+        num_video_frames: int = 121,
+        seed: int = 11,
+        num_input_frames: int = 1,
+        num_frame_pairs: int = 1,
+        frame_index_start: int = 0,
+        frame_stride: int = 1,
+    ):
+        """Initialize diffusion world generation pipeline.
+
+        Args:
+            inference_type: Type of world generation ('text2world' or 'video2world')
+            checkpoint_dir: Base directory containing model checkpoints
+            checkpoint_name: Name of the diffusion transformer checkpoint to use
+            prompt_upsampler_dir: Directory containing prompt upsampler model weights
+            enable_prompt_upsampler: Whether to use prompt upsampling
+            has_text_input: Whether the pipeline takes text input for world generation
+            offload_network: Whether to offload diffusion transformer after inference
+            offload_tokenizer: Whether to offload tokenizer after inference
+            offload_text_encoder_model: Whether to offload T5 model after inference
+            offload_prompt_upsampler: Whether to offload prompt upsampler
+            offload_guardrail_models: Whether to offload guardrail models
+            disable_guardrail: Whether to disable guardrail
+            guidance: Classifier-free guidance scale
+            num_steps: Number of diffusion sampling steps
+            height: Height of output video
+            width: Width of output video
+            fps: Frames per second of output video
+            num_video_frames: Number of frames to generate
+            seed: Random seed for sampling
+            num_input_frames: Number of latent conditions
+        """
+        self.num_input_frames = num_input_frames
+        self.num_frame_pairs = num_frame_pairs
+        self.frame_index_start = frame_index_start
+        self.frame_stride = frame_stride
+        self.num_steps = num_steps
+        self.height = height
+        self.width = width
+        self.fps = fps
+
+        super().__init__(
+            inference_type=inference_type,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_name=checkpoint_name,
+            prompt_upsampler_dir=prompt_upsampler_dir,
+            enable_prompt_upsampler=enable_prompt_upsampler,
+            has_text_input=has_text_input,
+            offload_network=offload_network,
+            offload_tokenizer=offload_tokenizer,
+            offload_text_encoder_model=offload_text_encoder_model,
+            offload_prompt_upsampler=offload_prompt_upsampler,
+            offload_guardrail_models=offload_guardrail_models,
+            disable_guardrail=disable_guardrail,
+            guidance=guidance,
+            num_steps=num_steps,
+            height=height,
+            width=width,
+            fps=fps,
+            num_video_frames=num_video_frames,
+            seed=seed,
+            num_input_frames=num_input_frames,
+        )
+
+    def _run_prompt_upsampler_on_prompt(self, image_or_video_path: str) -> str:
+        """Enhance the input prompt using visual context from the conditioning image.
+
+        Args:
+            image_or_video_path: Path to conditioning image or video used for visual context
+
+        Returns:
+            str: Enhanced prompt incorporating visual details from the image
+        """
+        dialog = prepare_dialog(image_or_video_path)
+        upsampled_prompt = run_chat_completion_vlm(
+            self.prompt_upsampler, dialog, max_gen_len=400, temperature=0.01, top_p=0.9, logprobs=False
+        )
+        log.info(f"Upsampled prompt: {upsampled_prompt}")
+        return upsampled_prompt
+
+    def _load_prompt_upsampler_model(self):
+        self.prompt_upsampler = create_vlm_prompt_upsampler(
+            checkpoint_dir=os.path.join(self.checkpoint_dir, self.prompt_upsampler_dir),
+        )
+
+    def _load_model(self):
+        self.model = load_model_by_config(
+            config_job_name=self.model_name,
+            config_file="cosmos_predict1/diffusion/config/config.py",
+            model_class=DiffusionWorldInterpolatorWModel,
+        )
+
+    @torch.inference_mode()
+    def _run_model(
+        self,
+        condition_latent: torch.Tensor | None = None,
+        negative_prompt_embedding: torch.Tensor | None = None,
+        num_of_loops: int = 1,
+        num_of_latent_overlap_list: list[int] = [1],
+        augment_sigma_list: list[float] = [0.001],
+        add_input_frames_guidance: float = 0,
+        skip_reencode: int = 0,
+        state_shape: list = None,
+        raw_data_batch: dict = None,
+    ) -> np.ndarray:
+        """Generate video frames using the diffusion model, supporting chunk processing for video extension.
+
+        Args:
+            condition_latent: Latent tensor from conditioning image or video (optional for video extension).
+            negative_prompt_embedding: Optional embedding for negative prompt guidance.
+            num_of_loops: Number of loops for generating video segments.
+            num_of_latent_overlap_list: List of overlaps for latent conditions in each loop.
+            augment_sigma_list: List of sigma values for augmentation.
+            add_input_frames_guidance: Guidance strength for input frames.
+            skip_reencode: Whether to skip reencoding.
+            frame_index_start: Starting index for frame pairs.
+            num_frame_pairs: Number of frame pairs to process.
+            frame_stride: Stride between frame pairs.
+            is_interpolator_model: Whether the model is an interpolator.
+            input_frames: Input video frames for interpolation (optional).
+
+        Returns:
+            np.ndarray: Generated video frames in shape (T, H, W, C).
+        """
+        video_np_THWC, _, _ = generate_video_from_batch_with_loop(
+            model=self.model,
+            data_batch=raw_data_batch,
+            condition_latent=condition_latent,
+            num_of_loops=num_of_loops,
+            num_of_latent_overlap_list=num_of_latent_overlap_list,
+            guidance=self.guidance,
+            state_shape=state_shape,
+            num_steps=self.num_steps,
+            seed=self.seed,
+            is_negative_prompt=True if negative_prompt_embedding is not None else False,
+            visualize=False,
+            save_fig_path=None,
+            augment_sigma_list=augment_sigma_list,
+            add_input_frames_guidance=add_input_frames_guidance,
+            skip_reencode=skip_reencode,
+        )
+
+        return video_np_THWC
+
+    def _run_tokenizer_encoding(
+        self, image_or_video_path: str, frame_index: int = 0, frame_stride: int = 1
+    ) -> torch.Tensor:
+        """Encode image to latent space
+
+        Args:
+            image_or_video_path: Path to conditioning image
+            frame_index: Starting frame index for encoding
+            frame_stride: Stride between frames for encoding
+
+        Returns:
+            torch.Tensor: Latent tensor from tokenizer encoding
+        """
+        condition_latent = get_condition_latent(
+            model=self.model,
+            input_image_or_video_path=image_or_video_path,
+            num_input_frames=self.num_input_frames,
+            state_shape=self.model.state_shape,
+            frame_index=frame_index,
+            frame_stride=frame_stride,
+        )
+
+        return condition_latent
+
+    def _run_model_with_offload(
+        self,
+        prompt_embedding: torch.Tensor,
+        image_or_video_path: str,
+        negative_prompt_embedding: Optional[torch.Tensor] = None,
+        frame_index_start: int = 0,
+        num_frame_pairs: int = 1,
+    ) -> np.ndarray:
+        """Generate world representation with automatic model offloading.
+
+        Wraps the core generation process with model loading/offloading logic
+        to minimize GPU memory usage during inference.
+
+        Args:
+            prompt_embedding: Text embedding tensor from T5 encoder
+            image_or_video_path: Path to conditioning image or video
+            negative_prompt_embedding: Optional embedding for negative prompt guidance
+            frame_index_start: Starting index for frame pairs
+            num_frame_pairs: Number of frame pairs to process
+
+        Returns:
+            np.ndarray: Generated world representation as numpy array
+        """
+        if self.offload_tokenizer:
+            self._load_tokenizer()
+
+        # Prepare video batch and state shape
+        raw_data_batch, state_shape = get_video_batch(
+            model=self.model,
+            prompt_embedding=prompt_embedding,
+            negative_prompt_embedding=negative_prompt_embedding,
+            height=self.height,
+            width=self.width,
+            fps=self.fps,
+            num_video_frames=self.num_video_frames,
+        )
+
+        H, W = (
+            state_shape[-2] * self.model.tokenizer.spatial_compression_factor,
+            state_shape[-1] * self.model.tokenizer.spatial_compression_factor,
+        )
+
+        input_path_format = image_or_video_path.split(".")[-1]
+        input_frames = read_video_or_image_into_frames_BCTHW(
+            image_or_video_path,
+            input_path_format=input_path_format,
+            H=H,
+            W=W,
+        )
+
+        num_frames = input_frames.shape[2]
+        num_frame_pairs = num_frame_pairs or num_frames // self.frame_stride
+        frame_stride = self.frame_stride
+
+        video_output = []
+        for frame_index in range(frame_index_start, num_frame_pairs):
+            print(f"Processing frame pair {frame_index + 1} / {num_frame_pairs}...")
+
+            condition_latent = self._run_tokenizer_encoding(image_or_video_path, frame_index, frame_stride)
+
+            video_np_THWC = self._run_model(
+                condition_latent=condition_latent,
+                negative_prompt_embedding=negative_prompt_embedding,
+                raw_data_batch=raw_data_batch,
+                state_shape=state_shape,
+            )
+
+            # Convert to tensor, rearrange, and normalize to [0, 1]
+            video_0_1 = einops.rearrange(torch.from_numpy(video_np_THWC), "t h w c -> c t h w") / 255.0
+
+            # Handle overlap by skipping the first frame of subsequent segments
+            if len(video_output) == 0:
+                video_output.append(video_0_1)
+            else:
+                video_output.append(video_0_1[:, 1:, :, :])  # Skip first frame to avoid duplication
+
+        # Concatenate all segments
+        video_tensor = torch.cat(video_output, dim=1)  # Shape: (C, total_num_frames, H, W)
+
+        # Convert to NumPy array for guardrail: [T, H, W, C], uint8, [0, 255]
+        video_np = (
+            video_tensor.permute(1, 2, 3, 0) * 255
+        ).to(torch.uint8).cpu().numpy()  # Shape: (T, H, W, C)
+
+        if self.offload_network:
+            self._offload_network()
+        if self.offload_tokenizer:
+            self._offload_tokenizer()
+
+        return video_np
+
+    def generate(
+        self,
+        prompt: str,
+        image_or_video_path: str,
+        negative_prompt: Optional[str] = None,
+    ) -> tuple[np.ndarray, str] | None:
+        """Generate video from text prompt and optional image.
+
+        Pipeline steps:
+        1. Run safety checks on input prompt
+        2. Enhance prompt using upsampler if enabled
+        3. Run safety checks on upsampled prompt if applicable
+        4. Convert prompt to embeddings
+        5. Generate video frames using diffusion
+        6. Run safety checks and apply face blur on generated video frames
+
+        Args:
+            prompt: Text description of desired video
+            image_or_video_path: Path to conditioning image or video
+            negative_prompt: Optional text to guide what not to generate
+
+        Returns:
+            tuple: (
+                Generated video frames as uint8 np.ndarray [T, H, W, C],
+                Final prompt used for generation (may be enhanced)
+            ), or None if content fails guardrail safety checks
+        """
+        log.info(f"Run with prompt: {prompt}")
+        log.info(f"Run with image or video path: {image_or_video_path}")
+        log.info(f"Run with negative prompt: {negative_prompt}")
+        log.info(f"Run with prompt upsampler: {self.enable_prompt_upsampler}")
+
+        if not self.disable_guardrail and not self.enable_prompt_upsampler:
+            log.info("Run guardrail on prompt")
+            is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
+            if not is_safe:
+                log.critical("Input text prompt is not safe")
+                return None
+            log.info("Pass guardrail on prompt")
+        else:
+            log.info("Run prompt upsampler on image or video, input prompt is not used")
+            prompt = self._run_prompt_upsampler_on_prompt_with_offload(image_or_video_path=image_or_video_path)
+
+            if not self.disable_guardrail:
+                log.info("Run guardrail on upsampled prompt")
+                is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
+                if not is_safe:
+                    log.critical("Upsampled text prompt is not safe")
+                    return None
+                log.info("Pass guardrail on upsampled prompt")
+
+        log.info("Run text embedding on prompt")
+        if negative_prompt:
+            prompts = [prompt, negative_prompt]
+        else:
+            prompts = [prompt]
+        prompt_embeddings, _ = self._run_text_embedding_on_prompt_with_offload(prompts)
+        prompt_embedding = prompt_embeddings[0]
+        negative_prompt_embedding = prompt_embeddings[1] if negative_prompt else None
+        log.info("Finish text embedding on prompt")
+
+        # Generate video
+        log.info("Run generation")
+        video = self._run_model_with_offload(
+            prompt_embedding,
+            negative_prompt_embedding=negative_prompt_embedding,
+            image_or_video_path=image_or_video_path,
+            frame_index_start=self.frame_index_start,
+            num_frame_pairs=self.num_frame_pairs,
+        )
+        log.info("Finish generation")
+
+        if not self.disable_guardrail:
+            log.info("Run guardrail on generated video")
+            video = self._run_guardrail_on_video_with_offload(video)
+            if video is None:
+                log.critical("Generated video is not safe")
+                return None
+            log.info("Pass guardrail on generated video")
 
         return video, prompt
 
