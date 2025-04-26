@@ -85,7 +85,7 @@ class Dataset(Dataset):
         self.prefix_t5_embeddings = {}
         for view_key in view_keys:
             with open(os.path.join(cache_dir, f"prefix_t5_embeddings_{view_key}.pickle"), "rb") as f:
-                self.prefix_t5_embeddings[view_key] = pickle.load(f)[0]
+                self.prefix_t5_embeddings[view_key] = pickle.load(f)
         if caption_view_idx_map is None:
             self.caption_view_idx_map = dict([(i, i) for i in range(len(self.view_keys))])
         else:
@@ -115,8 +115,8 @@ class Dataset(Dataset):
             sample["video_path"] = video_path
             sample["t5_embedding_path"] = os.path.join(
                 self.t5_dir,
-                os.path.basename(os.path.dirname(video_path)),
-                os.path.basename(video_path).replace(".mp4", ".pickle"),
+                # os.path.basename(os.path.dirname(video_path)),
+                os.path.basename(video_path).replace(".mp4", ".pkl"),
             )
             sample["frame_ids"] = []
             curr_frame_i = frame_i
@@ -191,10 +191,13 @@ class Dataset(Dataset):
                 video, fps = self._get_frames(os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)), frame_ids)
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
                 videos.append(video)
-
-                with open(os.path.join(os.path.dirname(os.path.dirname(t5_embedding_path)), view_key, os.path.basename(t5_embedding_path)), "rb") as f:
-                    t5_embedding = pickle.load(f)[0]
-                t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
+                if view_key == "front":
+                    with open(t5_embedding_path, "rb") as f:
+                        t5_embedding = pickle.load(f)["pickle"]["ground_truth"]["embeddings"]["t5_xxl"]
+                else:
+                    # use camera prompt
+                    t5_embedding = self.prefix_t5_embeddings[view_key]
+                #t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
                 t5_embedding = torch.from_numpy(t5_embedding)
                 if t5_embedding.shape[0] < 512:
                     t5_embedding = torch.cat([t5_embedding, torch.zeros(512 - t5_embedding.shape[0], 1024)], dim=0)

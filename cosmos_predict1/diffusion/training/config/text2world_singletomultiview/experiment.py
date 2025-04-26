@@ -46,15 +46,15 @@ num_frames = 57
 train_num_views = 3
 # To use the single2multiview checkpoint, we need to enable 7 view embeddings
 num_views_embedding = 7
-view_keys = ["pinhole_front_left", "pinhole_front", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"]
+view_keys = ["pinhole_front", "pinhole_front_left", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"]
 example_multiview_dataset_waymo = L(Dataset)(
-    dataset_dir="cosmos-av-sample-toolkits/datasets/waymo",
+    dataset_dir="cosmos-av-sample-toolkits/waymo_apr25",
     sequence_interval=1,
     num_frames=num_frames,
     view_keys=view_keys,
     video_size=(576, 1024),
     sample_n_views=train_num_views,
-    caption_view_idx_map={0:1,1:0,2:2,3:4,4:5},
+    caption_view_idx_map={0:0,1:1,2:2,3:4,4:5},
 )
 
 
