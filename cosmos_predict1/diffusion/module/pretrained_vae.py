@@ -604,7 +604,7 @@ class JointImageVideoSharedJITTokenizer(JointImageVideoTokenizer):
         self.video_vae.register_mean_std(vae_dir)
         self.video_vae.load_decoder(vae_dir)
         self.video_vae.load_encoder(vae_dir)
-        
+
         # Load for image_vae
         self.image_vae.register_mean_std(vae_dir)
         self.image_vae.load_decoder(vae_dir)

@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cosmos_predict1.diffusion.training.utils.peft.lora_attn import build_attn_lora
 from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
 from cosmos_predict1.utils import log
-from cosmos_predict1.diffusion.training.utils.peft.lora_attn import build_attn_lora
 from cosmos_predict1.utils.misc import count_params
 
 

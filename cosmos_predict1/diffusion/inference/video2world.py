@@ -18,7 +18,12 @@ import os
 
 import torch
 
-from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, check_input_frames, get_input_sizes, validate_args
+from cosmos_predict1.diffusion.inference.inference_utils import (
+    add_common_arguments,
+    check_input_frames,
+    get_input_sizes,
+    validate_args,
+)
 from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionVideo2WorldGenerationPipeline
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video

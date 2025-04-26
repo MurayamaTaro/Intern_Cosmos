@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import attrs
 
 from cosmos_predict1.utils.lazy_config import LazyDict
-from typing import Optional, Dict, List, Any
+
 
 @attrs.define(slots=False)
 class DefaultModelConfig:
@@ -31,7 +31,7 @@ class DefaultModelConfig:
     latent_shape: List[int] = [16, 24, 44, 80]  # 24 corresponig to 136 frames
     input_image_key: str = "images_1024"
     adjust_video_noise: bool = False  # Added field with default value
-    context_parallel_size: int = 1    # Added field with default value
+    context_parallel_size: int = 1  # Added field with default value
     # `num_latents_to_drop` is a flag that helps satisfy (1I,N*P,1I) latents setup.
     # Since the tokenizer is causal and has the `T+1` input frames setup, it's
     # challenging to encode arbitrary number of frames. To circumvent this,

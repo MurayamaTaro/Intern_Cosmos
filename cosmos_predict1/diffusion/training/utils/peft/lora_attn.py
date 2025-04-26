@@ -18,9 +18,10 @@ from einops import rearrange
 from torch.utils.checkpoint import checkpoint
 from transformer_engine.pytorch.attention import apply_rotary_pos_emb
 
-from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
-from cosmos_predict1.diffusion.training.utils.peft.lora_net import LoRALinearLayer, TELoRALinearLayer
 from cosmos_predict1.diffusion.module.attention import Attention
+from cosmos_predict1.diffusion.training.utils.peft.lora_net import LoRALinearLayer, TELoRALinearLayer
+from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
+
 try:
     from megatron.core import parallel_state
 
@@ -80,7 +81,12 @@ def configure_attn_lora(attn: Attention, peft_control: dict) -> None:
 
 
 def cal_qkv_lora(
-    self, x: torch.Tensor, context: torch.Tensor = None, mask: torch.Tensor = None, rope_emb: torch.Tensor = None, **kwargs
+    self,
+    x: torch.Tensor,
+    context: torch.Tensor = None,
+    mask: torch.Tensor = None,
+    rope_emb: torch.Tensor = None,
+    **kwargs,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     del kwargs
     """

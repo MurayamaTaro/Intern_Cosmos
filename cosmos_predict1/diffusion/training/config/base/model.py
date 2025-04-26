@@ -72,6 +72,7 @@ class DefaultModelConfig:
     adjust_video_noise: bool = False  # whether or not adjust video noise accroding to the video length
     peft_control: LazyDict | None = None
 
+
 @attrs.define(slots=False)
 class MultiviewModelConfig(DefaultModelConfig):
     n_views: int = 6

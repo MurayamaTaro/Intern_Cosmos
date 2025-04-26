@@ -16,6 +16,7 @@
 
 from enum import Enum
 
+
 class CustomizationType(Enum):
     LORA = 1
     REPLACE = 2

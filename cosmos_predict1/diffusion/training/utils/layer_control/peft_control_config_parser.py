@@ -27,23 +27,24 @@ from cosmos_predict1.utils.validator import Float, Int, OneOf
 
 class LayerControlConfigParser:
     """
-        Parses a config to select layers, blocks, and subblocks to apply LoRA, PEFT, and other finegrained post-training techniques.
-        A base model is first loaded then edits (i.e. LoRA, unfreeze, etc.) are applied to the model. Currently, only LoRA is supported for to_q, to_k, to_v, to_out attention layers.  
-        See: cosmos_predict1/diffusion/training/utils/peft/lora_config.py and LoRA diffusion post-training for an example of how to create and use a LoRA config.
-        The input config is a dictionary with the following keys:
-        - enabled: whether to apply the PEFT
-        - customization_type: default/global type of PEFT to apply (LoRA, unfreeze, etc.) 
-        - rank: default/global LoRA rank
-        - scale: default/global LoRA scale 
-        - edits: a list of model edits to apply. 
-            - blocks: a regex to select the blocks to apply the edit to: eg: r'\b(0|1|25|26)\b'
-            - block_edit: a list of subblocks to apply the edit to: eg: ["FA[to_q, to_v]", "CA[to_q, to_v]"]. 
-              Subblock names correspond to FA (Full-Attention), CA (Cross-Attention), FL (FinalLayer), and MLP modules as defined in general_dit.py, 
-              and the layers (i.e to_q, to_k, to_v, etc.) are defined in corresponding modules in attention.py.
-            - customization_type: type of PEFT to apply for the edit (LoRA, unfreeze, etc.) - overrides the global customization_type if provided
-            - rank: LoRA rank - overrides the global rank for target blocks and subblocks if provided
-            - scale: LoRA scale - overrides the global scale for target blocks and subblocks if provided
+    Parses a config to select layers, blocks, and subblocks to apply LoRA, PEFT, and other finegrained post-training techniques.
+    A base model is first loaded then edits (i.e. LoRA, unfreeze, etc.) are applied to the model. Currently, only LoRA is supported for to_q, to_k, to_v, to_out attention layers.
+    See: cosmos_predict1/diffusion/training/utils/peft/lora_config.py and LoRA diffusion post-training for an example of how to create and use a LoRA config.
+    The input config is a dictionary with the following keys:
+    - enabled: whether to apply the PEFT
+    - customization_type: default/global type of PEFT to apply (LoRA, unfreeze, etc.)
+    - rank: default/global LoRA rank
+    - scale: default/global LoRA scale
+    - edits: a list of model edits to apply.
+        - blocks: a regex to select the blocks to apply the edit to: eg: r'\b(0|1|25|26)\b'
+        - block_edit: a list of subblocks to apply the edit to: eg: ["FA[to_q, to_v]", "CA[to_q, to_v]"].
+          Subblock names correspond to FA (Full-Attention), CA (Cross-Attention), FL (FinalLayer), and MLP modules as defined in general_dit.py,
+          and the layers (i.e to_q, to_k, to_v, etc.) are defined in corresponding modules in attention.py.
+        - customization_type: type of PEFT to apply for the edit (LoRA, unfreeze, etc.) - overrides the global customization_type if provided
+        - rank: LoRA rank - overrides the global rank for target blocks and subblocks if provided
+        - scale: LoRA scale - overrides the global scale for target blocks and subblocks if provided
     """
+
     SUBBLOCK_PATTERN = r"^(?P<subblock>.+?)\[(?P<parameters>[^\]]+)\]$"  # determines the subblock type (i.e. "FA[...]")
     LAYER_PATTERN = r"^(?P<layer>.+?)(?::(?P<rank>.+?))?(?::(?P<scale>[\d\.]+))?$"  # determines the layer details (i.e. to_q:8:0.6 or to_q)
     FINAL_LAYER_NAME = "final_layer"
@@ -52,12 +53,14 @@ class LayerControlConfigParser:
         "CA": {"to_q", "to_k", "to_v", "to_out", "ada1", "ada2"},
         "MLP": {"l1", "l2", "ada1", "ada2"},
     }
-    
-    DEFAULT_VALUE_CONSTRAINTS = {  # field to allowed ranges. these ranges are not prescriptive and can be adjusted as needed.
-        "blocks": {"min": 0, "max": 27},
-        "rank": {"min": 1, "max": 512},
-        "scale": {"min": 1e-5, "max": 64},
-    }
+
+    DEFAULT_VALUE_CONSTRAINTS = (
+        {  # field to allowed ranges. these ranges are not prescriptive and can be adjusted as needed.
+            "blocks": {"min": 0, "max": 27},
+            "rank": {"min": 1, "max": 512},
+            "scale": {"min": 1e-5, "max": 64},
+        }
+    )
     ALLOWED_TYPES_FINAL_LAYER = {"FL": {"l1", "ada1", "ada2"}}
 
     def __init__(self, config: Union[str, dict] = {}, allowed_types: dict = None, value_constraints: dict = None):
@@ -98,7 +101,7 @@ class LayerControlConfigParser:
     def _set_validators(self):
         """
         Sets validators for blocks, subblocks, rank, and scale.
-        
+
         Raises:
             AttributeError: If value constraints are not properly defined.
         """
@@ -181,7 +184,14 @@ class LayerControlConfigParser:
 
         return block_numbers
 
-    def _parse_subblocks(self, block_edit: list | ListConfig, customization_type: str, rank: int, scale: float, is_final_layer: bool = False):
+    def _parse_subblocks(
+        self,
+        block_edit: list | ListConfig,
+        customization_type: str,
+        rank: int,
+        scale: float,
+        is_final_layer: bool = False,
+    ):
         """Generate a dictionary of edits config by subblock.
 
         Args:

@@ -12,22 +12,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cosmos_predict1.checkpointer.ddp import Checkpointer as DDPCheckpointer
-from cosmos_predict1.utils.model import Model
-from typing import Set, Any
 import os
+from typing import Any, Set
+
 import torch
+
+from cosmos_predict1.checkpointer.ddp import Checkpointer as DDPCheckpointer
 from cosmos_predict1.utils import distributed, log
+from cosmos_predict1.utils.model import Model
+
 
 class Checkpointer(DDPCheckpointer):
     """
     Checkpointer class for PEFT in distributed training. This class is similar to the DDP checkpointer,
     with the exception that the `broadcast_via_filesystem` functionality is not supported, and it supports
     loading pre-trained model without any postfix.
-    
+
     Note:
     - Fully Sharded Data Parallelism (FSDP) is not supported by this checkpointer.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.broadcast_via_filesystem:
@@ -41,7 +45,7 @@ class Checkpointer(DDPCheckpointer):
         checkpoint_path = super().add_type_postfix_to_checkpoint_path(key, checkpoint_path, model)
         checkpoint_path = checkpoint_path.replace("model_model.pt", "model.pt")
         return checkpoint_path
-    
+
     def load_broadcast_state_dict(self, checkpoint_path: str, model: Model, resume_keys: Set) -> dict[str, Any]:
         """
         Load state_dict and broadcast for PEFT checkpointer.
@@ -67,13 +71,15 @@ class Checkpointer(DDPCheckpointer):
                 if os.path.exists(local_cache_path):
                     # If the local checkpoint exists, we can directly load it
                     self.print(f"Checkpoint is already in local cache: {local_cache_path}. Loading...")
-                    _state_dict = torch.load(local_cache_path, map_location=lambda storage, loc: storage, weights_only=False)
+                    _state_dict = torch.load(
+                        local_cache_path, map_location=lambda storage, loc: storage, weights_only=False
+                    )
                 else:
                     # Pre-trained model is not in local cache, so we need to load it from the checkpoint path
                     self.print(f"Loading checkpoint from: {_ckpt_path}")
                     _state_dict = torch.load(_ckpt_path, map_location=lambda storage, loc: storage, weights_only=False)
                 state_dict[key] = _state_dict
-        
+
         # Ensure all ranks wait for the download to complete
         distributed.barrier()
 
@@ -90,7 +96,9 @@ class Checkpointer(DDPCheckpointer):
                     local_cache_path = os.path.join(self.load_dirname, os.path.basename(_ckpt_path))
                     if os.path.exists(local_cache_path):
                         self.print(f"Loading checkpoint from: {local_cache_path}")
-                        state_dict[key] = torch.load(local_cache_path, map_location=lambda storage, loc: storage, weights_only=False)
+                        state_dict[key] = torch.load(
+                            local_cache_path, map_location=lambda storage, loc: storage, weights_only=False
+                        )
                     else:
                         self.print(f"Loading checkpoint from: {_ckpt_path}")
                         state_dict[key] = torch.load(
