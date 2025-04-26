@@ -34,11 +34,10 @@ PREFIX_PROMPTS = {
     "pinhole_side_right": "The video is captured from a camera mounted on a car. The camera is facing to the right.",
 }
 
+
 def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compute T5 embeddings for text prompts")
-    parser.add_argument(
-        "--dataset_path", type=str, default="datasets/waymo", help="Root path to the dataset"
-    )
+    parser.add_argument("--dataset_path", type=str, default="datasets/waymo", help="Root path to the dataset")
     parser.add_argument("--max_length", type=int, default=512, help="Maximum length of the text embedding")
     parser.add_argument(
         "--pretrained_model_name_or_path", type=str, default="google-t5/t5-11b", help="T5 model name or the local path"
@@ -133,16 +132,18 @@ def main(args) -> None:
         if os.path.exists(t5_xxl_filename):
             # Skip if the file already exists
             continue
-        
+
         # Compute T5 embeddings
         encoded_text = encode_for_batch(tokenizer, text_encoder, [prefix_prompt])
-        
+
         # Save T5 embeddings as pickle file
         with open(t5_xxl_filename, "wb") as fp:
             pickle.dump(encoded_text, fp)
 
     for meta_filename in metas_list:
-        t5_xxl_filename = os.path.join(t5_xxl_dir, meta_filename.split("/")[-2], os.path.basename(meta_filename).replace(".txt", ".pickle"))
+        t5_xxl_filename = os.path.join(
+            t5_xxl_dir, meta_filename.split("/")[-2], os.path.basename(meta_filename).replace(".txt", ".pickle")
+        )
         os.makedirs(os.path.dirname(t5_xxl_filename), exist_ok=True)
         if os.path.exists(t5_xxl_filename):
             # Skip if the file already exists

@@ -68,7 +68,9 @@ class Dataset(Dataset):
         self.view_keys = view_keys
 
         video_dir = os.path.join(self.dataset_dir, "videos")
-        self.video_paths = [os.path.join(video_dir, view_keys[0], f) for f in os.listdir(os.path.join(video_dir, view_keys[0]))]
+        self.video_paths = [
+            os.path.join(video_dir, view_keys[0], f) for f in os.listdir(os.path.join(video_dir, view_keys[0]))
+        ]
         print(f"{len(self.video_paths)} videos in total")
 
         self.t5_dir = os.path.join(self.dataset_dir, "t5_xxl")
@@ -159,11 +161,21 @@ class Dataset(Dataset):
             videos = []
             t5_embeddings = []
             for view_key in self.view_keys:
-                video, fps = self._get_frames(os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)), frame_ids)
+                video, fps = self._get_frames(
+                    os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)),
+                    frame_ids,
+                )
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
                 videos.append(video)
 
-                with open(os.path.join(os.path.dirname(os.path.dirname(t5_embedding_path)), view_key, os.path.basename(t5_embedding_path)), "rb") as f:
+                with open(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(t5_embedding_path)),
+                        view_key,
+                        os.path.basename(t5_embedding_path),
+                    ),
+                    "rb",
+                ) as f:
                     t5_embedding = pickle.load(f)[0]
                 t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
                 t5_embedding = torch.from_numpy(t5_embedding)
@@ -172,7 +184,7 @@ class Dataset(Dataset):
                 t5_embeddings.append(t5_embedding)
             video = torch.cat(videos, dim=1)
             t5_embedding = torch.cat(t5_embeddings, dim=0)
-            
+
             data["video"] = video
             data["video_name"] = {
                 "video_path": video_path,
@@ -204,7 +216,13 @@ if __name__ == "__main__":
         dataset_dir="datasets/waymo/",
         sequence_interval=1,
         num_frames=57,
-        view_keys=["pinhole_front_left", "pinhole_front", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"],
+        view_keys=[
+            "pinhole_front_left",
+            "pinhole_front",
+            "pinhole_front_right",
+            "pinhole_side_left",
+            "pinhole_side_right",
+        ],
         video_size=[240, 360],
     )
 

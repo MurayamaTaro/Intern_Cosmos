@@ -16,9 +16,9 @@
 from hydra.core.config_store import ConfigStore
 
 from cosmos_predict1.diffusion.networks.general_dit_video_conditioned import VideoExtendGeneralDIT
+from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
-from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 
 Cosmos_Predict1_Video2World_7B: LazyDict = LazyDict(
     dict(

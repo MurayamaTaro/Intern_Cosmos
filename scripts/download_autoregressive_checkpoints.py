@@ -113,7 +113,9 @@ def main(args):
     checkpoints_dir = Path(args.checkpoint_dir)
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
-    download_kwargs = dict(allow_patterns=["README.md", "model.pt", "image_mean_std.pt", "mean_std.pt", "config.json", "*.jit"])
+    download_kwargs = dict(
+        allow_patterns=["README.md", "model.pt", "image_mean_std.pt", "mean_std.pt", "config.json", "*.jit"]
+    )
 
     # Download the requested Autoregressive models
     for size in args.model_sizes:
