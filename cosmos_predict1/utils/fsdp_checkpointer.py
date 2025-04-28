@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import gc
 import os
 import threading
 
@@ -220,11 +221,15 @@ class FSDPCheckpointer:
             self.save_thread.start()
             log.info("checkpoint saving from an async thread")
         else:
+            torch.cuda.empty_cache()
             # Run the checkpoint saver in the current thread.
             self._save_worker_local(
                 model_state_dict, optim_scheduler_state_dict, state_dict, checkpoint_file, distributed.get_rank()
             )
             log.info("checkpoint saved within the main thread")
+            del model_state_dict, optim_scheduler_state_dict, state_dict
+            gc.collect()
+            torch.cuda.empty_cache()
         self.callbacks.on_save_checkpoint_end(model=None, iteration=iteration)
 
     @misc.timer("checkpoint saving (local)")

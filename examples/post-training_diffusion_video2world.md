@@ -187,12 +187,13 @@ The inference can be done with the same interface as described in [examples/infe
 
 The post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt`
 
-For example, if a posttrained checkpoint (ema) with 1000 iterations is to be used,
+For example, if a posttrained checkpoint (ema) with 2000 iterations is to be used,
 ```bash
 # copy checkpoint to the designated location
 mkdir checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/
-cp checkpoints/posttraining/diffusion_video2world/video2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000001000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt
+cp checkpoints/posttraining/diffusion_video2world/video2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000002000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt
 ```
+
 2. Running the Inference
 
 This is the basic example for running inference on the post-trained 7B model with a single image.

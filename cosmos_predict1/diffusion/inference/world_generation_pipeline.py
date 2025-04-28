@@ -54,18 +54,27 @@ from cosmos_predict1.utils import log
 from cosmos_predict1.utils.base_world_generation_pipeline import BaseWorldGenerationPipeline
 
 MODEL_NAME_DICT = {
+    # text2world
     "Cosmos-Predict1-7B-Text2World": "Cosmos_Predict1_Text2World_7B",
     "Cosmos-Predict1-14B-Text2World": "Cosmos_Predict1_Text2World_14B",
-    "Cosmos-Predict1-7B-Video2World": "Cosmos_Predict1_Video2World_7B",
-    "Cosmos-Predict1-14B-Video2World": "Cosmos_Predict1_Video2World_14B",
     "Cosmos-Predict1-7B-Text2World_post-trained": "Cosmos_Predict1_Text2World_7B_Post_trained",
     "Cosmos-Predict1-14B-Text2World_post-trained": "Cosmos_Predict1_Text2World_14B_Post_trained",
-    "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
-    "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    # text2world low-memory
     "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_80gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb",
     "Cosmos-Predict1-7B-Text2World_post-trained-8gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb",
     "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb",
+    # text2world lora
     "Cosmos-Predict1-7B-Text2World_post-trained-lora": "Cosmos_Predict1_Text2World_7B_Post_trained_lora",
+    # video2world
+    "Cosmos-Predict1-7B-Video2World": "Cosmos_Predict1_Video2World_7B",
+    "Cosmos-Predict1-14B-Video2World": "Cosmos_Predict1_Video2World_14B",
+    "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
+    "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    # video2world low-memory
+    "Cosmos-Predict1-7B-Video2World_post-trained-4gpu_80gb": "Cosmos_Predict1_Video2World_7B_Post_trained_4gpu_80gb",
+    "Cosmos-Predict1-7B-Video2World_post-trained-8gpu_40gb": "Cosmos_Predict1_Video2World_7B_Post_trained_8gpu_40gb",
+    "Cosmos-Predict1-7B-Video2World_post-trained-4gpu_40gb": "Cosmos_Predict1_Video2World_7B_Post_trained_4gpu_40gb",
+    # video2world lora
     "Cosmos-Predict1-7B-Video2World_post-trained-lora": "Cosmos_Predict1_Video2World_7B_Post_trained_lora",
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
