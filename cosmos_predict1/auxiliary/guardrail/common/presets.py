@@ -18,10 +18,10 @@ from pathlib import Path
 
 import numpy as np
 
-from cosmos_predict1.auxiliary.guardrail.llamaGuard3.llamaGuard3 import LlamaGuard3
 from cosmos_predict1.auxiliary.guardrail.blocklist.blocklist import Blocklist
 from cosmos_predict1.auxiliary.guardrail.common.core import GuardrailRunner
 from cosmos_predict1.auxiliary.guardrail.face_blur_filter.face_blur_filter import RetinaFaceFilter
+from cosmos_predict1.auxiliary.guardrail.llamaGuard3.llamaGuard3 import LlamaGuard3
 from cosmos_predict1.auxiliary.guardrail.video_content_safety_filter.video_content_safety_filter import (
     VideoContentSafetyFilter,
 )

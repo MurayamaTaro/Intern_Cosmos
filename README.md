@@ -89,7 +89,7 @@ Cosmos-Predict1 include the following models
 
 ## License and Contact
 
-This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use. 
+This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
 
 This model includes safety and content moderation features powered by Llama Guard 3. Llama Guard 3 is used solely as a content input filter and is subject to its own license.
 
