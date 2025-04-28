@@ -21,12 +21,16 @@ from typing import List, NamedTuple, Optional, Tuple
 import einops
 import imageio
 import numpy as np
+import omegaconf.errors
 import torch
 import torchvision.transforms.functional as transforms_F
+from omegaconf import OmegaConf
 
 from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
+from cosmos_predict1.diffusion.model.model_world_interpolator import DiffusionWorldInterpolatorWModel
+from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.io import load_from_fileobj
@@ -113,7 +117,11 @@ def add_common_arguments(parser):
     parser.add_argument("--num_steps", type=int, default=35, help="Number of diffusion sampling steps")
     parser.add_argument("--guidance", type=float, default=7, help="Guidance scale value")
     parser.add_argument(
-        "--num_video_frames", type=int, default=121, choices=[121], help="Number of video frames to sample"
+        "--num_video_frames",
+        type=int,
+        default=121,
+        choices=[8 * n + 1 for n in range(16)] + [10, 117],
+        help="Number of video frames to sample",
     )
     parser.add_argument("--height", type=int, default=704, help="Height of video to sample")
     parser.add_argument("--width", type=int, default=1280, help="Width of video to sample")
@@ -176,12 +184,13 @@ def validate_args(args: argparse.Namespace, inference_type: str) -> None:
     assert inference_type in [
         "text2world",
         "video2world",
+        "world_interpolator",
     ], "Invalid inference_type, must be 'text2world' or 'video2world'"
 
     # Validate prompt/image/video args for single or batch generation
     if inference_type == "text2world" or (inference_type == "video2world" and args.disable_prompt_upsampler):
         assert args.prompt or args.batch_input_path, "--prompt or --batch_input_path must be provided."
-    if inference_type == "video2world" and not args.batch_input_path:
+    if (inference_type == "video2world" or inference_type == "world_interpolator") and not args.batch_input_path:
         assert (
             args.input_image_or_video_path
         ), "--input_image_or_video_path must be provided for single video generation."
@@ -304,7 +313,6 @@ def load_model_by_config(
     config.validate()
     # Freeze the config so developers don't change it during training.
     config.freeze()  # type: ignore
-
     # Initialize model
     with skip_init_linear():
         model = model_class(config.model)
@@ -319,6 +327,17 @@ def load_network_model(model: DiffusionT2WModel, ckpt_path: str):
     except Exception:
         # Posttrained models can be loaded with weights_only=False
         net_state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    if "model" in net_state_dict:
+        model_state_dict = net_state_dict["model"]
+        if "ema" in net_state_dict and model.config.peft_control and model.config.peft_control.enabled:
+            ema_state_dict = net_state_dict["ema"]
+            # Convert ema state_dict to model state_dict by replacing "-" with "."
+            ema_state_dict = {k.replace("-", "."): v for k, v in ema_state_dict.items()}
+            model_state_dict.update(ema_state_dict)
+            net_state_dict = model_state_dict
+        else:
+            net_state_dict = model_state_dict
+
     log.debug(non_strict_load_model(model.model, net_state_dict))
     model.cuda()
 
@@ -407,12 +426,27 @@ def get_video_batch(model, prompt_embedding, negative_prompt_embedding, height, 
         prompt_embedding=prompt_embedding,
         negative_prompt_embedding=negative_prompt_embedding,
     )
-    state_shape = [
-        model.tokenizer.channel,
-        model.tokenizer.get_latent_num_frames(num_video_frames),
-        height // model.tokenizer.spatial_compression_factor,
-        width // model.tokenizer.spatial_compression_factor,
-    ]
+    try:
+        condition_location = model.config.conditioner.video_cond_bool.condition_location
+    except omegaconf.errors.ConfigAttributeError:
+        condition_location = None
+
+    # Use condition_location in your logic
+    if condition_location == "first_and_last_1":
+        state_shape = [
+            model.tokenizer.channel,
+            model.tokenizer.get_latent_num_frames(num_video_frames - 1) + 1,  # +1 for the last frame
+            height // model.tokenizer.spatial_compression_factor,
+            width // model.tokenizer.spatial_compression_factor,
+        ]
+    else:
+        state_shape = [
+            model.tokenizer.channel,
+            model.tokenizer.get_latent_num_frames(num_video_frames),
+            height // model.tokenizer.spatial_compression_factor,
+            width // model.tokenizer.spatial_compression_factor,
+        ]
+
     return raw_video_batch, state_shape
 
 
@@ -641,9 +675,9 @@ def compute_num_latent_frames(model: DiffusionV2WModel, num_input_frames: int, d
         * model.tokenizer.video_vae.latent_chunk_duration
     )
     # Then handle the remainder
-    if num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration == 1:
+    if num_input_frames % model.tokenizer.video_vae.latent_chunk_duration == 1:
         num_latent_frames += 1
-    elif num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration > 1:
+    elif num_input_frames % model.tokenizer.video_vae.latent_chunk_duration > 1:
         assert (
             num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration - 1
         ) % downsample_factor == 0, f"num_input_frames % model.tokenizer.video_vae.pixel_chunk_duration - 1 must be divisible by {downsample_factor}"
@@ -693,17 +727,56 @@ def create_condition_latent_from_input_frames(
     ), f"num_frames_encode should be larger than num_frames_condition, get {num_frames_encode}, {num_frames_condition}"
 
     # Put the conditioal frames to the begining of the video, and pad the end with zero
-    condition_frames = input_frames[:, :, -num_frames_condition:]
-    padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
-    encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        condition_frames_first = input_frames[:, :, :num_frames_condition]
+        condition_frames_last = input_frames[:, :, -num_frames_condition:]
+        padding_frames = condition_frames_first.new_zeros(B, C, num_frames_encode + 1 - 2 * num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames_first, padding_frames, condition_frames_last], dim=2)
+    else:
+        condition_frames = input_frames[:, :, -num_frames_condition:]
+        padding_frames = condition_frames.new_zeros(B, C, num_frames_encode - num_frames_condition, H, W)
+        encode_input_frames = torch.cat([condition_frames, padding_frames], dim=2)
 
     log.debug(
         f"create latent with input shape {encode_input_frames.shape} including padding {num_frames_encode - num_frames_condition} at the end"
     )
     if hasattr(model, "n_views"):
         encode_input_frames = einops.rearrange(encode_input_frames, "(B V) C T H W -> B C (V T) H W", V=model.n_views)
-    latent = model.encode(encode_input_frames)
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        latent1 = model.encode(encode_input_frames[:, :, :num_frames_encode])  # BCTHW
+        latent2 = model.encode(encode_input_frames[:, :, num_frames_encode:])
+        latent = torch.cat([latent1, latent2], dim=2)  # BCTHW
+    else:
+        latent = model.encode(encode_input_frames)
     return latent, encode_input_frames
+
+
+def compute_num_frames_condition(model: DiffusionV2WModel, num_of_latent_overlap: int, downsample_factor=8) -> int:
+    """This function computes the number of condition pixel frames given the number of latent frames to overlap.
+    Args:
+        model (ExtendDiffusionModel): video generation model
+        num_of_latent_overlap (int): number of latent frames to overlap
+        downsample_factor (int): downsample factor for temporal reduce
+    Returns:
+        int: number of condition frames in output space
+    """
+    if getattr(model.tokenizer.video_vae, "is_casual", True):
+        # For casual model
+        num_frames_condition = (
+            num_of_latent_overlap
+            // model.tokenizer.video_vae.latent_chunk_duration
+            * model.tokenizer.video_vae.pixel_chunk_duration
+        )
+        if num_of_latent_overlap % model.tokenizer.video_vae.latent_chunk_duration == 1:
+            num_frames_condition += 1
+        elif num_of_latent_overlap % model.tokenizer.video_vae.latent_chunk_duration > 1:
+            num_frames_condition += (
+                1 + (num_of_latent_overlap % model.tokenizer.video_vae.latent_chunk_duration - 1) * downsample_factor
+            )
+    else:
+        num_frames_condition = num_of_latent_overlap * downsample_factor
+
+    return num_frames_condition
 
 
 def get_condition_latent(
@@ -711,6 +784,8 @@ def get_condition_latent(
     input_image_or_video_path: str,
     num_input_frames: int = 1,
     state_shape: list[int] = None,
+    frame_index: int = 0,
+    frame_stride: int = 1,
 ):
     """Get condition latent from input image/video file.
 
@@ -740,6 +815,20 @@ def get_condition_latent(
         H=H,
         W=W,
     )
+    if model.config.conditioner.video_cond_bool.condition_location == "first_and_last_1":
+        start_frame = frame_index * frame_stride
+        end_frame = (frame_index + 1) * frame_stride
+        curr_input_frames = torch.cat(
+            [input_frames[:, :, start_frame : start_frame + 1], input_frames[:, :, end_frame : end_frame + 1]], dim=2
+        ).contiguous()  # BCTHW
+        num_of_latent_condition = 1
+        num_frames_condition = compute_num_frames_condition(
+            model, num_of_latent_condition, downsample_factor=model.tokenizer.temporal_compression_factor
+        )
+
+        condition_latent, _ = create_condition_latent_from_input_frames(model, curr_input_frames, num_frames_condition)
+        condition_latent = condition_latent.to(torch.bfloat16)
+        return condition_latent
 
     condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames)
     condition_latent = condition_latent.to(torch.bfloat16)
@@ -795,7 +884,7 @@ def check_input_frames(input_path: str, required_frames: int) -> bool:
         required_frames: Number of required frames
 
     Returns:
-        np.ndarray of frames if valid, None if invalid
+        bool: True if input has sufficient frames, False otherwise
     """
     if input_path.endswith((".jpg", ".jpeg", ".png")):
         if required_frames > 1:
@@ -815,3 +904,31 @@ def check_input_frames(input_path: str, required_frames: int) -> bool:
     except Exception as e:
         log.error(f"Error reading video file {input_path}: {e}")
         return False
+
+
+def get_input_sizes(input_path: str) -> tuple[int, int]:
+    """Get the height and width of input video or image.
+
+    Args:
+        input_path: Path to input video or image file
+
+    Returns:
+        tuple: (height, width) dimensions of the input
+    """
+    if input_path.endswith((".jpg", ".jpeg", ".png")):
+        # For image input
+        try:
+            img = imageio.imread(input_path)
+            return img.shape[0], img.shape[1]
+        except Exception as e:
+            log.error(f"Error reading image file {input_path}: {e}")
+            raise
+    else:
+        # For video input
+        try:
+            vid = imageio.get_reader(input_path, "ffmpeg")
+            first_frame = vid.get_data(0)
+            return first_frame.shape[0], first_frame.shape[1]
+        except Exception as e:
+            log.error(f"Error reading video file {input_path}: {e}")
+            raise

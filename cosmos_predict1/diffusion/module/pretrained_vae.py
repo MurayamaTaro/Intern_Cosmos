@@ -600,7 +600,12 @@ class JointImageVideoSharedJITTokenizer(JointImageVideoTokenizer):
         # a hack to make the image_vae and video_vae share the same encoder and decoder
 
     def load_weights(self, vae_dir: str):
+        # Load for video_vae
         self.video_vae.register_mean_std(vae_dir)
-
         self.video_vae.load_decoder(vae_dir)
         self.video_vae.load_encoder(vae_dir)
+
+        # Load for image_vae
+        self.image_vae.register_mean_std(vae_dir)
+        self.image_vae.load_decoder(vae_dir)
+        self.image_vae.load_encoder(vae_dir)

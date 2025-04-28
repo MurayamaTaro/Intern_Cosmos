@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import attrs
 
@@ -29,6 +29,21 @@ class DefaultModelConfig:
     precision: str = "bfloat16"
     input_data_key: str = "video"  # key to fetch input data from data_batch
     latent_shape: List[int] = [16, 24, 44, 80]  # 24 corresponig to 136 frames
+    input_image_key: str = "images_1024"
+    adjust_video_noise: bool = False  # Added field with default value
+    context_parallel_size: int = 1  # Added field with default value
+    # `num_latents_to_drop` is a flag that helps satisfy (1I,N*P,1I) latents setup.
+    # Since the tokenizer is causal and has the `T+1` input frames setup, it's
+    # challenging to encode arbitrary number of frames. To circumvent this,
+    # we sample as many frames, run the tokenizer twice, and discard the last
+    # chunk's P-latents, ensuring the requirement: I-latents for the input frames
+    # and P-latent for the-to-be-predicted in-between frames.
+    # By default, this flag does not have any effect.
+    num_latents_to_drop: int = 0  # number of P-latents to discard after encoding
+
+    sde: Optional[Dict] = None
+    vae: Optional[Dict] = None  # Add this line to include the vae field
+    peft_control: LazyDict | None = None
 
 
 @attrs.define(slots=False)

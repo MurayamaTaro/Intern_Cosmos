@@ -161,10 +161,17 @@ class Dataset(Dataset):
             # Just add these to fit the interface
             # t5_embedding = np.load(sample["t5_embedding_path"])[0]
             with open(sample["t5_embedding_path"], "rb") as f:
-                t5_embedding = pickle.load(f)[0]
+                t5_embedding = pickle.load(f)[0]  # [n_tokens, 1024]
+            n_tokens = t5_embedding.shape[0]
+            if n_tokens < 512:
+                t5_embedding = np.concatenate(
+                    [t5_embedding, np.zeros((512 - n_tokens, 1024), dtype=np.float32)], axis=0
+                )
+            t5_text_mask = torch.zeros(512, dtype=torch.int64)
+            t5_text_mask[:n_tokens] = 1
 
             data["t5_text_embeddings"] = torch.from_numpy(t5_embedding)
-            data["t5_text_mask"] = torch.ones(512, dtype=torch.int64)
+            data["t5_text_mask"] = t5_text_mask
             data["fps"] = fps
             data["image_size"] = torch.tensor([704, 1280, 704, 1280])
             data["num_frames"] = self.sequence_length
@@ -185,7 +192,7 @@ class Dataset(Dataset):
 
 if __name__ == "__main__":
     dataset = Dataset(
-        dataset_dir="assets/example_training_data/",
+        dataset_dir="datasets/cosmos_nemo_assets",
         sequence_interval=1,
         num_frames=57,
         video_size=[240, 360],

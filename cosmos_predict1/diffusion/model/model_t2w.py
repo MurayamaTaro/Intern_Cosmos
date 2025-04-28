@@ -23,7 +23,10 @@ from cosmos_predict1.diffusion.module import parallel
 from cosmos_predict1.diffusion.module.blocks import FourierFeatures
 from cosmos_predict1.diffusion.module.parallel import cat_outputs_cp, split_inputs_cp
 from cosmos_predict1.diffusion.module.pretrained_vae import BaseVAE
+from cosmos_predict1.diffusion.training.utils.layer_control.peft_control_config_parser import LayerControlConfigParser
+from cosmos_predict1.diffusion.training.utils.peft.peft import add_lora_layers, setup_lora_requires_grad
 from cosmos_predict1.utils import log, misc
+from cosmos_predict1.utils.distributed import get_rank
 from cosmos_predict1.utils.lazy_config import instantiate as lazy_instantiate
 
 
@@ -85,6 +88,15 @@ class DiffusionT2WModel(torch.nn.Module):
     def set_up_model(self, memory_format: torch.memory_format = torch.preserve_format):
         """Initialize the core model components including network, conditioner and logvar."""
         self.model = self.build_model()
+        if self.config.peft_control and self.config.peft_control.enabled:
+            log.info("Setting up LoRA layers")
+            peft_control_config_parser = LayerControlConfigParser(config=self.config.peft_control)
+            peft_control_config = peft_control_config_parser.parse()
+            add_lora_layers(self.model, peft_control_config)
+            num_lora_params = setup_lora_requires_grad(self.model)
+            self.model.requires_grad_(False)
+            if num_lora_params == 0:
+                raise ValueError("No LoRA parameters found. Please check the model configuration.")
         self.model = self.model.to(memory_format=memory_format, **self.tensor_kwargs)
 
     def build_model(self) -> torch.nn.ModuleDict:
@@ -168,7 +180,6 @@ class DiffusionT2WModel(torch.nn.Module):
         self.scheduler.set_timesteps(num_steps)
 
         xt = torch.randn(size=(n_sample,) + tuple(state_shape)) * self.scheduler.init_noise_sigma
-
         to_cp = self.net.is_context_parallel_enabled
         if to_cp:
             xt = split_inputs_cp(x=xt, seq_dim=2, cp_group=self.net.cp_group)

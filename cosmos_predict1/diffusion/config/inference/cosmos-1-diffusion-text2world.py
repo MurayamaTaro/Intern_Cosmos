@@ -15,6 +15,7 @@
 
 from hydra.core.config_store import ConfigStore
 
+from cosmos_predict1.diffusion.training.utils.peft.lora_config import get_fa_ca_qv_lora_config
 from cosmos_predict1.utils.lazy_config import LazyDict
 
 Cosmos_Predict1_Text2World_7B: LazyDict = LazyDict(
@@ -37,16 +38,13 @@ Cosmos_Predict1_Text2World_7B: LazyDict = LazyDict(
                 160,
             ],
             net=dict(
-                extra_per_block_abs_pos_emb=True,
                 rope_h_extrapolation_ratio=1.0,
                 rope_w_extrapolation_ratio=1.0,
                 rope_t_extrapolation_ratio=2.0,
-                extra_per_block_abs_pos_emb_type="learnable",
             ),
         ),
     )
 )
-
 
 Cosmos_Predict1_Text2World_14B: LazyDict = LazyDict(
     dict(
@@ -68,14 +66,12 @@ Cosmos_Predict1_Text2World_14B: LazyDict = LazyDict(
                 160,
             ],
             net=dict(
-                extra_per_block_abs_pos_emb=True,
                 rope_h_extrapolation_ratio=2.0,
                 rope_t_extrapolation_ratio=2.0,
                 rope_w_extrapolation_ratio=2.0,
                 extra_h_extrapolation_ratio=2.0,
                 extra_t_extrapolation_ratio=2.0,
                 extra_w_extrapolation_ratio=2.0,
-                extra_per_block_abs_pos_emb_type="learnable",
             ),
         ),
     )
@@ -92,7 +88,6 @@ Cosmos_Predict1_Text2World_7B_Post_trained: LazyDict = LazyDict(
     )
 )
 
-
 Cosmos_Predict1_Text2World_14B_Post_trained: LazyDict = LazyDict(
     dict(
         defaults=[
@@ -104,6 +99,86 @@ Cosmos_Predict1_Text2World_14B_Post_trained: LazyDict = LazyDict(
     )
 )
 
+Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Text2World_7B",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb",
+        ),
+        model=dict(
+            latent_shape=[  # 384x384 resolution
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+            ],
+            tokenizer=dict(
+                video_vae=dict(pixel_chunk_duration=121, spatial_resolution="384"),
+            ),
+        ),
+    )
+)
+
+Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Text2World_7B",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb",
+        ),
+        model=dict(
+            latent_shape=[  # 384x384 resolution
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+            ],
+            tokenizer=dict(
+                video_vae=dict(pixel_chunk_duration=33, spatial_resolution="384"),
+            ),
+        ),
+    )
+)
+
+Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Text2World_7B",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb",
+        ),
+        model=dict(
+            latent_shape=[  # 384x384 resolution
+                16,  # Latent channel dim
+                16,  # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
+            ],
+            tokenizer=dict(
+                video_vae=dict(pixel_chunk_duration=17, spatial_resolution="384"),
+            ),
+        ),
+    )
+)
+
+Cosmos_Predict1_Text2World_7B_Post_trained_lora: LazyDict = LazyDict(
+    dict(
+        defaults=[
+            "/experiment/Cosmos_Predict1_Text2World_7B_Post_trained",
+        ],
+        job=dict(
+            name="Cosmos_Predict1_Text2World_7B_Post_trained_lora",
+        ),
+        model=dict(
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=27, rank=8, scale=1),
+        ),
+    )
+)
+
 cs = ConfigStore.instance()
 
 for _item in [
@@ -111,5 +186,9 @@ for _item in [
     Cosmos_Predict1_Text2World_14B,
     Cosmos_Predict1_Text2World_7B_Post_trained,
     Cosmos_Predict1_Text2World_14B_Post_trained,
+    Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb,
+    Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb,
+    Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb,
+    Cosmos_Predict1_Text2World_7B_Post_trained_lora,
 ]:
     cs.store(group="experiment", package="_global_", name=_item["job"]["name"], node=_item)

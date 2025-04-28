@@ -18,6 +18,7 @@ from typing import Dict
 
 from hydra.core.config_store import ConfigStore
 
+from cosmos_predict1.checkpointer.peft_checkpointer import Checkpointer as PEFTCheckpointer
 from cosmos_predict1.diffusion.checkpointers.ema_fsdp_checkpointer import CheckpointConfig, FSDPCheckpointer
 from cosmos_predict1.diffusion.conditioner import VideoExtendConditioner
 from cosmos_predict1.diffusion.config.base.conditioner import (
@@ -39,6 +40,7 @@ from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 
 FSDP_CHECKPOINTER: Dict[str, str] = L(FSDPCheckpointer)()
+PEFT_CHECKPOINTER: Dict[str, str] = L(PEFTCheckpointer)()
 VideoExtendConditionerConfig: LazyDict = L(VideoExtendConditioner)(
     text=TextConfig(),
     fps=FPSConfig(),
@@ -87,6 +89,7 @@ def register_checkpoint_credential(cs):
 
 def register_checkpointer(cs):
     cs.store(group="ckpt_klass", package="checkpoint.type", name="fsdp", node=FSDP_CHECKPOINTER)
+    cs.store(group="ckpt_klass", package="checkpoint.type", name="peft", node=PEFT_CHECKPOINTER)
 
 
 FADITV2Config: LazyDict = L(GeneralDIT)(

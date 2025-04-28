@@ -102,7 +102,7 @@ video2world_multiview_7b_example_waymo = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=8,
+            context_parallel_size=1,
         ),
         model=dict(
             n_views=num_views,
@@ -120,7 +120,7 @@ video2world_multiview_7b_example_waymo = LazyDict(
             fsdp_enabled=True,
             fsdp=dict(
                 policy="block",
-                checkpoint=False,
+                checkpoint=True,
                 min_num_params=1024,
                 sharding_group_size=32,
                 sharding_strategy="hybrid",
@@ -166,7 +166,7 @@ video2world_multiview_7b_example_waymo = LazyDict(
             batch_size=1,
             drop_last=True,
             pin_memory=True,
-            num_workers=8
+            num_workers=8,
         ),
         dataloader_val=L(DataLoader)(
             dataset=example_multiview_dataset_waymo,
@@ -174,7 +174,7 @@ video2world_multiview_7b_example_waymo = LazyDict(
             batch_size=1,
             drop_last=True,
             pin_memory=True,
-            num_workers=8
+            num_workers=8,
         ),
     )
 )

@@ -113,6 +113,7 @@ class Checkpointer(AbstractCheckpointer):
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         grad_scaler: torch.amp.GradScaler,
         iteration: int,
+        **ignore_kwargs,
     ) -> None:
         """Save network weights, optimizer parameters, scheduler parameters to a checkpoint.
 
@@ -279,8 +280,8 @@ class Checkpointer(AbstractCheckpointer):
                     self.print(f"Checkpoint is already in local cache: {local_cache_path}. Loading...")
                     _state_dict = easy_io.load(local_cache_path, fast_backend=True)
                 else:
-                    _state_dict = easy_io.load(_ckpt_path, fast_backend=True)
                     self.print(f"Downloading checkpoint from: {_ckpt_path}")
+                    _state_dict = easy_io.load(_ckpt_path, fast_backend=True)
                     if self.broadcast_via_filesystem:
                         # Save the checkpoint to the local filesystem
                         easy_io.dump(_state_dict, local_cache_path, fast_backend=True)

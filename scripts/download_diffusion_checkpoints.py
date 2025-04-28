@@ -222,11 +222,13 @@ MD5_CHECKSUM_LOOKUP = {
     "Cosmos-Predict1-14B-Text2World/model.pt": "c69d1c6e51dc78b959040e8c4035a29b",
     "Cosmos-Predict1-14B-Video2World/guardrail/video_content_safety_filter/safety_filter.pt": "b46dc2ad821fc3b0d946549d7ade19cf",
     "Cosmos-Predict1-14B-Video2World/model.pt": "eaa7aa3678f61d88108c41d7fe201b18",
+    "Cosmos-Predict1-7B-WorldInterpolator/model.pt": "48a0bdc99d5e41eee05ba8597c4851da",
     "Cosmos-Predict1-7B-Text2World/guardrail/video_content_safety_filter/safety_filter.pt": "b46dc2ad821fc3b0d946549d7ade19cf",
     "Cosmos-Predict1-7B-Text2World/model.pt": "fe9ed68e16cf37b10e7414c9b3ee81e1",
     "Cosmos-Predict1-7B-Video2World/guardrail/video_content_safety_filter/safety_filter.pt": "b46dc2ad821fc3b0d946549d7ade19cf",
     "Cosmos-Predict1-7B-Video2World/model.pt": "ebcdb19c4c4a6a0e1e0bb65e346f6867",
     "Cosmos-Tokenize1-CV8x8x8-720p/mean_std.pt": "f07680ad7eefae57d698778e2a0c7c96",
+    "Cosmos-Tokenize1-CV8x8x8-720p/image_mean_std.pt": "9f19fd3312fc1198e4905ada02e68bce",
     "Cosmos-UpsamplePrompt1-12B-Text2World/guardrail/video_content_safety_filter/safety_filter.pt": "b46dc2ad821fc3b0d946549d7ade19cf",
     "Cosmos-UpsamplePrompt1-12B-Text2World/model.pt": "52d7a6b8b1ac44d856b4c1ea3f8c8c74",
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview/model.pt": "e3a6ef070deaae0678acd529dc749ea4",
@@ -238,6 +240,18 @@ MD5_CHECKSUM_LOOKUP = {
 
 def get_md5_checksum(checkpoints_dir, model_name):
     print("---------------------")
+    # Check if there are any expected files for this model
+    expected_files = [key for key in MD5_CHECKSUM_LOOKUP if key.startswith(model_name + "/")]
+    if not expected_files:
+        # No expected files in MD5_CHECKSUM_LOOKUP, check if the directory exists and has content
+        model_dir = checkpoints_dir / model_name
+        if not model_dir.exists() or not any(model_dir.iterdir()):
+            print(f"Directory for {model_name} does not exist or is empty. Download required.")
+            return False
+        else:
+            print(f"Directory for {model_name} exists and contains files. Assuming download is complete.")
+            return True
+    # Proceed with checksum verification for models with expected files
     for key, value in MD5_CHECKSUM_LOOKUP.items():
         if key.startswith(model_name + "/"):
             print(f"Verifying checkpoint {key}...")
@@ -246,7 +260,7 @@ def get_md5_checksum(checkpoints_dir, model_name):
             if not Path(file_path).exists():
                 print(f"Checkpoint {key} does not exist.")
                 return False
-            # File must match give MD5 checksum
+            # File must match given MD5 checksum
             with open(file_path, "rb") as f:
                 file_md5 = hashlib.md5(f.read()).hexdigest()
             if file_md5 != value:
@@ -274,12 +288,24 @@ def main(args):
     if "Text2World" in args.model_types:
         extra_models.append("Cosmos-UpsamplePrompt1-12B-Text2World")
 
+    # Add interpolator if 7B model is selected
+    if "7B" in args.model_sizes:
+        extra_models.append("Cosmos-Predict1-7B-WorldInterpolator")
+
     # Create local checkpoints folder
     checkpoints_dir = Path(args.checkpoint_dir)
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
     download_kwargs = dict(
-        allow_patterns=["README.md", "model.pt", "mean_std.pt", "config.json", "*.jit", "guardrail/*"]
+        allow_patterns=[
+            "README.md",
+            "model.pt",
+            "mean_std.pt",
+            "image_mean_std.pt",
+            "config.json",
+            "*.jit",
+            "guardrail/*",
+        ]
     )
 
     # Download the requested diffusion models
