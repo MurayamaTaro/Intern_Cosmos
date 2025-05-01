@@ -1,8 +1,8 @@
-## Post-training diffusion-based Single2Multiview Models
+## Post-training diffusion-based Single2Multiview-Sample-AV Models
 
 ### Model Support Matrix
 
-We support the following Cosmos Diffusion models for post-training. Review the available models and their compute requirements for post-tuning and inference to determine the best model for your use case.
+We support the following Cosmos Single2Multiview-Sample-AV models for post-training. Review the available models and their compute requirements for post-tuning and inference to determine the best model for your use case.
 
 | Model Name                                                | Model Status   | Compute Requirements for Post-Training   |
 |-----------------------------------------------------------|----------------|------------------------------------------|
@@ -39,6 +39,29 @@ The first step is to download a dataset with videos and captions and then prepro
 
 Example 1. You can use [Waymo Open Dataset](https://waymo.com/open/) for post-training.
 Please follow the [instruction](https://github.com/nv-tlabs/cosmos-av-sample-toolkits/tree/tianshic/t5_changes) in [cosmos-av-sample-toolkits](https://github.com/nv-tlabs/cosmos-av-sample-toolkits) to download and convert the Waymo Open Dataset.
+
+The resulting folder structure should look like this:
+```
+<DATA_ROOT>/waymo/
+├── cache/
+│   ├── prefix_t5_embeddings_pinhole_front.pickle
+│   ├── prefix_t5_embeddings_pinhole_front_left.pickle
+│   ├── prefix_t5_embeddings_pinhole_front_right.pickle
+│   ├── prefix_t5_embeddings_pinhole_side_left.pickle
+│   └── prefix_t5_embeddings_pinhole_side_right.pickle
+├── videos/
+│   ├── pinhole_front
+│       ├── *.mp4
+│   ├── pinhole_front_left
+│   ├── pinhole_front_right
+│   ├── pinhole_side_left
+│   ├── pinhole_side_right
+│   ...
+└── t5_xxl/
+    ├── pinhole_front
+        └── *.pkl
+```
+
 If you've used the multiview caption embedding option above, set `load_mv_emb` to True in `cosmos_predict1/diffusion/training/config/text2world_singletomultiview/experiment.py`
 #### 2. Post-train the Model
 

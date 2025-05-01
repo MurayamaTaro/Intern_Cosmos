@@ -71,8 +71,8 @@ MODEL_NAME_DICT = {
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
     "Cosmos-Predict1-7B-WorldInterpolator": "Cosmos_Predict1_WorldInterpolator_7B",
-    "sv2mv_t2v": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
-    "sv2mv_i2v": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
 }
 
 

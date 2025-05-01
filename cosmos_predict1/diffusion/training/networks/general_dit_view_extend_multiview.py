@@ -83,9 +83,9 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
         view_indices_B_T: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> torch.Tensor:
-        """Args:
-        condition_video_augment_sigma: (B) tensor of sigma value for the conditional input augmentation
-        condition_video_pose: (B, 1, T, H, W) tensor of pose condition
+        """
+        Args:
+        view_indices_B_T: (B, T) tensor of view indices used to select self.view_embedding
         """
         B, C, T, H, W = x.shape
 
@@ -149,10 +149,7 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
     ) -> torch.Tensor:
         """
         Args:
-            x: (B, C, T, H, W) tensor of spatial-temp inputs
-            timesteps: (B, ) tensor of timesteps
-            crossattn_emb: (B, N, D) tensor of cross-attention embeddings
-            crossattn_mask: (B, N) tensor of cross-attention masks
+        view_indices_B_T: (B, T) tensor of view indices used to select self.view_embedding
         """
         trajectory = kwargs.get("trajectory", None)
         frame_repeat = kwargs.get("frame_repeat", None)
@@ -274,7 +271,9 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
             fps (Optional[torch.Tensor]): Frames per second tensor to be used for positional embedding when required.
                                     If None, a default value (`self.base_fps`) will be used.
             padding_mask (Optional[torch.Tensor]): current it is not used
-
+            frame_repeat (Optional[torch.Tensor]): indicate to the model how many repeatedly sampled frames (for aligning
+            number of frames across views) in each view
+            view_indices_B_T (Optional[torch.Tensor]): index for selecting self.view_embeddings
         Returns:
             Tuple[torch.Tensor, Optional[torch.Tensor]]:
                 - A tensor of shape (B, T, H, W, D) with the embedded sequence.

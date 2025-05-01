@@ -59,6 +59,7 @@ class Dataset(Dataset):
             video_size (list): Target size [H,W] for video frames
             sample_n_views (int): Number of views to sample
             caption_view_idx_map (dict): Optional dictionary mapping index in view_keys to index in model.view_embeddings
+            load_mv_emb (bool): Whether to load t5 embeddings for all views, or only  for front view
         Returns dict with:
             - video: RGB frames tensor [T,C,H,W]
             - video_name: Dict with episode/frame metadata
@@ -86,7 +87,7 @@ class Dataset(Dataset):
         cache_dir = os.path.join(self.dataset_dir, "cache")
         self.prefix_t5_embeddings = {}
         for view_key in view_keys:
-            with open(os.path.join(cache_dir, f"prefix_t5_embeddings_{view_key}.pickle"), "rb") as f:
+            with open(os.path.join(cache_dir, f"prefix_{view_key}.pkl"), "rb") as f:
                 self.prefix_t5_embeddings[view_key] = pickle.load(f)
         if caption_view_idx_map is None:
             self.caption_view_idx_map = dict([(i, i) for i in range(len(self.view_keys))])
@@ -168,6 +169,7 @@ class Dataset(Dataset):
 
             videos = []
             t5_embeddings = []
+            t5_masks = []
             view_indices = [i for i in range(len(self.view_keys))]
             view_indices_conditioning = []
             if self.sample_n_views > 0:
@@ -186,29 +188,32 @@ class Dataset(Dataset):
                 sampled_idx.sort()
                 view_indices = sampled_idx.tolist()
 
-            # for view_key in self.view_keys:
             for view_index in view_indices:
                 view_key = self.view_keys[view_index]
 
                 video, fps = self._get_frames(os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)), frame_ids)
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
                 videos.append(video)
-                if self.load_mv_emb:
+
+                if self.load_mv_emb or view_key == "pinhole_front":
                     t5_embedding_path = os.path.join(os.path.dirname(os.path.dirname(t5_embedding_path)), view_key, os.path.basename(t5_embedding_path))
                     with open(t5_embedding_path, "rb") as f:
                         t5_embedding = pickle.load(f)[0]
+                    if self.load_mv_emb:
+                        t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
                 else:
-                    if view_key == "front":
-                        with open(t5_embedding_path, "rb") as f:
-                            t5_embedding = pickle.load(f)[0]
-                    else:
-                        # use camera prompt
-                        t5_embedding = self.prefix_t5_embeddings[view_key]
-                #t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
+                    t5_embedding = self.prefix_t5_embeddings[view_key]
+
                 t5_embedding = torch.from_numpy(t5_embedding)
+                t5_mask = torch.ones(t5_embedding.shape[0],  dtype=torch.int64)
                 if t5_embedding.shape[0] < 512:
                     t5_embedding = torch.cat([t5_embedding, torch.zeros(512 - t5_embedding.shape[0], 1024)], dim=0)
+                    t5_mask = torch.cat([t5_mask, torch.zeros(512 - t5_mask.shape[0])], dim=0)
+                else:
+                    t5_embedding = t5_embedding[:512]
+                    t5_mask = t5_mask[:512]
                 t5_embeddings.append(t5_embedding)
+                t5_masks.append(t5_mask)
                 caption_viewid = self.caption_view_idx_map[view_index]
                 view_indices_conditioning.append(torch.ones(video.shape[1]) * caption_viewid)
             video = torch.cat(videos, dim=1)
@@ -221,7 +226,7 @@ class Dataset(Dataset):
                 "start_frame_id": str(frame_ids[0]),
             }
             data["t5_text_embeddings"] = t5_embedding
-            data["t5_text_mask"] = torch.ones(512 * len(self.view_keys), dtype=torch.int64)
+            data["t5_text_mask"] = torch.cat(t5_masks)
             data["fps"] = fps
             data["image_size"] = torch.tensor([704, 1280, 704, 1280])
             data["num_frames"] = self.sequence_length

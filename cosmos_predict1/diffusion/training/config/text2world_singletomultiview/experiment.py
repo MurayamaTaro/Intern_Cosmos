@@ -48,7 +48,7 @@ train_num_views = 3
 num_views_embedding = 7
 view_keys = ["pinhole_front", "pinhole_front_left", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"]
 example_multiview_dataset_waymo = L(Dataset)(
-    dataset_dir="cosmos-av-sample-toolkits/waymo_apr25",
+    dataset_dir="cosmos-av-sample-toolkits/waymo",
     sequence_interval=1,
     num_frames=num_frames,
     view_keys=view_keys,
@@ -82,10 +82,8 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
         ),
         checkpoint=dict(
             save_iter=200,
-            # broadcast_via_filesystem=True,
             broadcast_via_filesystem=False,
-            #load_path="checkpoints/Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2v_model.pt",
-            load_path="/lustre/fsw/portfolios/nvr/users/tianshic/cosmos_ckpts/sv2mv_t2v/model.pt",
+            load_path="checkpoints/Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World/model.pt",
             load_training_state=False,
             strict_resume=True,
             keys_not_to_resume=[],
@@ -104,7 +102,6 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
                     every_n=200,
                     hit_thres=5,
                 ),
-                # manual_gc=L(ManualGarbageCollection)(every_n=5),
             ),
         ),
         model_parallel=dict(

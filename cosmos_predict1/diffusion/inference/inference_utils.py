@@ -558,7 +558,7 @@ def generate_world_from_video(
         seed (int): Random seed for generation
         condition_latent (torch.Tensor): Latent tensor from conditioning video/image file
         num_input_frames (int): Number of input frames
-
+        augment_sigma (float): augment sigma value to use for perturbing conditioning input
     Returns:
         np.array: Generated video frames in shape [T,H,W,C], range [0,255]
     """
@@ -704,6 +704,8 @@ def create_condition_latent_from_input_frames(
         model (DiffusionV2WModel): Video generation model
         input_frames (torch.Tensor): Input video tensor [B,C,T,H,W], range [-1,1]
         num_frames_condition (int): Number of frames to use for conditioning
+        from_back (bool): select condition input frames from rear of video, default to True.
+                          If False, start from front of video instead
 
     Returns:
         tuple: (condition_latent, encode_input_frames) where:
@@ -807,7 +809,9 @@ def get_condition_latent(
         model (DiffusionV2WModel): Video generation model
         input_image_or_video_path (str): Path to conditioning image/video
         num_input_frames (int): Number of input frames for video2world prediction
-
+        from_back (bool): select condition input frames from rear of video, default to True.
+                          If False, start from front of video instead
+        start_frame (int): select input video starting from this frame.
     Returns:
         tuple: (condition_latent, input_frames) where:
             - condition_latent (torch.Tensor): Encoded latent condition [B,C,T,H,W]
