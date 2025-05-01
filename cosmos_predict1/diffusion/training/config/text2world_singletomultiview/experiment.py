@@ -55,6 +55,7 @@ example_multiview_dataset_waymo = L(Dataset)(
     video_size=(576, 1024),
     sample_n_views=train_num_views,
     caption_view_idx_map={0:0,1:1,2:2,3:4,4:5},
+    load_mv_emb=False,
 )
 
 

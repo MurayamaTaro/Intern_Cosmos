@@ -48,6 +48,7 @@ class Dataset(Dataset):
         start_frame_interval=1,
         sample_n_views=-1,
         caption_view_idx_map=None,
+        load_mv_emb=False
     ):
         """Dataset class for loading image-text-to-video generation data.
 
@@ -69,6 +70,7 @@ class Dataset(Dataset):
         self.sequence_interval = sequence_interval
         self.sequence_length = num_frames
         self.view_keys = view_keys
+        self.load_mv_emb = load_mv_emb
 
         video_dir = os.path.join(self.dataset_dir, "videos")
         self.video_paths = [os.path.join(video_dir, view_keys[0], f) for f in os.listdir(os.path.join(video_dir, view_keys[0]))]
@@ -115,7 +117,7 @@ class Dataset(Dataset):
             sample["video_path"] = video_path
             sample["t5_embedding_path"] = os.path.join(
                 self.t5_dir,
-                # os.path.basename(os.path.dirname(video_path)),
+                os.path.basename(os.path.dirname(video_path)),
                 os.path.basename(video_path).replace(".mp4", ".pkl"),
             )
             sample["frame_ids"] = []
@@ -191,12 +193,17 @@ class Dataset(Dataset):
                 video, fps = self._get_frames(os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)), frame_ids)
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
                 videos.append(video)
-                if view_key == "front":
+                if self.load_mv_emb:
+                    t5_embedding_path = os.path.join(os.path.dirname(os.path.dirname(t5_embedding_path)), view_key, os.path.basename(t5_embedding_path))
                     with open(t5_embedding_path, "rb") as f:
-                        t5_embedding = pickle.load(f)["pickle"]["ground_truth"]["embeddings"]["t5_xxl"]
+                        t5_embedding = pickle.load(f)[0]
                 else:
-                    # use camera prompt
-                    t5_embedding = self.prefix_t5_embeddings[view_key]
+                    if view_key == "front":
+                        with open(t5_embedding_path, "rb") as f:
+                            t5_embedding = pickle.load(f)[0]
+                    else:
+                        # use camera prompt
+                        t5_embedding = self.prefix_t5_embeddings[view_key]
                 #t5_embedding = np.concatenate([self.prefix_t5_embeddings[view_key], t5_embedding], axis=0)
                 t5_embedding = torch.from_numpy(t5_embedding)
                 if t5_embedding.shape[0] < 512:
