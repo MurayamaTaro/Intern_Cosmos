@@ -13,17 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Type, TypeVar
-from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
-from cosmos_predict1.utils.lazy_config import instantiate as lazy_instantiate
-from cosmos_predict1.utils import misc
-from cosmos_predict1.diffusion.training.models.model import DiffusionModel as VideoDiffusionModel
+from typing import Dict, Type, TypeVar
+
 from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
-from cosmos_predict1.diffusion.training.utils.layer_control.peft_control_config_parser import (
-    LayerControlConfigParser,
-)
+from cosmos_predict1.diffusion.training.models.model import DiffusionModel as VideoDiffusionModel
+from cosmos_predict1.diffusion.training.utils.layer_control.peft_control_config_parser import LayerControlConfigParser
 from cosmos_predict1.diffusion.training.utils.peft.peft import add_lora_layers, setup_lora_requires_grad
-from typing import Dict
+from cosmos_predict1.diffusion.utils.customization.customization_manager import CustomizationType
+from cosmos_predict1.utils import misc
+from cosmos_predict1.utils.lazy_config import instantiate as lazy_instantiate
 
 T = TypeVar("T")
 
@@ -51,11 +49,13 @@ def video_peft_decorator(base_class: Type[T]) -> Type[T]:
                     config.ema.model = None
             else:
                 self.model_ema = None
+
         def state_dict_model(self) -> Dict:
             return {
                 "model": self.model.state_dict(),
                 "ema": self.model_ema.state_dict() if self.model_ema else None,
             }
+
     return PEFTVideoDiffusionModel
 
 
@@ -63,7 +63,7 @@ def video_peft_decorator(base_class: Type[T]) -> Type[T]:
 class PEFTVideoDiffusionModel(VideoDiffusionModel):
     pass
 
+
 @video_peft_decorator
 class PEFTExtendDiffusionModel(ExtendDiffusionModel):
     pass
-

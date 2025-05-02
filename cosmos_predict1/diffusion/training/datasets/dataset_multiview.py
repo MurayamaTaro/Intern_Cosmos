@@ -74,7 +74,9 @@ class Dataset(Dataset):
         self.load_mv_emb = load_mv_emb
 
         video_dir = os.path.join(self.dataset_dir, "videos")
-        self.video_paths = [os.path.join(video_dir, view_keys[0], f) for f in os.listdir(os.path.join(video_dir, view_keys[0]))]
+        self.video_paths = [
+            os.path.join(video_dir, view_keys[0], f) for f in os.listdir(os.path.join(video_dir, view_keys[0]))
+        ]
         print(f"{len(self.video_paths)} videos in total")
 
         self.t5_dir = os.path.join(self.dataset_dir, "t5_xxl")
@@ -169,6 +171,7 @@ class Dataset(Dataset):
 
             videos = []
             t5_embeddings = []
+
             t5_masks = []
             view_indices = [i for i in range(len(self.view_keys))]
             view_indices_conditioning = []
@@ -218,7 +221,9 @@ class Dataset(Dataset):
                 view_indices_conditioning.append(torch.ones(video.shape[1]) * caption_viewid)
             video = torch.cat(videos, dim=1)
             t5_embedding = torch.cat(t5_embeddings, dim=0)
+
             view_indices_conditioning = torch.cat(view_indices_conditioning, dim=0)
+
             data["video"] = video
             data["video_name"] = {
                 "video_path": video_path,
@@ -251,7 +256,13 @@ if __name__ == "__main__":
         dataset_dir="datasets/waymo/",
         sequence_interval=1,
         num_frames=57,
-        view_keys=["pinhole_front_left", "pinhole_front", "pinhole_front_right", "pinhole_side_left", "pinhole_side_right"],
+        view_keys=[
+            "pinhole_front_left",
+            "pinhole_front",
+            "pinhole_front_right",
+            "pinhole_side_left",
+            "pinhole_side_right",
+        ],
         video_size=[240, 360],
     )
 

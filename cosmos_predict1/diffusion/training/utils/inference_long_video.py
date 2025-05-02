@@ -126,7 +126,7 @@ def visualize_tensor_bcthw(tensor: torch.Tensor, nrow=4, save_fig_path=None):
     plt.show()
 
 
-def compute_num_frames_condition(model: 'ExtendDiffusionModel', num_of_latent_overlap: int, downsample_factor=8) -> int:
+def compute_num_frames_condition(model: "ExtendDiffusionModel", num_of_latent_overlap: int, downsample_factor=8) -> int:
     """This function computes the number of condition pixel frames given the number of latent frames to overlap.
     Args:
         model (ExtendDiffusionModel): Video generation model
@@ -136,22 +136,16 @@ def compute_num_frames_condition(model: 'ExtendDiffusionModel', num_of_latent_ov
         int: Number of condition frames in output space
     """
     # Access the VAE: use tokenizer.video_vae if it exists, otherwise use tokenizer directly
-    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, 'video_vae') else model.tokenizer
-    
+    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, "video_vae") else model.tokenizer
+
     # Check if the VAE is causal (default to True if attribute not found)
     if getattr(vae, "is_casual", True):
         # For causal model
-        num_frames_condition = (
-            num_of_latent_overlap
-            // vae.latent_chunk_duration
-            * vae.pixel_chunk_duration
-        )
+        num_frames_condition = num_of_latent_overlap // vae.latent_chunk_duration * vae.pixel_chunk_duration
         if num_of_latent_overlap % vae.latent_chunk_duration == 1:
             num_frames_condition += 1
         elif num_of_latent_overlap % vae.latent_chunk_duration > 1:
-            num_frames_condition += (
-                1 + (num_of_latent_overlap % vae.latent_chunk_duration - 1) * downsample_factor
-            )
+            num_frames_condition += 1 + (num_of_latent_overlap % vae.latent_chunk_duration - 1) * downsample_factor
     else:
         num_frames_condition = num_of_latent_overlap * downsample_factor
 
@@ -236,7 +230,7 @@ def create_condition_latent_from_input_frames(
     """
     B, C, T, H, W = input_frames.shape
     # Dynamically access the VAE: use tokenizer.video_vae if it exists, otherwise use tokenizer directly
-    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, 'video_vae') else model.tokenizer
+    vae = model.tokenizer.video_vae if hasattr(model.tokenizer, "video_vae") else model.tokenizer
     num_frames_encode = vae.pixel_chunk_duration  # Access pixel_chunk_duration from the VAE
     log.info(
         f"num_frames_encode not set, set it based on pixel chunk duration and model state shape: {num_frames_encode}"
@@ -432,7 +426,6 @@ def generate_video_from_batch_with_loop(
         else:
             condition_video_augment_sigma_in_inference = augment_sigma_list[-1]
         assert not add_input_frames_guidance, "add_input_frames_guidance should be False, not supported"
-        
 
         sample = model.generate_samples_from_batch(
             data_batch_list[i],
@@ -446,7 +439,6 @@ def generate_video_from_batch_with_loop(
             condition_video_augment_sigma_in_inference=condition_video_augment_sigma_in_inference,
             return_noise=return_noise,
         )
-
 
         if return_noise:
             sample, noise = sample

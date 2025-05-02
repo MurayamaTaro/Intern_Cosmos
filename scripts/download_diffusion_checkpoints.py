@@ -27,6 +27,7 @@ from safetensors.torch import load_file
 
 from scripts.download_guardrail_checkpoints import download_guardrail_checkpoints
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Download NVIDIA Cosmos Predict1 diffusion models from Hugging Face")
     parser.add_argument(
@@ -286,7 +287,7 @@ def main(args):
 
     if "Text2World" in args.model_types:
         extra_models.append("Cosmos-UpsamplePrompt1-12B-Text2World")
-    
+
     # Add interpolator if 7B model is selected
     if "7B" in args.model_sizes:
         extra_models.append("Cosmos-Predict1-7B-WorldInterpolator")
@@ -296,7 +297,15 @@ def main(args):
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
     download_kwargs = dict(
-        allow_patterns=["README.md", "model.pt", "mean_std.pt", "image_mean_std.pt", "config.json", "*.jit", "guardrail/*"]
+        allow_patterns=[
+            "README.md",
+            "model.pt",
+            "mean_std.pt",
+            "image_mean_std.pt",
+            "config.json",
+            "*.jit",
+            "guardrail/*",
+        ]
     )
 
     # Download the requested diffusion models

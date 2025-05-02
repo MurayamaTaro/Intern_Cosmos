@@ -21,10 +21,10 @@ from megatron.core import parallel_state
 from torch import Tensor
 
 from cosmos_predict1.diffusion.training.conditioner import DataType, VideoExtendCondition
+from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.diffusion.training.models.model import DiffusionModel as BaseModel
 from cosmos_predict1.diffusion.training.models.model import broadcast_condition
 from cosmos_predict1.diffusion.training.models.model_image import diffusion_fsdp_class_decorator
-from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.utils import log
 
 
@@ -34,7 +34,7 @@ class InterpolatorDiffusionModel(ExtendDiffusionModel):
         self.is_extend_model = True
         self.num_valid_latents = config.latent_shape[1] - config.num_latents_to_drop
         self.pixel_chunk_duration = config.vae.video_vae.pixel_chunk_duration
-        self.input_image_key = getattr(self.config, 'input_image_key', None)
+        self.input_image_key = getattr(self.config, "input_image_key", None)
         self.input_data_key = self.config.input_data_key
 
     def get_data_and_condition(

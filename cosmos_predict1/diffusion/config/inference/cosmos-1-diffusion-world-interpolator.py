@@ -16,9 +16,9 @@
 from hydra.core.config_store import ConfigStore
 
 from cosmos_predict1.diffusion.networks.general_dit_video_conditioned import VideoExtendGeneralDIT
+from cosmos_predict1.diffusion.training.modules.edm_sde import EDMSDE
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
-from cosmos_predict1.diffusion.training.modules.edm_sde import EDMSDE
 
 Cosmos_Predict1_WorldInterpolator_7B: LazyDict = LazyDict(
     dict(
@@ -51,7 +51,6 @@ Cosmos_Predict1_WorldInterpolator_7B: LazyDict = LazyDict(
                 pixel_chunk_duration=9,
                 latent_ch=16,
             ),
-            
             adjust_video_noise=True,
             num_latents_to_drop=1,
             context_parallel_size=1,

@@ -31,12 +31,15 @@ from cosmos_predict1.diffusion.inference.inference_utils import (
     load_model_by_config,
     load_network_model,
     load_tokenizer_model,
+    read_video_or_image_into_frames_BCTHW,
 )
 from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel
 from cosmos_predict1.diffusion.model.model_t2w_multiview import DiffusionMultiviewT2WModel
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
 from cosmos_predict1.diffusion.model.model_view_extend_multiview import DiffusionMultiviewViewExtendModel
+from cosmos_predict1.diffusion.model.model_world_interpolator import DiffusionWorldInterpolatorWModel
+
 from cosmos_predict1.diffusion.prompt_upsampler.text2world_prompt_upsampler_inference import (
     create_prompt_upsampler,
     run_chat_completion,
@@ -48,31 +51,38 @@ from cosmos_predict1.diffusion.prompt_upsampler.video2world_prompt_upsampler_inf
 from cosmos_predict1.diffusion.prompt_upsampler.video2world_prompt_upsampler_inference import (
     run_chat_completion as run_chat_completion_vlm,
 )
+from cosmos_predict1.diffusion.training.utils.inference_long_video import generate_video_from_batch_with_loop
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.base_world_generation_pipeline import BaseWorldGenerationPipeline
-from cosmos_predict1.diffusion.model.model_world_interpolator import DiffusionWorldInterpolatorWModel
-from cosmos_predict1.diffusion.training.utils.inference_long_video import generate_video_from_batch_with_loop
-from cosmos_predict1.diffusion.inference.inference_utils import read_video_or_image_into_frames_BCTHW
 
 MODEL_NAME_DICT = {
+    # text2world
     "Cosmos-Predict1-7B-Text2World": "Cosmos_Predict1_Text2World_7B",
     "Cosmos-Predict1-14B-Text2World": "Cosmos_Predict1_Text2World_14B",
-    "Cosmos-Predict1-7B-Video2World": "Cosmos_Predict1_Video2World_7B",
-    "Cosmos-Predict1-14B-Video2World": "Cosmos_Predict1_Video2World_14B",
     "Cosmos-Predict1-7B-Text2World_post-trained": "Cosmos_Predict1_Text2World_7B_Post_trained",
     "Cosmos-Predict1-14B-Text2World_post-trained": "Cosmos_Predict1_Text2World_14B_Post_trained",
-    "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
-    "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    # text2world low-memory
     "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_80gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_80gb",
     "Cosmos-Predict1-7B-Text2World_post-trained-8gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_8gpu_40gb",
     "Cosmos-Predict1-7B-Text2World_post-trained-4gpu_40gb": "Cosmos_Predict1_Text2World_7B_Post_trained_4gpu_40gb",
+    # text2world lora
     "Cosmos-Predict1-7B-Text2World_post-trained-lora": "Cosmos_Predict1_Text2World_7B_Post_trained_lora",
+    # video2world
+    "Cosmos-Predict1-7B-Video2World": "Cosmos_Predict1_Video2World_7B",
+    "Cosmos-Predict1-14B-Video2World": "Cosmos_Predict1_Video2World_14B",
+    "Cosmos-Predict1-7B-Video2World_post-trained": "Cosmos_Predict1_Video2World_7B_Post_trained",
+    "Cosmos-Predict1-14B-Video2World_post-trained": "Cosmos_Predict1_Video2World_14B_Post_trained",
+    # video2world low-memory
+    "Cosmos-Predict1-7B-Video2World_post-trained-4gpu_80gb": "Cosmos_Predict1_Video2World_7B_Post_trained_4gpu_80gb",
+    "Cosmos-Predict1-7B-Video2World_post-trained-8gpu_40gb": "Cosmos_Predict1_Video2World_7B_Post_trained_8gpu_40gb",
+    "Cosmos-Predict1-7B-Video2World_post-trained-4gpu_40gb": "Cosmos_Predict1_Video2World_7B_Post_trained_4gpu_40gb",
+    # video2world lora
     "Cosmos-Predict1-7B-Video2World_post-trained-lora": "Cosmos_Predict1_Video2World_7B_Post_trained_lora",
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
     "Cosmos-Predict1-7B-WorldInterpolator": "Cosmos_Predict1_WorldInterpolator_7B",
-    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
-    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-Text2World-Sample-AV-SingleToMultiView": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-Video2World-Sample-AV-SingleToMultiView": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
 }
 
 
@@ -1364,9 +1374,7 @@ class DiffusionWorldInterpolatorGenerationPipeline(DiffusionVideo2WorldGeneratio
         video_tensor = torch.cat(video_output, dim=1)  # Shape: (C, total_num_frames, H, W)
 
         # Convert to NumPy array for guardrail: [T, H, W, C], uint8, [0, 255]
-        video_np = (
-            video_tensor.permute(1, 2, 3, 0) * 255
-        ).to(torch.uint8).cpu().numpy()  # Shape: (T, H, W, C)
+        video_np = (video_tensor.permute(1, 2, 3, 0) * 255).to(torch.uint8).cpu().numpy()  # Shape: (T, H, W, C)
 
         if self.offload_network:
             self._offload_network()
@@ -1692,3 +1700,4 @@ class DiffusionViewExtendMultiviewGenerationPipeline(DiffusionVideo2WorldMultivi
         log.info("Finish generation")
 
         return video, prompt
+

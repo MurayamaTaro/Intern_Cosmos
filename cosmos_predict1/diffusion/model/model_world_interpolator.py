@@ -13,30 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Dict, Optional, Tuple, Union
-
-import torch
-from megatron.core import parallel_state
-from torch import Tensor
-from einops import rearrange
 from dataclasses import dataclass
 from statistics import NormalDist
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
+import torch
+from einops import rearrange
+from megatron.core import parallel_state
+from torch import Tensor
 
 from cosmos_predict1.diffusion.conditioner import VideoExtendCondition
+from cosmos_predict1.diffusion.config.base.conditioner import VideoCondBoolConfig
+from cosmos_predict1.diffusion.functional.batch_ops import batch_mul
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel, broadcast_condition
 from cosmos_predict1.diffusion.module.parallel import cat_outputs_cp, split_inputs_cp
-from cosmos_predict1.utils import log, misc
 from cosmos_predict1.diffusion.modules.res_sampler import Sampler
-from cosmos_predict1.diffusion.functional.batch_ops import batch_mul
 from cosmos_predict1.diffusion.training.conditioner import DataType
-from cosmos_predict1.diffusion.config.base.conditioner import VideoCondBoolConfig
 from cosmos_predict1.diffusion.training.models.model import _broadcast
+from cosmos_predict1.utils import log, misc
+
 IS_PREPROCESSED_KEY = "is_preprocessed"
-from cosmos_predict1.diffusion.types import DenoisePrediction
+from dataclasses import dataclass, fields
+
 from cosmos_predict1.diffusion.modules.denoiser_scaling import EDMScaling
 from cosmos_predict1.diffusion.training.modules.edm_sde import EDMSDE
-from dataclasses import dataclass, fields
+from cosmos_predict1.diffusion.types import DenoisePrediction
+
+
 @dataclass
 class VideoDenoisePrediction:
     x0: torch.Tensor  # clean data prediction
@@ -46,6 +50,7 @@ class VideoDenoisePrediction:
     net_x0_pred: Optional[torch.Tensor] = None  # prediction of x0 from the network
     xt: Optional[torch.Tensor] = None  # input to the network, before multiply with c_in
     x0_pred_replaced: Optional[torch.Tensor] = None  # x0 prediction with condition region replaced by gt_latent
+
 
 @dataclass
 class CosmosCondition:
@@ -269,7 +274,6 @@ class DiffusionWorldInterpolatorWModel(DiffusionV2WModel):
 
         return DenoisePrediction(x0_pred, eps_pred, logvar)
 
-
     def drop_out_condition_region(
         self, augment_latent: Tensor, noise_x: Tensor, cfg_video_cond_bool: VideoCondBoolConfig
     ) -> Tensor:
@@ -295,7 +299,7 @@ class DiffusionWorldInterpolatorWModel(DiffusionV2WModel):
         """Denoise the noisy input tensor for video data."""
         assert (
             condition.gt_latent is not None
-        ), f"find None gt_latent in condition, likely didn't call self.add_condition_video_indicator_and_video_input_mask when preparing the condition"
+        ), "find None gt_latent in condition, likely didn't call self.add_condition_video_indicator_and_video_input_mask when preparing the condition"
         gt_latent = condition.gt_latent
         cfg_video_cond_bool: VideoCondBoolConfig = self.config.conditioner.video_cond_bool
 

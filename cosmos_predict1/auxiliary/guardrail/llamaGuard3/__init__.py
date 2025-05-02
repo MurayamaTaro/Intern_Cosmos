@@ -12,26 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from enum import Enum
-
-
-class CustomizationType(Enum):
-    LORA = 1
-    REPLACE = 2
-
-    @classmethod
-    def from_value(cls, value):
-        """Convert both int and str to the corresponding enum."""
-        if isinstance(value, str):
-            value = value.lower()
-            if value == "lora":
-                return cls.LORA
-            elif value == "replace":
-                return cls.REPLACE
-            elif value == "":
-                return None
-            else:
-                raise ValueError("Customization type must be lora or replace")
-        raise TypeError("CustomizationType must be specified as a string.")

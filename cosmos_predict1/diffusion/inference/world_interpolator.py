@@ -34,9 +34,9 @@ from cosmos_predict1.diffusion.inference.inference_utils import add_common_argum
 from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionWorldInterpolatorGenerationPipeline
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
+
 # from cosmos_predict1.utils.visualize.video import save_img_or_video
 torch.enable_grad(False)
-
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -142,7 +142,6 @@ def demo(args):
         parallel_state.initialize_model_parallel(context_parallel_size=args.num_gpus)
         process_group = parallel_state.get_context_parallel_group()
 
-
     # Initialize video_interpolator generation model pipeline
     pipeline = DiffusionWorldInterpolatorGenerationPipeline(
         inference_type=inference_type,
@@ -205,7 +204,7 @@ def demo(args):
 
         # Save video
 
-        video_save_path = os.path.join(args.video_save_folder, args.video_save_name+ ".mp4")
+        video_save_path = os.path.join(args.video_save_folder, args.video_save_name + ".mp4")
         prompt_save_path = os.path.join(args.video_save_folder, args.video_save_name + ".txt")
 
         save_video(

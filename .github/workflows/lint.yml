@@ -13,25 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from enum import Enum
-
-
-class CustomizationType(Enum):
-    LORA = 1
-    REPLACE = 2
-
-    @classmethod
-    def from_value(cls, value):
-        """Convert both int and str to the corresponding enum."""
-        if isinstance(value, str):
-            value = value.lower()
-            if value == "lora":
-                return cls.LORA
-            elif value == "replace":
-                return cls.REPLACE
-            elif value == "":
-                return None
-            else:
-                raise ValueError("Customization type must be lora or replace")
-        raise TypeError("CustomizationType must be specified as a string.")
+# lint.yml : A workflow to trigger lint tests on GitHub
+name: 'Lint'
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  lint:
+    name: 'Linting'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup Python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: 'pypy3.10'
+      - name: 'Lint'
+        run: |
+          sudo apt-get update
+          bash ./scripts/format.sh

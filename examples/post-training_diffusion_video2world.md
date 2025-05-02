@@ -22,7 +22,7 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
    ```bash
    huggingface-cli login
    ```
-3. Accept the [LlamaGuard-7b terms](https://huggingface.co/meta-llama/LlamaGuard-7b)
+3. Accept the [Llama-Guard-3-8B terms](https://huggingface.co/meta-llama/Llama-Guard-3-8B)
 
 4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
@@ -145,7 +145,7 @@ torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=video2world_7b_lora_example_cosmos_nemo_assets
 ```
-See the config `video2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/video2world/experiment.py` and `cosmos_predict1/diffusion/training/utils/layer_control/peft_control_config_parser.py` to understand how LoRA is enabled. 
+See the config `video2world_7b_lora_example_cosmos_nemo_assets` defined in `cosmos_predict1/diffusion/training/config/video2world/experiment.py` and `cosmos_predict1/diffusion/training/utils/layer_control/peft_control_config_parser.py` to understand how LoRA is enabled.
 ```python
 video2world_7b_example_cosmos_nemo_assets = LazyDict(
     dict(
@@ -187,12 +187,13 @@ The inference can be done with the same interface as described in [examples/infe
 
 The post-trained checkpoint needs to be copied to `checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt`
 
-For example, if a posttrained checkpoint (ema) with 1000 iterations is to be used,
+For example, if a posttrained checkpoint (ema) with 2000 iterations is to be used,
 ```bash
 # copy checkpoint to the designated location
 mkdir checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/
-cp checkpoints/posttraining/diffusion_video2world/video2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000001000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt
+cp checkpoints/posttraining/diffusion_video2world/video2world_7b_example_cosmos_nemo_assets/checkpoints/iter_000002000_ema_model.pt checkpoints/Cosmos-Predict1-7B-Video2World_post-trained/model.pt
 ```
+
 2. Running the Inference
 
 This is the basic example for running inference on the post-trained 7B model with a single image.

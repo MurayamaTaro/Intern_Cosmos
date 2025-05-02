@@ -98,7 +98,7 @@ dataloader_val_cosmos_nemo_assets = L(DataLoader)(
     pin_memory=True,
 )
 
-# Cosmos-NeMo-Assets 480x848 example
+# Cosmos-NeMo-Assets 480x848 example for lora
 example_video_dataset_cosmos_nemo_assets_480_848 = L(Dataset)(
     dataset_dir="datasets/cosmos_nemo_assets",
     sequence_interval=1,
@@ -666,7 +666,7 @@ text2world_7b_example_cosmos_nemo_assets_8gpu_40gb = LazyDict(
             ],
             loss_reduce="mean",
             ema=dict(
-                enabled=False,
+                enabled=False,  # turn off to save memory
             ),
             fsdp_enabled=True,
             fsdp=dict(
@@ -767,7 +767,7 @@ text2world_7b_example_cosmos_nemo_assets_4gpu_40gb = LazyDict(
             ],
             loss_reduce="mean",
             ema=dict(
-                enabled=False,
+                enabled=False,  # turn off to save memory
             ),
             fsdp_enabled=True,
             fsdp=dict(
