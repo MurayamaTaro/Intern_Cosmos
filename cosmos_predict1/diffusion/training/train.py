@@ -27,6 +27,8 @@ from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.lazy_config import instantiate
 from cosmos_predict1.utils.lazy_config.lazy import LazyConfig
 from cosmos_predict1.utils.parallel_state_helper import is_tp_cp_pp_rank0
+# import debugpy
+# debugpy.listen(("localhost", 5678))
 
 
 @misc.timer("instantiate model")
@@ -116,6 +118,8 @@ For python-based LazyConfig, use "path.key=value".
         action="store_true",
         help="Use only model parallel rank 0 dataloader for faster dataloading! Make sure mock data has same keys as real data.",
     )
+    # debugpy.wait_for_client()
+    # debugpy.breakpoint()
     args = parser.parse_args()
     config_module = get_config_module(args.config)
     config = importlib.import_module(config_module).make_config()

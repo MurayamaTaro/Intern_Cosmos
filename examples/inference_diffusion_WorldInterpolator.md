@@ -1,4 +1,4 @@
-## Inference with diffusion-based Video2World models
+## Inference with diffusion-based WorldInterpolator models
 
 ### Environment setup
 
@@ -39,14 +39,14 @@ The numbers may vary depending on system specs and are for reference only.
 
 
 The inference script is `cosmos_predict1/diffusion/inference/world_interpolator.py`.
-It requires the input argument `--input_image_or_video_path` (image/video input); if the prompt upsampler is disabled, `--prompt` (text input) must also be provided.
+It requires the input argument `--input_image_or_video_path` (video input); if the prompt upsampler is disabled, `--prompt` (text input) must also be provided.
 To see the complete list of available arguments, run
 ```bash
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/world_interpolator.py --help
 ```
 
 #### Example 1: single generation
-This is the basic example for running inference on the 7B model with a single image. No text prompts are provided here.
+This is the basic example for running inference on the 7B model with input video. No text prompts are provided here.
 ```bash
 
 CUDA_VISIBLE_DEVICES=1 python3 -m cosmos_predict1.diffusion.inference.world_interpolator \

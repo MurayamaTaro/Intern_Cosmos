@@ -16,8 +16,10 @@
 """Implementations of dataset settings and augmentations for tokenization
 
 Run this command to interactively debug:
-python3 -m cosmos_predict1.tokenizer.training.datasets.dataset_provider
-
+PYTHONPATH=$(pwd) python -m \
+cosmos_predict1.tokenizer.training.datasets.dataset_provider \
+    --dataset_name hdvila_video \
+    --is_train
 """
 
 from cosmos_predict1.tokenizer.training.datasets.augmentation_provider import (
@@ -109,18 +111,26 @@ def dataset_entry(
 
 
 if __name__ == "__main__":
-    # Example usage / quick test
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", default="hdvila_video")
+    parser.add_argument("--dataset_type", default="video")
+    parser.add_argument("--is_train",   action="store_true")
+    parser.add_argument("--resolution", default="720")
+    parser.add_argument("--crop_height", type=int, default=256)
+    parser.add_argument("--num_frames",  type=int, default=25)
+    args = parser.parse_args()
+
     dataset = dataset_entry(
-        dataset_name="davis_video",
-        dataset_type="video",
-        is_train=False,
-        resolution="720",
-        crop_height=256,
-        num_video_frames=25,
+        dataset_name=args.dataset_name,
+        dataset_type=args.dataset_type,
+        is_train=args.is_train,
+        resolution=args.resolution,
+        crop_height=args.crop_height,
+        num_video_frames=args.num_frames,
     )
 
-    # 2) Print out some basic info:
-    print(f"Total samples in dataset: {len(dataset)}")
+    print(f"Total samples: {len(dataset)}")
 
     # 3) Grab one sample (or a few) to check shapes, keys, etc.
     if len(dataset) > 0:

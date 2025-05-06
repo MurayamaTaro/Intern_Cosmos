@@ -55,6 +55,8 @@ dataloader_train = L(DataLoader)(
     dataset=example_video_dataset,
     sampler=L(get_sampler)(dataset=example_video_dataset),
     batch_size=1,
+    num_workers=0,
+    prefetch_factor=None,
     drop_last=True,
 )
 dataloader_val = L(DataLoader)(
@@ -86,6 +88,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
             weight_decay=0.1,
             betas=[0.9, 0.99],
             eps=1e-10,
+            master_weights = False,
         ),
         checkpoint=dict(
             save_iter=200,
@@ -120,6 +123,10 @@ world_interpolator_7b_example_hdvila = LazyDict(
             context_parallel_size=1,
         ),
         model=dict(
+            peft_control = dict(
+                enabled = False,
+                mode    = "none",
+            ),
             latent_shape=[
                 16,
                 4,
@@ -128,7 +135,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
             ],
             loss_reduce="mean",
             ema=dict(
-                enabled=True,
+                enabled=False,
             ),
             fsdp_enabled=True,
             fsdp=dict(
@@ -137,7 +144,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
                 checkpoint=True,
                 min_num_params=1024,
                 sharding_group_size=32,
-                sharding_strategy="hybrid",
+                sharding_strategy="full",
             ),
             net=L(VideoExtendGeneralDIT)(
                 rope_h_extrapolation_ratio=1,
@@ -165,7 +172,11 @@ world_interpolator_7b_example_hdvila = LazyDict(
                     dropout_rate=0.5,
                 ),
             ),
-            vae=dict(pixel_chunk_duration=9),  # 9 frames per chunk for video vae (18 frames / 2 chunks = 9)
+            # vae=dict(pixel_chunk_duration=9),  # 9 frames per chunk for video vae (18 frames / 2 chunks = 9)
+            vae=dict(  # Added VAE field
+                pixel_chunk_duration=9,
+                latent_ch=16,
+            ),
         ),
         model_obj=L(FSDPInterpolatorDiffusionModel)(
             config=PLACEHOLDER,
@@ -197,3 +208,5 @@ def register_experiments(cs):
             name=experiment_name,
             node=_item,
         )
+
+register_experiments(cs)

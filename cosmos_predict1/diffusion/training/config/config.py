@@ -102,5 +102,5 @@ def make_config():
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_instruction", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_action", reload=True)
-
+    import_all_modules_from_package("cosmos_predict1.diffusion.training.config.world_interpolator", reload=True)
     return c
