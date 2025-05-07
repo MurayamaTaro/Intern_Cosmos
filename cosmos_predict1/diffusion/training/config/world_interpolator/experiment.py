@@ -55,7 +55,7 @@ dataloader_train = L(DataLoader)(
     dataset=example_video_dataset,
     sampler=L(get_sampler)(dataset=example_video_dataset),
     batch_size=1,
-    num_workers=0,
+    drop_last=True,
 )
 dataloader_val = L(DataLoader)(
     dataset=example_video_dataset,
@@ -86,7 +86,6 @@ world_interpolator_7b_example_hdvila = LazyDict(
             weight_decay=0.1,
             betas=[0.9, 0.99],
             eps=1e-10,
-            master_weights=False,
         ),
         checkpoint=dict(
             save_iter=200,
@@ -142,7 +141,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
                 checkpoint=True,
                 min_num_params=1024,
                 sharding_group_size=32,
-                sharding_strategy="full",
+                sharding_strategy="hybrid",
             ),
             net=L(VideoExtendGeneralDIT)(
                 rope_h_extrapolation_ratio=1,
