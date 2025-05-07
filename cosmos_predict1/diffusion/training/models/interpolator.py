@@ -33,7 +33,7 @@ class InterpolatorDiffusionModel(ExtendDiffusionModel):
         super().__init__(config)
         self.is_extend_model = True
         self.num_valid_latents = config.latent_shape[1] - config.num_latents_to_drop
-        self.pixel_chunk_duration = config.vae.video_vae.pixel_chunk_duration
+        self.pixel_chunk_duration = config.vae.pixel_chunk_duration
         self.input_image_key = getattr(self.config, "input_image_key", None)
         self.input_data_key = self.config.input_data_key
 
