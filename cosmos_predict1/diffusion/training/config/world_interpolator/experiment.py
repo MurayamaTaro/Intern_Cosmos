@@ -56,8 +56,6 @@ dataloader_train = L(DataLoader)(
     sampler=L(get_sampler)(dataset=example_video_dataset),
     batch_size=1,
     num_workers=0,
-    prefetch_factor=None,
-    drop_last=True,
 )
 dataloader_val = L(DataLoader)(
     dataset=example_video_dataset,
@@ -135,7 +133,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
             ],
             loss_reduce="mean",
             ema=dict(
-                enabled=False,
+                enabled=True,
             ),
             fsdp_enabled=True,
             fsdp=dict(
