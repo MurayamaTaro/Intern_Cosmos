@@ -1,4 +1,4 @@
-## Post-training diffusion-based Video2World models
+## Post-training diffusion-based WorldInterpolator model
 
 ### Model Support Matrix
 
@@ -6,7 +6,7 @@ We support the following Cosmos Diffusion models for post-training. Review the a
 
 | Model Name                               | Model Status | Compute Requirements for Post-Training |
 |----------------------------------------------|------------------|------------------------------------------|
-| Cosmos-Predict1-7B-Video2World           | **Supported**    | 8 NVIDIA GPUs*                           |
+| Cosmos-Predict1-7B-WorldInterpolator         | **Supported**    | 4 NVIDIA GPUs*                           |
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
 
@@ -54,7 +54,7 @@ Run the following command to download the sample videos used for post-training:
 
 ```bash
 # Requirements for Youtube video downloads & video clipping
-pip install pytubefix ffmpeg
+pip install pytubefix ffmpeg-python
 ```
 
 ```bash
@@ -114,10 +114,18 @@ datasets/hdvila/
 Run the following command to execute an example post-training job with `hdvila` data.
 ```bash
 export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train --config=cosmos_predict1/diffusion/training/config/config.py -- experiment=world_interpolator_7b_example_hdvila
+torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=world_interpolator_7b_example_hdvila
 ```
 
-The model will be post-trained using the above hdvila dataset.
+During the training, the checkpoints will be saved in the below structure.
+```
+checkpoints/posttraining/diffusion_world_interpolator/world_interpolator_7b_example_hdvila/checkpoints/
+├── iter_{NUMBER}_reg_model.pt
+├── iter_{NUMBER}_optimizer_model.pt
+```
+
 See the config `world_interpolator_7b_example_hdvila` defined in `cosmos_predict1/diffusion/training/config/world_interpolator/experiment.py` to understand how the dataloader is determined.
 
 ```python
@@ -149,7 +157,7 @@ dataloader_val = L(DataLoader)(
 ```
 
 The checkpoints will be saved to `${OUTPUT_ROOT}/PROJECT/GROUP/NAME`.
-In the above example, `PROJECT` is `posttraining`, `GROUP` is `diffusion_video2world`, `NAME` is `world_interpolator_7b_example_hdvila`.
+In the above example, `PROJECT` is `posttraining`, `GROUP` is `diffusion_world_interpolator`, `NAME` is `world_interpolator_7b_example_hdvila`.
 
 See the job config to understand how they are determined.
 ```python
@@ -166,29 +174,11 @@ world_interpolator_7b_example_hdvila = LazyDict(
 )
 ```
 
-##### Post-train Cosmos-Predict1-7B-Video2World
-
-Run the following command to execute an example post-training job with `cosmos_hdvila_assets` data.
-```bash
-export OUTPUT_ROOT=checkpoints # default value
-torchrun --nproc_per_node=4 -m cosmos_predict1.diffusion.training.train \
-    --config=cosmos_predict1/diffusion/training/config/config.py \
-    -- experiment=world_interpolator_7b_example_hdvila
-```
-
-During the training, the checkpoints will be saved in the below structure.
-```
-checkpoints/posttraining/diffusion_world_interpolator/world_interpolator_7b_example_hdvila/checkpoints/
-├── iter_{NUMBER}_reg_model.pt
-├── iter_{NUMBER}_optimizer_model.pt
-```
-
-
 #### 3. Inference with the Post-trained Model Checkpoint
 
-The inference can be done with the same interface as described in [examples/inference_diffusion_WorldInterpolator.md](/examples/inference_diffusion_WorldInterpolator.md.
+The inference can be done with the same interface as described in [examples/inference_diffusion_WorldInterpolator.md](/examples/inference_diffusion_WorldInterpolator.md).
 
-##### Cosmos-Predict1-7B-Video2World
+##### Cosmos-Predict1-7B-WorldInterpolator
 
 1. Copying checkpoint to Designated Location
 
