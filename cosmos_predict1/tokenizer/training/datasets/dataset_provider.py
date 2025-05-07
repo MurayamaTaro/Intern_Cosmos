@@ -112,13 +112,14 @@ def dataset_entry(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", default="hdvila_video")
     parser.add_argument("--dataset_type", default="video")
-    parser.add_argument("--is_train",   action="store_true")
+    parser.add_argument("--is_train", action="store_true")
     parser.add_argument("--resolution", default="720")
     parser.add_argument("--crop_height", type=int, default=256)
-    parser.add_argument("--num_frames",  type=int, default=25)
+    parser.add_argument("--num_frames", type=int, default=25)
     args = parser.parse_args()
 
     dataset = dataset_entry(

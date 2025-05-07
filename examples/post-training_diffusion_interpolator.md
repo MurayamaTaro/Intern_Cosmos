@@ -83,7 +83,7 @@ PYTHONPATH=$(pwd) python -m \
 cosmos_predict1.tokenizer.training.datasets.dataset_provider \
   --dataset_name hdvila_video \
   --dataset_type video \
-  --is_train true    
+  --is_train true  
 ```
 
 **Note**: As will be shown below, different resolution variants of the `hdvila_video` can be obtained by simply passing `hdvila_video<resolution>`. For instance, in the following examples, we use `hdvila_video360` and `hdvila_video720` to refer to the same hdvila videos but resized to the resolution 360p and 720p, respectively, at the time of training.

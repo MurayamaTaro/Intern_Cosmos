@@ -86,7 +86,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
             weight_decay=0.1,
             betas=[0.9, 0.99],
             eps=1e-10,
-            master_weights = False,
+            master_weights=False,
         ),
         checkpoint=dict(
             save_iter=200,
@@ -121,9 +121,9 @@ world_interpolator_7b_example_hdvila = LazyDict(
             context_parallel_size=1,
         ),
         model=dict(
-            peft_control = dict(
-                enabled = False,
-                mode    = "none",
+            peft_control=dict(
+                enabled=False,
+                mode="none",
             ),
             latent_shape=[
                 16,
@@ -206,5 +206,6 @@ def register_experiments(cs):
             name=experiment_name,
             node=_item,
         )
+
 
 register_experiments(cs)
