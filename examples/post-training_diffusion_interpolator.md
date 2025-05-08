@@ -39,7 +39,7 @@ There are 3 steps to post-training: downloading a dataset, preprocessing the dat
 
 The first step is to download a dataset with videos.
 
-You must provide a folder containing a collection of videos in **MP4 format**, preferably 720p. These videos should focus be diverse enough to capture different scenarios.
+You must provide a folder containing a collection of videos in **MP4 format**, preferably 720p. These videos should be diverse enough to capture different scenarios.
 
 For example, you can use a subset of [HD-VILA-100M](https://github.com/microsoft/XPretrain/tree/main/hd-vila-100m) dataset for post-training.
 
