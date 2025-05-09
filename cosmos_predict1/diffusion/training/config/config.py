@@ -99,7 +99,7 @@ def make_config():
     register_configs_video2world_instruction()
     register_configs_video2world_action()
     register_configs_world_interpolator()
-    
+
     # experiment config are defined in the experiment folder
     # call import_all_modules_from_package to register them
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world", reload=True)
