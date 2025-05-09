@@ -206,5 +206,3 @@ def register_experiments(cs):
             node=_item,
         )
 
-
-register_experiments(cs)
