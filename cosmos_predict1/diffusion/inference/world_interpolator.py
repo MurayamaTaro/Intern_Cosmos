@@ -72,8 +72,6 @@ def parse_arguments() -> argparse.Namespace:
         default=2,
         help="The minimum number of input frames for world_interpolator predictions.",
     )
-    # parser.add_argument("--num_video_frames", type=int, default=118, help="numer of video frames to sample")
-    parser.add_argument("--pixel_chunk_duration", type=int, default=121, help="pixel chunk duration")
     parser.add_argument(
         "--frame_stride",
         type=int,
