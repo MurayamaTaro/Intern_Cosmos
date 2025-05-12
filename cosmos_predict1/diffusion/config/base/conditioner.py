@@ -18,7 +18,13 @@ from typing import Dict, List, Optional
 import attrs
 import torch
 
-from cosmos_predict1.diffusion.conditioner import BaseConditionEntry, TextAttr, VideoConditioner, VideoExtendConditioner, ViewConditionedVideoExtendConditioner
+from cosmos_predict1.diffusion.conditioner import (
+    BaseConditionEntry,
+    TextAttr,
+    VideoConditioner,
+    VideoExtendConditioner,
+    ViewConditionedVideoExtendConditioner,
+)
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 
@@ -180,6 +186,7 @@ class VideoCondBoolConfig:
 class MVVideoCondBoolConfig(VideoCondBoolConfig):
     n_cond_view_max: int = 1  # The max number of camera views as condition region
     n_cond_view_min: int = 1  # The min number of camera views as condition region
+
 
 @attrs.define(slots=False)
 class LatentConditionConfig:

@@ -54,7 +54,7 @@ example_multiview_dataset_waymo = L(Dataset)(
     view_keys=view_keys,
     video_size=(576, 1024),
     sample_n_views=train_num_views,
-    caption_view_idx_map={0:0,1:1,2:2,3:4,4:5},
+    caption_view_idx_map={0: 0, 1: 1, 2: 2, 3: 4, 4: 5},
     load_mv_emb=False,
 )
 
@@ -115,8 +115,8 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
             latent_shape=[
                 16,  # Latent channel dim
                 8,  # Latent temporal dim
-                72,#88,  # Latent height dim
-                128#160,  # Latent width dim
+                72,  # 88,  # Latent height dim
+                128,  # 160,  # Latent width dim
             ],
             loss_reduce="mean",
             ema=dict(
@@ -139,7 +139,7 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
                 view_condition_dim=6,
                 add_repeat_frame_embedding=True,
                 extra_per_block_abs_pos_emb=True,
-                extra_per_block_abs_pos_emb_type='sincos'
+                extra_per_block_abs_pos_emb_type="sincos",
             ),
             conditioner=dict(
                 video_cond_bool=dict(
@@ -176,7 +176,7 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
             batch_size=1,
             drop_last=True,
             pin_memory=True,
-            num_workers=8
+            num_workers=8,
         ),
         dataloader_val=L(DataLoader)(
             dataset=example_multiview_dataset_waymo,
@@ -184,7 +184,7 @@ text2world_singletomultiview_7b_example_waymo = LazyDict(
             batch_size=1,
             drop_last=True,
             pin_memory=True,
-            num_workers=8
+            num_workers=8,
         ),
     )
 )

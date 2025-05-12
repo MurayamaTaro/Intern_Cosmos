@@ -27,7 +27,6 @@ from cosmos_predict1.diffusion.training.module.position_embedding import (
     MultiviewSinCosPosEmbAxis,
     MultiviewVideoRopePosition3DEmb,
 )
-
 from cosmos_predict1.diffusion.training.networks.general_dit_multiview import MultiviewGeneralDIT
 from cosmos_predict1.utils import log
 
@@ -36,6 +35,7 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
     """
     Trainable Network Module for MultiviewExtension and MultiviewExtension+LVG
     """
+
     def __init__(
         self,
         *args,
@@ -54,10 +54,9 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
             self.n_views_emb = n_views_emb
         self.view_condition_dim = view_condition_dim
         in_channels = in_channels + 1
-        super().__init__(*args, in_channels=in_channels,
-                                      n_views=n_views,
-                                       view_condition_dim=view_condition_dim,
-                                      **kwargs)
+        super().__init__(
+            *args, in_channels=in_channels, n_views=n_views, view_condition_dim=view_condition_dim, **kwargs
+        )
         log.info(f"MultiviewExtensionGeneralDIT in_channels: {in_channels}")
         # reinit self.view_embeddings
         del self.view_embeddings
@@ -298,9 +297,7 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
             )
 
         if view_indices_B_T is None:
-            view_indices = torch.arange(self.n_views).clamp(
-                max=self.n_views_emb - 1
-            )  # View indices [0, 1, ..., V-1]
+            view_indices = torch.arange(self.n_views).clamp(max=self.n_views_emb - 1)  # View indices [0, 1, ..., V-1]
             view_indices = view_indices.to(x_B_C_T_H_W.device)
             view_embedding = self.view_embeddings(view_indices)  # Shape: [V, embedding_dim]
             view_embedding = rearrange(view_embedding, "V D -> D V")

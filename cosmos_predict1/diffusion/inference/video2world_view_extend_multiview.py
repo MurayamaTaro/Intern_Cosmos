@@ -19,13 +19,8 @@ import os
 import torch
 from megatron.core import parallel_state
 
-from cosmos_predict1.diffusion.inference.inference_utils import (
-    add_common_arguments,
-    remove_argument
-)
-from cosmos_predict1.diffusion.inference.world_generation_pipeline import (
-    DiffusionViewExtendMultiviewGenerationPipeline,
-)
+from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, remove_argument
+from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionViewExtendMultiviewGenerationPipeline
 from cosmos_predict1.utils import distributed, log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
@@ -56,7 +51,8 @@ def parse_arguments() -> argparse.Namespace:
         default="Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World",
         help="DiT model weights directory name relative to checkpoint_dir",
         choices=[
-            "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World", "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World"
+            "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World",
+            "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World",
         ],
     )
     parser.add_argument(
@@ -100,29 +96,29 @@ def parse_arguments() -> argparse.Namespace:
         "--view_condition_video",
         type=str,
         help="Input video path for view extension. Can be either a path to a mp4 or a directory. If it is a mp4, we require"
-             "that only a single condition view is specified and this video is treated as conditioning for that view. "
-             "If it is a directory, we assume that the file names evaluate to integers that correspond to a view index,"
-             " e.g. '000.mp4', '003.mp4', '004.mp4'."
-             "This video/videos should have at least num_video_frames number of frames. Frames will be taken from the front"
-             "of the video(s) if the duration of the video exceed num_video_frames",
+        "that only a single condition view is specified and this video is treated as conditioning for that view. "
+        "If it is a directory, we assume that the file names evaluate to integers that correspond to a view index,"
+        " e.g. '000.mp4', '003.mp4', '004.mp4'."
+        "This video/videos should have at least num_video_frames number of frames. Frames will be taken from the front"
+        "of the video(s) if the duration of the video exceed num_video_frames",
     )
     parser.add_argument(
         "--initial_condition_video",
         type=str,
         help="Input video/image for time extension. Can be either a path to a mp4 or a directory. If it is a mp4, we assume"
-             "that it is a video temporally concatenated with the same number of views as the model. "
-             "If it is a directory, we assume that the file names evaluate to integers that correspond to a view index,"
-             " e.g. '000.mp4', '003.mp4', '004.mp4'."
-             "This video/videos should have at least num_input_frames number of frames for each view. Frames will be taken from the back"
-             "of the video(s) if the duration of the video in each view exceed num_input_frames",
+        "that it is a video temporally concatenated with the same number of views as the model. "
+        "If it is a directory, we assume that the file names evaluate to integers that correspond to a view index,"
+        " e.g. '000.mp4', '003.mp4', '004.mp4'."
+        "This video/videos should have at least num_input_frames number of frames for each view. Frames will be taken from the back"
+        "of the video(s) if the duration of the video in each view exceed num_input_frames",
     )
     parser.add_argument(
         "--condition_location",
         type=str,
         help="Which view/views to use as input condition and whether to use initial frame conditioning. Options are:"
-             "'fixed_cam_{x1}_{x2}_{x3}' where x1 x2 x3 are integers indicating the input conditioning views,"
-             "'first_cam, which is equivalent to fixed_cam_0,"
-             "and 'first_cam_and_first_n', where the first view (front view) and initial frames are used as condition ",
+        "'fixed_cam_{x1}_{x2}_{x3}' where x1 x2 x3 are integers indicating the input conditioning views,"
+        "'first_cam, which is equivalent to fixed_cam_0,"
+        "and 'first_cam_and_first_n', where the first view (front view) and initial frames are used as condition ",
     )
     parser.add_argument(
         "--num_input_frames",
@@ -166,7 +162,7 @@ def demo(args):
     """
     misc.set_random_seed(args.seed)
     inference_type = "video2world"
-    #validate_args(args, inference_type)
+    # validate_args(args, inference_type)
 
     if args.num_gpus > 1:
         distributed.init()
@@ -191,7 +187,7 @@ def demo(args):
         frame_repeat_negative_condition=args.frame_repeat_negative_condition,
         seed=args.seed,
         num_input_frames=args.num_input_frames,
-        n_views=6
+        n_views=6,
     )
 
     # Handle multiple prompts if prompt file is provided
@@ -221,7 +217,9 @@ def demo(args):
             continue
         current_initial_condition_video = input_dict.pop("initial_condition_input", None)
         if current_initial_condition_video is None and "first_n" in args.condition_location:
-            log.critical("Initial condition input is missing but first_n is specified in condition location, skipping generation")
+            log.critical(
+                "Initial condition input is missing but first_n is specified in condition location, skipping generation"
+            )
             continue
         current_prompt = input_dict
 
@@ -233,7 +231,7 @@ def demo(args):
             condition_location=args.condition_location,
             view_condition_video_path=current_view_condition_video,
             initial_condition_video_path=current_initial_condition_video,
-            view_cond_start_frame=args.view_cond_start_frame
+            view_cond_start_frame=args.view_cond_start_frame,
         )
         if generated_output is None:
             log.critical("Guardrail blocked video2world generation.")

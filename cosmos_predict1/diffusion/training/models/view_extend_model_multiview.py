@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 from typing import Callable, Dict, Tuple, Union
 
 import torch
-import copy
-
 from einops import rearrange
 from megatron.core import parallel_state
 from torch import Tensor
@@ -26,7 +25,7 @@ from cosmos_predict1.diffusion.functional.batch_ops import batch_mul
 from cosmos_predict1.diffusion.training.conditioner import (
     DataType,
     VideoExtendCondition,
-    ViewConditionedVideoExtendCondition
+    ViewConditionedVideoExtendCondition,
 )
 from cosmos_predict1.diffusion.training.context_parallel import cat_outputs_cp, split_inputs_cp
 from cosmos_predict1.diffusion.training.models.extend_model import (
@@ -34,8 +33,8 @@ from cosmos_predict1.diffusion.training.models.extend_model import (
     VideoDenoisePrediction,
     normalize_condition_latent,
 )
-from cosmos_predict1.diffusion.training.models.model import DiffusionModel, broadcast_condition
 from cosmos_predict1.diffusion.training.models.extend_model_multiview import MultiviewExtendDiffusionModel
+from cosmos_predict1.diffusion.training.models.model import DiffusionModel, broadcast_condition
 from cosmos_predict1.diffusion.training.models.model_image import CosmosCondition, diffusion_fsdp_class_decorator
 from cosmos_predict1.utils import log
 
@@ -228,7 +227,7 @@ class MultiviewViewExtendDiffusionModel(MultiviewExtendDiffusionModel):
 
             num_condition_t_max = self.config.conditioner.video_cond_bool.first_random_n_num_condition_t_max
             assert (
-                    num_condition_t_max <= T
+                num_condition_t_max <= T
             ), f"num_condition_t_max should be less than T, get {num_condition_t_max}, {T}"
             num_condition_t = torch.randint(0, num_condition_t_max + 1, (1,)).item()
             condition_video_indicator[:, :, :num_condition_t] += 1.0
@@ -279,7 +278,7 @@ class MultiviewViewExtendDiffusionModel(MultiviewExtendDiffusionModel):
             # and condition on first few cams
             num_condition_t_max = self.config.conditioner.video_cond_bool.first_random_n_num_condition_t_max
             assert (
-                    num_condition_t_max <= T
+                num_condition_t_max <= T
             ), f"num_condition_t_max should be less than T, get {num_condition_t_max}, {T}"
             num_condition_t = torch.randint(0, num_condition_t_max + 1, (1,)).item()
             condition_video_indicator[:, :, :num_condition_t] += 1.0
@@ -528,7 +527,7 @@ class MultiviewViewExtendDiffusionModel(MultiviewExtendDiffusionModel):
         return samples
 
     def get_data_and_condition(
-            self, data_batch: dict[str, Tensor], num_condition_t: Union[int, None] = None
+        self, data_batch: dict[str, Tensor], num_condition_t: Union[int, None] = None
     ) -> Tuple[Tensor, Tensor, ViewConditionedVideoExtendCondition]:
         raw_state, latent_state, condition = super().get_data_and_condition(data_batch, num_condition_t=num_condition_t)
         if condition.data_type == DataType.VIDEO and "view_indices" in data_batch:

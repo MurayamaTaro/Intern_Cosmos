@@ -15,7 +15,6 @@
 
 from hydra.core.config_store import ConfigStore
 
-
 from cosmos_predict1.diffusion.networks.general_dit_view_extend_multiview import MultiviewExtensionGeneralDIT
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
@@ -39,7 +38,7 @@ Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview: LazyDict = LazyDict(
                 128,
             ],
             net=L(MultiviewExtensionGeneralDIT)(
-                n_views=6,      # this indicates how many views to generate, can be overwritten at inference time
+                n_views=6,  # this indicates how many views to generate, can be overwritten at inference time
                 n_views_emb=7,  # this indicates how many views the model has trained for, should not be changed at inference time
                 view_condition_dim=6,
                 add_repeat_frame_embedding=True,

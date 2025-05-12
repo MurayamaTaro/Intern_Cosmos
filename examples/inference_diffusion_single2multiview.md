@@ -20,7 +20,7 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
    ```
 
 ### Examples
-We provide `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World` for world generation from front view video and text, 
+We provide `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World` for world generation from front view video and text,
 and `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World` for world generation from front view video and multiview initial frame(s).
 
 The inference script is `cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py`.
@@ -67,7 +67,7 @@ PROMPT_BACK_RIGHT="The video is captured from a camera mounted on a car. The cam
 ```
 
 #### Example 1: single view extension with Text condition
-This is the basic example for running inference on the 7B single to multiview model with a single view input video. 
+This is the basic example for running inference on the 7B single to multiview model with a single view input video.
 ```bash
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --checkpoint_dir checkpoints \
@@ -139,4 +139,3 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
     --prompt_back_right "${PROMPT_BACK_RIGHT}" \
     --video_save_name diffusion-single2multiview-video2world-lvg
 ```
-

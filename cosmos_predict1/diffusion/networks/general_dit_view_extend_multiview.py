@@ -30,14 +30,9 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
     """
     Inference-time network module for MultiviewExtension and MultiviewExtension+LVG
     """
+
     def __init__(
-        self,
-        *args,
-        in_channels: int,
-        n_views: int = 3,
-        n_views_emb: int = -1,
-        view_condition_dim: int = 3,
-        **kwargs
+        self, *args, in_channels: int, n_views: int = 3, n_views_emb: int = -1, view_condition_dim: int = 3, **kwargs
     ):
         if n_views_emb < 0:
             self.n_views_emb = n_views
@@ -46,16 +41,12 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
         in_channels = in_channels + 1
         log.info(f"MultiviewExtensionGeneralDIT in_channels: {in_channels}")
         super().__init__(
-            *args,
-            in_channels=in_channels,
-            n_views=n_views,
-            view_condition_dim=view_condition_dim,
-            **kwargs
+            *args, in_channels=in_channels, n_views=n_views, view_condition_dim=view_condition_dim, **kwargs
         )
         # reinit view embeddings
         del self.view_embeddings
 
-        self.view_embeddings = nn.Embedding(self.n_views_emb, view_condition_dim)   # Learnable embedding layer
+        self.view_embeddings = nn.Embedding(self.n_views_emb, view_condition_dim)  # Learnable embedding layer
 
         self.initialize_weights()
 
@@ -263,9 +254,7 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
             )
 
         if view_indices_B_T is None:
-            view_indices = torch.arange(self.n_views).clamp(
-                max=self.n_views_emb - 1
-            )  # View indices [0, 1, ..., V-1]
+            view_indices = torch.arange(self.n_views).clamp(max=self.n_views_emb - 1)  # View indices [0, 1, ..., V-1]
             view_indices = view_indices.to(x_B_C_T_H_W.device)
             view_embedding = self.view_embeddings(view_indices)  # Shape: [V, embedding_dim]
             view_embedding = rearrange(view_embedding, "V D -> D V")
@@ -278,7 +267,6 @@ class MultiviewExtensionGeneralDIT(MultiviewGeneralDIT):
             view_embedding = self.view_embeddings(view_indices_B_T)  # B, (V T), D
             view_embedding = rearrange(view_embedding, "B (V T) D -> B D V T", V=self.n_views)
             view_embedding = view_embedding.unsqueeze(-1).unsqueeze(-1)  # Shape: [B, D, V, T, 1, 1]
-
 
         if self.add_repeat_frame_embedding:
             if frame_repeat is None:

@@ -106,7 +106,9 @@ def make_config():
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world_multiview", reload=True)
-    import_all_modules_from_package("cosmos_predict1.diffusion.training.config.text2world_singletomultiview", reload=True)
+    import_all_modules_from_package(
+        "cosmos_predict1.diffusion.training.config.text2world_singletomultiview", reload=True
+    )
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_multiview", reload=True)
 
     return c

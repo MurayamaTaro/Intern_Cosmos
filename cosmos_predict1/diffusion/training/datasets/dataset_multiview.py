@@ -48,7 +48,7 @@ class Dataset(Dataset):
         start_frame_interval=1,
         sample_n_views=-1,
         caption_view_idx_map=None,
-        load_mv_emb=False
+        load_mv_emb=False,
     ):
         """Dataset class for loading image-text-to-video generation data.
 
@@ -177,8 +177,9 @@ class Dataset(Dataset):
             view_indices_conditioning = []
             if self.sample_n_views > 0:
                 sampled_idx = np.random.choice(
-                    np.arange(1, len(view_indices)), size=min(self.sample_n_views - 1, len(view_indices) - 1),
-                    replace=False
+                    np.arange(1, len(view_indices)),
+                    size=min(self.sample_n_views - 1, len(view_indices) - 1),
+                    replace=False,
                 )
                 sampled_idx = np.concatenate(
                     [
@@ -194,12 +195,19 @@ class Dataset(Dataset):
             for view_index in view_indices:
                 view_key = self.view_keys[view_index]
 
-                video, fps = self._get_frames(os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)), frame_ids)
+                video, fps = self._get_frames(
+                    os.path.join(os.path.dirname(os.path.dirname(video_path)), view_key, os.path.basename(video_path)),
+                    frame_ids,
+                )
                 video = video.permute(1, 0, 2, 3)  # Rearrange from [T, C, H, W] to [C, T, H, W]
                 videos.append(video)
 
                 if self.load_mv_emb or view_key == "pinhole_front":
-                    t5_embedding_path = os.path.join(os.path.dirname(os.path.dirname(t5_embedding_path)), view_key, os.path.basename(t5_embedding_path))
+                    t5_embedding_path = os.path.join(
+                        os.path.dirname(os.path.dirname(t5_embedding_path)),
+                        view_key,
+                        os.path.basename(t5_embedding_path),
+                    )
                     with open(t5_embedding_path, "rb") as f:
                         t5_embedding = pickle.load(f)[0]
                     if self.load_mv_emb:
@@ -208,7 +216,7 @@ class Dataset(Dataset):
                     t5_embedding = self.prefix_t5_embeddings[view_key]
 
                 t5_embedding = torch.from_numpy(t5_embedding)
-                t5_mask = torch.ones(t5_embedding.shape[0],  dtype=torch.int64)
+                t5_mask = torch.ones(t5_embedding.shape[0], dtype=torch.int64)
                 if t5_embedding.shape[0] < 512:
                     t5_embedding = torch.cat([t5_embedding, torch.zeros(512 - t5_embedding.shape[0], 1024)], dim=0)
                     t5_mask = torch.cat([t5_mask, torch.zeros(512 - t5_mask.shape[0])], dim=0)

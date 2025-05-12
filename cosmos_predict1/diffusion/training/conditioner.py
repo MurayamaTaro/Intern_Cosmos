@@ -170,10 +170,12 @@ class VideoExtendCondition(BaseVideoCondition):
     # pose conditional input, will be concat with the input tensor
     condition_video_pose: Optional[torch.Tensor] = None
 
+
 @dataclass
 class ViewConditionedVideoExtendCondition(VideoExtendCondition):
     # view index indicating camera, used to index nn.Embedding
     view_indices_B_T: Optional[torch.Tensor] = None
+
 
 @dataclass
 class VideoLatentDiffusionDecoderCondition(BaseVideoCondition):
@@ -225,6 +227,7 @@ class ViewConditionedVideoExtendConditioner(GeneralConditioner):
     ) -> ViewConditionedVideoExtendCondition:
         output = super()._forward(batch, override_dropout_rate)
         return ViewConditionedVideoExtendCondition(**output)
+
 
 class VideoConditionerWithTraingOnlyEmb(GeneralConditioner):
     def get_condition_uncondition(

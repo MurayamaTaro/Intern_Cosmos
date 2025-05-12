@@ -15,17 +15,17 @@
 
 from hydra.core.config_store import ConfigStore
 
-from cosmos_predict1.diffusion.training.config.text2world_singletomultiview.experiment import register_experiments
 from cosmos_predict1.diffusion.config.base.conditioner import (
     FPSConfig,
+    FrameRepeatConfig,
     ImageSizeConfig,
     NumFramesConfig,
     PaddingMaskConfig,
     TextConfig,
     VideoCondBoolConfig,
-    FrameRepeatConfig
 )
 from cosmos_predict1.diffusion.training.conditioner import ViewConditionedVideoExtendConditioner
+from cosmos_predict1.diffusion.training.config.text2world_singletomultiview.experiment import register_experiments
 from cosmos_predict1.utils.lazy_config import LazyCall as L
 from cosmos_predict1.utils.lazy_config import LazyDict
 
@@ -38,6 +38,7 @@ ViewConditionedVideoExtendConditionerConfig: LazyDict = L(ViewConditionedVideoEx
     video_cond_bool=VideoCondBoolConfig(),
     frame_repeat=FrameRepeatConfig(),
 )
+
 
 def register_configs():
     cs = ConfigStore.instance()

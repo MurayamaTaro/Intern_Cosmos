@@ -337,7 +337,7 @@ def load_network_model(model: DiffusionT2WModel, ckpt_path: str):
             net_state_dict = model_state_dict
         else:
             net_state_dict = model_state_dict
-    
+
     log.debug(non_strict_load_model(model.model, net_state_dict))
     model.cuda()
 
@@ -544,7 +544,7 @@ def generate_world_from_video(
     seed: int,
     condition_latent: torch.Tensor,
     num_input_frames: int,
-    augment_sigma: Optional[float]=None,
+    augment_sigma: Optional[float] = None,
 ) -> Tuple[np.array, list, list]:
     """Generate video using a conditioning video/image input.
 
@@ -760,8 +760,10 @@ def create_condition_latent_from_input_frames(
         # treat as single view video
         latent = model.tokenizer.encode(encode_input_frames) * model.sigma_data
     else:
-        raise ValueError(f"First dimension of encode_input_frames {encode_input_frames.shape[0]} does not match "
-                         f"model.n_views or model.n_views is not defined and first dimension is not 1")
+        raise ValueError(
+            f"First dimension of encode_input_frames {encode_input_frames.shape[0]} does not match "
+            f"model.n_views or model.n_views is not defined and first dimension is not 1"
+        )
     return latent, encode_input_frames
 
 
@@ -801,7 +803,7 @@ def get_condition_latent(
     frame_index: int = 0,
     frame_stride: int = 1,
     from_back: bool = True,
-    start_frame: int=0
+    start_frame: int = 0,
 ) -> torch.Tensor:
     """Get condition latent from input image/video file.
 
@@ -848,8 +850,9 @@ def get_condition_latent(
         condition_latent = condition_latent.to(torch.bfloat16)
         return condition_latent
     input_frames = input_frames[:, :, start_frame:, :, :]
-    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames,
-                                                                    from_back=from_back)
+    condition_latent, _ = create_condition_latent_from_input_frames(
+        model, input_frames, num_input_frames, from_back=from_back
+    )
     condition_latent = condition_latent.to(torch.bfloat16)
 
     return condition_latent
@@ -861,7 +864,7 @@ def get_condition_latent_multiview(
     num_input_frames: int = 1,
     state_shape: list[int] = None,
     from_back: bool = True,
-    start_frame: int=0
+    start_frame: int = 0,
 ):
     """Get condition latent from input image/video file. This is the function for the multi-view model where each view has one latent condition frame.
 
@@ -891,8 +894,10 @@ def get_condition_latent_multiview(
         W=W,
     )
     input_frames = einops.rearrange(input_frames, "B C (V T) H W -> (B V) C T H W", V=model.n_views)
-    input_frames = input_frames[:,:,start_frame:,:,:]
-    condition_latent, _ = create_condition_latent_from_input_frames(model, input_frames, num_input_frames, from_back=from_back)
+    input_frames = input_frames[:, :, start_frame:, :, :]
+    condition_latent, _ = create_condition_latent_from_input_frames(
+        model, input_frames, num_input_frames, from_back=from_back
+    )
     condition_latent = condition_latent.to(torch.bfloat16)
 
     return condition_latent, einops.rearrange(input_frames, "(B V) C T H W -> B C (V T) H W", V=model.n_views)[0]

@@ -17,11 +17,10 @@ from typing import Optional, Union
 
 import torch
 from einops import rearrange
-from torch import Tensor
 from megatron.core import parallel_state
+from torch import Tensor
 
 from cosmos_predict1.diffusion.conditioner import VideoExtendCondition, ViewConditionedVideoExtendCondition
-
 from cosmos_predict1.diffusion.model.model_t2w import broadcast_condition
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
 from cosmos_predict1.diffusion.module.parallel import cat_outputs_cp, split_inputs_cp
@@ -34,45 +33,50 @@ class DiffusionMultiviewViewExtendModel(DiffusionMultiviewV2WModel):
         self.condition_location = None
 
     def generate_samples_from_batch(
-            self,
-            data_batch: dict,
-            guidance: float = 1.5,
-            seed: int = 1,
-            state_shape: tuple | None = None,
-            n_sample: int | None = None,
-            is_negative_prompt: bool = False,
-            num_steps: int = 35,
-            condition_latent: Optional[torch.Tensor] = None,
-            num_condition_t: Optional[int] = None,
-            condition_augment_sigma: float = None,
-            add_input_frames_guidance: bool = False,
-            condition_location: Optional[str] = None,
+        self,
+        data_batch: dict,
+        guidance: float = 1.5,
+        seed: int = 1,
+        state_shape: tuple | None = None,
+        n_sample: int | None = None,
+        is_negative_prompt: bool = False,
+        num_steps: int = 35,
+        condition_latent: Optional[torch.Tensor] = None,
+        num_condition_t: Optional[int] = None,
+        condition_augment_sigma: float = None,
+        add_input_frames_guidance: bool = False,
+        condition_location: Optional[str] = None,
     ) -> Tensor:
         """Generates video samples conditioned on input frames.
 
-                Args:
-                    data_batch: Input data dictionary
-                    guidance: Classifier-free guidance scale
-                    seed: Random seed for reproducibility
-                    state_shape: Shape of output tensor (defaults to model's state shape)
-                    n_sample: Number of samples to generate (defaults to batch size)
-                    is_negative_prompt: Whether to use negative prompting
-                    num_steps: Number of denoising steps
-                    condition_latent: Conditioning frames tensor (B,C,T,H,W)
-                    num_condition_t: Number of frames to condition on
-                    condition_augment_sigma: Noise level for condition augmentation
-                    add_input_frames_guidance: Whether to apply guidance to input frames
+        Args:
+            data_batch: Input data dictionary
+            guidance: Classifier-free guidance scale
+            seed: Random seed for reproducibility
+            state_shape: Shape of output tensor (defaults to model's state shape)
+            n_sample: Number of samples to generate (defaults to batch size)
+            is_negative_prompt: Whether to use negative prompting
+            num_steps: Number of denoising steps
+            condition_latent: Conditioning frames tensor (B,C,T,H,W)
+            num_condition_t: Number of frames to condition on
+            condition_augment_sigma: Noise level for condition augmentation
+            add_input_frames_guidance: Whether to apply guidance to input frames
 
-                Returns:
-                    Generated video samples tensor
-                """
+        Returns:
+            Generated video samples tensor
+        """
         assert condition_latent is not None, "condition_latent should be provided"
 
         if condition_location is None:
             condition_location = self.condition_location
 
         condition, uncondition = self._get_conditions(
-            data_batch, is_negative_prompt, condition_latent, num_condition_t, add_input_frames_guidance, condition_location
+            data_batch,
+            is_negative_prompt,
+            condition_latent,
+            num_condition_t,
+            add_input_frames_guidance,
+            condition_location,
         )
 
         self.scheduler.set_timesteps(num_steps)
@@ -125,7 +129,7 @@ class DiffusionMultiviewViewExtendModel(DiffusionMultiviewV2WModel):
         condition_latent: Optional[torch.Tensor] = None,
         num_condition_t: Optional[int] = None,
         add_input_frames_guidance: bool = False,
-        condition_location: str = "first_cam"
+        condition_location: str = "first_cam",
     ):
         """Get the conditions for the model.
 
@@ -177,7 +181,7 @@ class DiffusionMultiviewViewExtendModel(DiffusionMultiviewV2WModel):
         latent_state: torch.Tensor,
         condition: ViewConditionedVideoExtendCondition,
         num_condition_t: Union[int, None] = None,
-        condition_location: str = "first_cam"
+        condition_location: str = "first_cam",
     ) -> ViewConditionedVideoExtendCondition:
         """Add condition_video_indicator and condition_video_input_mask to the condition object for video conditioning.
         condition_video_indicator is a binary tensor indicating the condition region in the latent state. 1x1xTx1x1 tensor.
@@ -202,9 +206,7 @@ class DiffusionMultiviewViewExtendModel(DiffusionMultiviewV2WModel):
             f"condition_location {condition_location}, num_condition_t {num_condition_t}, condition.video_cond_bool {condition.video_cond_bool}"
         )
         # condition on first cam
-        condition_video_indicator = rearrange(
-            condition_video_indicator, "B C (V T) H W -> B V C T H W", V=self.n_views
-        )
+        condition_video_indicator = rearrange(condition_video_indicator, "B C (V T) H W -> B V C T H W", V=self.n_views)
 
         if condition_location == "first_cam":
             # condition on first cam
@@ -234,9 +236,7 @@ class DiffusionMultiviewViewExtendModel(DiffusionMultiviewV2WModel):
             condition_video_indicator[:, :, :, :num_condition_t] += 1.0
             condition_video_indicator = condition_video_indicator.clamp(max=1.0)
         else:
-            raise NotImplementedError(
-                f"condition_location {condition_location} not implemented"
-            )
+            raise NotImplementedError(f"condition_location {condition_location} not implemented")
 
         condition_video_indicator = rearrange(
             condition_video_indicator, "B V C T H W  -> B C (V T) H W", V=self.n_views

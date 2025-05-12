@@ -27,7 +27,7 @@ from cosmos_predict1.diffusion.config.base.conditioner import (
     NumFramesConfig,
     PaddingMaskConfig,
     TextConfig,
-    VideoCondBoolConfig
+    VideoCondBoolConfig,
 )
 from cosmos_predict1.diffusion.training.conditioner import VideoConditioner
 from cosmos_predict1.diffusion.training.config.base.optim import FusedAdamWConfig, LambdaLinearSchedulerConfig
