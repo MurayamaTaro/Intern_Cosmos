@@ -28,7 +28,6 @@ CUDA_VISIBLE_DEVICES=1 python3 -m cosmos_predict1.diffusion.inference.world_inte
 import argparse
 import os
 
-import debugpy
 import torch
 
 from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, check_input_frames, validate_args
@@ -36,12 +35,6 @@ from cosmos_predict1.diffusion.inference.world_generation_pipeline import Diffus
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
-debugpy.listen(("localhost", 5678))
-
-# from cosmos_predict1.utils.visualize.video import save_video
-
-
-# from cosmos_predict1.utils.visualize.video import save_img_or_video
 torch.enable_grad(False)
 
 
@@ -136,9 +129,6 @@ def demo(args):
     misc.set_random_seed(args.seed)
     inference_type = "world_interpolator"
     validate_args(args, inference_type)
-
-    debugpy.wait_for_client()
-    debugpy.breakpoint()
 
     if args.num_gpus > 1:
         from megatron.core import parallel_state
