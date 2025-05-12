@@ -117,7 +117,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=1,
+            # context_parallel_size=1,
         ),
         model=dict(
             peft_control=dict(
@@ -149,7 +149,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
                 rope_t_extrapolation_ratio=2,
             ),
             adjust_video_noise=True,
-            context_parallel_size=1,
+            # context_parallel_size=1,
             num_latents_to_drop=1,
             conditioner=dict(
                 video_cond_bool=dict(
