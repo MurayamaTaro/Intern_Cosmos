@@ -17,10 +17,11 @@ import argparse
 import os
 
 import torch
+from megatron.core import parallel_state
 
 from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, remove_argument, validate_args
 from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionText2WorldMultiviewGenerationPipeline
-from cosmos_predict1.utils import log, misc
+from cosmos_predict1.utils import distributed, log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
 torch.enable_grad(False)
@@ -121,13 +122,8 @@ def demo(args):
     validate_args(args, inference_type)
 
     if args.num_gpus > 1:
-        from megatron.core import parallel_state
-
-        from cosmos_predict1.utils import distributed
-
         distributed.init()
         parallel_state.initialize_model_parallel(context_parallel_size=args.num_gpus)
-        process_group = parallel_state.get_context_parallel_group()
 
     # Initialize text2world generation model pipeline
     pipeline = DiffusionText2WorldMultiviewGenerationPipeline(
@@ -148,9 +144,6 @@ def demo(args):
         frame_repeat_negative_condition=args.frame_repeat_negative_condition,
         seed=args.seed,
     )
-
-    if args.num_gpus > 1:
-        pipeline.model.net.enable_context_parallel(process_group)
 
     # Handle multiple prompts if prompt file is provided
     if args.batch_input_path:

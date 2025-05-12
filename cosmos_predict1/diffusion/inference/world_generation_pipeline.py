@@ -20,6 +20,7 @@ from typing import Any, Optional
 import einops
 import numpy as np
 import torch
+from megatron.core import parallel_state
 
 from cosmos_predict1.diffusion.inference.inference_utils import (
     generate_world_from_text,
@@ -50,7 +51,7 @@ from cosmos_predict1.diffusion.prompt_upsampler.video2world_prompt_upsampler_inf
     run_chat_completion as run_chat_completion_vlm,
 )
 from cosmos_predict1.diffusion.training.utils.inference_long_video import generate_video_from_batch_with_loop
-from cosmos_predict1.utils import log
+from cosmos_predict1.utils import distributed, log
 from cosmos_predict1.utils.base_world_generation_pipeline import BaseWorldGenerationPipeline
 
 MODEL_NAME_DICT = {
@@ -176,6 +177,9 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
 
     def _load_network(self):
         load_network_model(self.model, f"{self.checkpoint_dir}/{self.checkpoint_name}/model.pt")
+        if distributed.get_world_size() > 1:
+            process_group = parallel_state.get_context_parallel_group()
+            self.model.net.enable_context_parallel(process_group)
 
     def _load_tokenizer(self):
         load_tokenizer_model(self.model, f"{self.checkpoint_dir}/Cosmos-Tokenize1-CV8x8x8-720p")
