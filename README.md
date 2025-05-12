@@ -39,6 +39,7 @@ Please refer to [INSTALL.md](INSTALL.md) for general instructions on environment
 ### Inference with pre-trained Cosmos-Predict1 models
 * [Inference with diffusion-based Text2World models](/examples/inference_diffusion_text2world.md) **[with multi-GPU support]**
 * [Inference with diffusion-based Video2World models](/examples/inference_diffusion_video2world.md) **[with multi-GPU support]**
+* [Inference with diffusion-based WorldInterpolator models](/examples/inference_diffusion_WorldInterpolator.md) **[with multi-GPU support]**
 * [Inference with autoregressive-based base models](/examples/inference_autoregressive_base.md) **[with multi-GPU support]**
 * [Inference with autoregressive-based Video2World models](/examples/inference_autoregressive_video2world.md) **[with multi-GPU support]**
 * [Inference with tokenizer models](/examples/inference_tokenizer.md)
@@ -46,6 +47,7 @@ Please refer to [INSTALL.md](INSTALL.md) for general instructions on environment
 ### Post-train pre-trained Cosmos-Predict1 models
 * [Post-train diffusion-based Text2World models using custom datasets](/examples/post-training_diffusion_text2world.md) **[with multi-node support]**
 * [Post-train diffusion-based Video2World models using custom datasets](/examples/post-training_diffusion_video2world.md) **[with multi-node support]**
+* [Post-train diffusion-based WorldInterpolator models using custom datasets](/examples/post-training_diffusion_interpolator.md) **[with multi-node support]**
 * [Post-train diffusion-based Text2World models using custom multi-view datasets](/examples/post-training_diffusion_text2world_multiview.md) **[with multi-node support]**
 * [Post-train diffusion-based Video2World models using custom multi-view datasets)](/examples/post-training_diffusion_video2world_multiview.md) **[with multi-node support]**
 * [Post-train autoregressive-based base models using custom datasets](/examples/post-training_autoregressive_base.md) **[with multi-node support]**
@@ -66,6 +68,7 @@ Cosmos-Predict1 include the following models
 * [Cosmos-Predict1-14B-Text2World](https://huggingface.co/nvidia/Cosmos-Predict1-14B-Text2World): Text to visual world generation
 * [Cosmos-Predict1-7B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-7B-Video2World): Video + Text based future visual world generation
 * [Cosmos-Predict1-14B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-14B-Video2World): Video + Text based future visual world generation
+* [Cosmos-Predict1-7B-WorldInterpolator](https://huggingface.co/nvidia/Cosmos-Predict1-7B-WorldInterpolator): Generates a smooth, higher-FPS video segment.
 
 **Autoregressive models**
 

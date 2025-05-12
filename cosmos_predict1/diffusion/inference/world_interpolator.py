@@ -35,7 +35,6 @@ from cosmos_predict1.diffusion.inference.world_generation_pipeline import Diffus
 from cosmos_predict1.utils import log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
-# from cosmos_predict1.utils.visualize.video import save_img_or_video
 torch.enable_grad(False)
 
 
@@ -72,8 +71,6 @@ def parse_arguments() -> argparse.Namespace:
         default=2,
         help="The minimum number of input frames for world_interpolator predictions.",
     )
-    # parser.add_argument("--num_video_frames", type=int, default=118, help="numer of video frames to sample")
-    parser.add_argument("--pixel_chunk_duration", type=int, default=121, help="pixel chunk duration")
     parser.add_argument(
         "--frame_stride",
         type=int,
