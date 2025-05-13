@@ -154,8 +154,6 @@ class MultiviewGeneralDIT(GeneralDIT):
             **kwargs,
         )
 
-        assert self.extra_per_block_abs_pos_emb is True, "extra_per_block_abs_pos_emb must be True"
-
         if self.extra_per_block_abs_pos_emb:
             assert self.extra_per_block_abs_pos_emb_type in [
                 "sincos",
