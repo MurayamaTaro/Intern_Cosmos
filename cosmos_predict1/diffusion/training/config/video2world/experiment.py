@@ -239,6 +239,8 @@ video2world_7b_example_hdvila = LazyDict(
                 sharding_strategy="hybrid",
             ),
             net=L(VideoExtendGeneralDIT)(
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
