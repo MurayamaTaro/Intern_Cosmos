@@ -24,13 +24,11 @@ import numpy as np
 import omegaconf.errors
 import torch
 import torchvision.transforms.functional as transforms_F
-from omegaconf import OmegaConf
 
 from cosmos_predict1.diffusion.model.model_t2w import DiffusionT2WModel
 from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
+from cosmos_predict1.diffusion.model.model_v2w_action import DiffusionActionV2WModel
 from cosmos_predict1.diffusion.model.model_v2w_multiview import DiffusionMultiviewV2WModel
-from cosmos_predict1.diffusion.model.model_world_interpolator import DiffusionWorldInterpolatorWModel
-from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.utils import log
 from cosmos_predict1.utils.config_helper import get_config_module, override
 from cosmos_predict1.utils.io import load_from_fileobj
@@ -184,13 +182,14 @@ def validate_args(args: argparse.Namespace, inference_type: str) -> None:
     assert inference_type in [
         "text2world",
         "video2world",
+        "video2world_action",
         "world_interpolator",
     ], "Invalid inference_type, must be 'text2world' or 'video2world'"
 
     # Validate prompt/image/video args for single or batch generation
     if inference_type == "text2world" or (inference_type == "video2world" and args.disable_prompt_upsampler):
         assert args.prompt or args.batch_input_path, "--prompt or --batch_input_path must be provided."
-    if (inference_type == "video2world" or inference_type == "world_interpolator") and not args.batch_input_path:
+    if inference_type in ("video2world", "video2world_action", "world_interpolator") and not args.batch_input_path:
         assert (
             args.input_image_or_video_path
         ), "--input_image_or_video_path must be provided for single video generation."
@@ -301,7 +300,7 @@ def skip_init_linear():
 
 def load_model_by_config(
     config_job_name,
-    config_file="projects/cosmos_video/config/config.py",
+    config_file="cosmos_predict1/diffusion/config/config.py",
     model_class=DiffusionT2WModel,
 ):
     config_module = get_config_module(config_file)
@@ -834,6 +833,13 @@ def get_condition_latent(
     condition_latent = condition_latent.to(torch.bfloat16)
 
     return condition_latent
+
+
+def get_condition_latent_action(
+    model: DiffusionActionV2WModel, data_batch: dict, num_of_latent_overlap: int
+) -> torch.Tensor:
+    _, x0, _ = model.get_data_and_condition(data_batch, num_condition_t=num_of_latent_overlap)
+    return x0
 
 
 def get_condition_latent_multiview(
