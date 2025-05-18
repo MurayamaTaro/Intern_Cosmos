@@ -117,9 +117,13 @@ world_interpolator_7b_example_hdvila = LazyDict(
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=1,
+            # context_parallel_size=1,
         ),
         model=dict(
+            peft_control=dict(
+                enabled=False,
+                mode="none",
+            ),
             latent_shape=[
                 16,
                 4,
@@ -145,7 +149,7 @@ world_interpolator_7b_example_hdvila = LazyDict(
                 rope_t_extrapolation_ratio=2,
             ),
             adjust_video_noise=True,
-            context_parallel_size=1,
+            # context_parallel_size=1,
             num_latents_to_drop=1,
             conditioner=dict(
                 video_cond_bool=dict(
@@ -165,7 +169,11 @@ world_interpolator_7b_example_hdvila = LazyDict(
                     dropout_rate=0.5,
                 ),
             ),
-            vae=dict(pixel_chunk_duration=9),  # 9 frames per chunk for video vae (18 frames / 2 chunks = 9)
+            # vae=dict(pixel_chunk_duration=9),  # 9 frames per chunk for video vae (18 frames / 2 chunks = 9)
+            vae=dict(  # Added VAE field
+                pixel_chunk_duration=9,
+                latent_ch=16,
+            ),
         ),
         model_obj=L(FSDPInterpolatorDiffusionModel)(
             config=PLACEHOLDER,

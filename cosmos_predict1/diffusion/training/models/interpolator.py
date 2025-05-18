@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Tuple, Union
 
-import numpy as np
 import torch
 from megatron.core import parallel_state
 from torch import Tensor
 
-from cosmos_predict1.diffusion.training.conditioner import DataType, VideoExtendCondition
+from cosmos_predict1.diffusion.conditioner import DataType
+from cosmos_predict1.diffusion.training.conditioner import VideoExtendCondition
 from cosmos_predict1.diffusion.training.models.extend_model import ExtendDiffusionModel
 from cosmos_predict1.diffusion.training.models.model import DiffusionModel as BaseModel
 from cosmos_predict1.diffusion.training.models.model import broadcast_condition
@@ -33,7 +33,7 @@ class InterpolatorDiffusionModel(ExtendDiffusionModel):
         super().__init__(config)
         self.is_extend_model = True
         self.num_valid_latents = config.latent_shape[1] - config.num_latents_to_drop
-        self.pixel_chunk_duration = config.vae.video_vae.pixel_chunk_duration
+        self.pixel_chunk_duration = config.vae.pixel_chunk_duration
         self.input_image_key = getattr(self.config, "input_image_key", None)
         self.input_data_key = self.config.input_data_key
 

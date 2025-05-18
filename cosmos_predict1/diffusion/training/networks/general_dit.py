@@ -42,8 +42,8 @@ from torch import nn
 from torch.distributed import ProcessGroup, get_process_group_ranks
 from torchvision import transforms
 
+from cosmos_predict1.diffusion.conditioner import DataType
 from cosmos_predict1.diffusion.module.attention import get_normalization
-from cosmos_predict1.diffusion.training.conditioner import DataType
 from cosmos_predict1.diffusion.training.module.blocks import (
     DITBuildingBlock,
     FinalLayer,
@@ -58,7 +58,6 @@ from cosmos_predict1.diffusion.training.module.position_embedding import (
     LearnablePosEmbAxis,
     SinCosPosEmb,
     SinCosPosEmb_FPS_Aware,
-    SinCosPosEmbAxis,
     VideoRopePosition3DEmb,
     VideoRopePositionEmb,
 )
@@ -178,8 +177,8 @@ class GeneralDIT(nn.Module):
         rope_h_extrapolation_ratio: float = 1.0,
         rope_w_extrapolation_ratio: float = 1.0,
         rope_t_extrapolation_ratio: float = 1.0,
-        extra_per_block_abs_pos_emb: bool = True,
-        extra_per_block_abs_pos_emb_type: str = "learnable",
+        extra_per_block_abs_pos_emb: bool = False,
+        extra_per_block_abs_pos_emb_type: str = "sincos",
         extra_h_extrapolation_ratio: float = 1.0,
         extra_w_extrapolation_ratio: float = 1.0,
         extra_t_extrapolation_ratio: float = 1.0,
@@ -438,8 +437,6 @@ class GeneralDIT(nn.Module):
         self.pos_embedder = cls_type(
             **kwargs,
         )
-
-        assert self.extra_per_block_abs_pos_emb is True, "extra_per_block_abs_pos_emb must be True"
 
         if self.extra_per_block_abs_pos_emb:
             assert self.extra_per_block_abs_pos_emb_type in [

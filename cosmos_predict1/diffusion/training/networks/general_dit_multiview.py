@@ -20,7 +20,7 @@ from einops import rearrange
 from torch import nn
 from torchvision import transforms
 
-from cosmos_predict1.diffusion.training.conditioner import DataType
+from cosmos_predict1.diffusion.conditioner import DataType
 from cosmos_predict1.diffusion.training.context_parallel import split_inputs_cp
 from cosmos_predict1.diffusion.training.module.blocks import GeneralDITTransformerBlock, PatchEmbed
 from cosmos_predict1.diffusion.training.module.position_embedding import (
@@ -153,8 +153,6 @@ class MultiviewGeneralDIT(GeneralDIT):
         self.pos_embedder = cls_type(
             **kwargs,
         )
-
-        assert self.extra_per_block_abs_pos_emb is True, "extra_per_block_abs_pos_emb must be True"
 
         if self.extra_per_block_abs_pos_emb:
             assert self.extra_per_block_abs_pos_emb_type in [

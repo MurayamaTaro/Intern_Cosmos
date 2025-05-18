@@ -30,6 +30,9 @@ from cosmos_predict1.diffusion.training.config.video2world_action.registry impor
 from cosmos_predict1.diffusion.training.config.video2world_instruction.registry import (
     register_configs as register_configs_video2world_instruction,
 )
+from cosmos_predict1.diffusion.training.config.world_interpolator.registry import (
+    register_configs as register_configs_world_interpolator,
+)
 from cosmos_predict1.diffusion.training.models.model import DiffusionModel
 from cosmos_predict1.utils import config
 from cosmos_predict1.utils.config_helper import import_all_modules_from_package
@@ -95,6 +98,7 @@ def make_config():
     register_configs_video2world()
     register_configs_video2world_instruction()
     register_configs_video2world_action()
+    register_configs_world_interpolator()
 
     # experiment config are defined in the experiment folder
     # call import_all_modules_from_package to register them
@@ -102,5 +106,5 @@ def make_config():
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_instruction", reload=True)
     import_all_modules_from_package("cosmos_predict1.diffusion.training.config.video2world_action", reload=True)
-
+    import_all_modules_from_package("cosmos_predict1.diffusion.training.config.world_interpolator", reload=True)
     return c

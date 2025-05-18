@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from statistics import NormalDist
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -22,16 +22,32 @@ import torch
 from einops import rearrange
 from megatron.core import parallel_state
 from torch import Tensor
+from torch.distributed import broadcast_object_list, get_process_group_ranks
+from torch.distributed.utils import _verify_param_shape_across_processes
 
-from cosmos_predict1.diffusion.conditioner import DataType
+from cosmos_predict1.diffusion.conditioner import BaseVideoCondition, DataType, VideoExtendCondition
 from cosmos_predict1.diffusion.config.base.conditioner import VideoCondBoolConfig
 from cosmos_predict1.diffusion.functional.batch_ops import batch_mul
-from cosmos_predict1.diffusion.training.conditioner import VideoExtendCondition
-from cosmos_predict1.diffusion.training.context_parallel import cat_outputs_cp, split_inputs_cp
-from cosmos_predict1.diffusion.training.models.model import DiffusionModel as BaseModel
-from cosmos_predict1.diffusion.training.models.model import _broadcast, broadcast_condition
-from cosmos_predict1.diffusion.training.models.model_image import diffusion_fsdp_class_decorator
-from cosmos_predict1.utils import log, misc
+from cosmos_predict1.diffusion.model.model_v2w import DiffusionV2WModel
+from cosmos_predict1.diffusion.module.parallel import cat_outputs_cp, split_inputs_cp
+from cosmos_predict1.diffusion.modules.denoiser_scaling import EDMScaling
+from cosmos_predict1.diffusion.modules.res_sampler import Sampler
+from cosmos_predict1.diffusion.training.modules.edm_sde import EDMSDE
+from cosmos_predict1.diffusion.types import DenoisePrediction
+from cosmos_predict1.utils import distributed, log, misc
+
+IS_PREPROCESSED_KEY = "is_preprocessed"
+
+
+@dataclass
+class CosmosCondition:
+    crossattn_emb: torch.Tensor
+    crossattn_mask: torch.Tensor
+    padding_mask: Optional[torch.Tensor] = None
+    scalar_feature: Optional[torch.Tensor] = None
+
+    def to_dict(self) -> Dict[str, Optional[torch.Tensor]]:
+        return {f.name: getattr(self, f.name) for f in fields(self)}
 
 
 @dataclass
@@ -60,23 +76,184 @@ def normalize_condition_latent(condition_latent):
     return condition_latent
 
 
-class ExtendDiffusionModel(BaseModel):
+def robust_broadcast(tensor: torch.Tensor, src: int, pg, is_check_shape: bool = False) -> torch.Tensor:
+    """
+    Perform a robust broadcast operation that works regardless of tensor shapes on different ranks.
+
+    Args:
+        tensor (torch.Tensor): The tensor to broadcast (on src rank) or receive (on other ranks).
+        src (int): The source rank for the broadcast. Defaults to 0.
+
+    Returns:
+        torch.Tensor: The broadcasted tensor on all ranks.
+    """
+    # First, broadcast the shape of the tensor
+    if distributed.get_rank() == src:
+        shape = torch.tensor(tensor.shape).cuda()
+    else:
+        shape = torch.empty(tensor.dim(), dtype=torch.long).cuda()
+    if is_check_shape:
+        _verify_param_shape_across_processes(pg, [shape])
+    torch.distributed.broadcast(shape, src, group=pg)
+
+    # Resize the tensor on non-src ranks if necessary
+    if distributed.get_rank() != src:
+        tensor = tensor.new_empty(shape.tolist()).type_as(tensor)
+
+    # Now broadcast the tensor data
+    torch.distributed.broadcast(tensor, src, group=pg)
+
+    return tensor
+
+
+def _broadcast(item: torch.Tensor | str | None, to_tp: bool = True, to_cp: bool = True) -> torch.Tensor | str | None:
+    """
+    Broadcast the item from the minimum rank in the specified group(s).
+    Since global rank = tp_rank + cp_rank * tp_size + ...
+    First broadcast in the tp_group and then in the cp_group will
+    ensure that the item is broadcasted across ranks in cp_group and tp_group.
+
+    Parameters:
+    - item: The item to broadcast (can be a torch.Tensor, str, or None).
+    - to_tp: Whether to broadcast to the tensor model parallel group.
+    - to_cp: Whether to broadcast to the context parallel group.
+    """
+    if not parallel_state.is_initialized():
+        return item
+    tp_group = parallel_state.get_tensor_model_parallel_group()
+    cp_group = parallel_state.get_context_parallel_group()
+
+    to_tp = to_tp and parallel_state.get_tensor_model_parallel_world_size() > 1
+    to_cp = to_cp and parallel_state.get_context_parallel_world_size() > 1
+
+    if to_tp:
+        min_tp_rank = min(get_process_group_ranks(tp_group))
+
+    if to_cp:
+        min_cp_rank = min(get_process_group_ranks(cp_group))
+
+    if isinstance(item, torch.Tensor):  # assume the device is cuda
+        # log.info(f"{item.shape}", rank0_only=False)
+        if to_tp:
+            # torch.distributed.broadcast(item, min_tp_rank, group=tp_group)
+            item = robust_broadcast(item, min_tp_rank, tp_group)
+        if to_cp:
+            # torch.distributed.broadcast(item, min_cp_rank, group=cp_group)
+            item = robust_broadcast(item, min_cp_rank, cp_group)
+    elif item is not None:
+        broadcastable_list = [item]
+        if to_tp:
+            # log.info(f"{broadcastable_list}", rank0_only=False)
+            broadcast_object_list(broadcastable_list, min_tp_rank, group=tp_group)
+        if to_cp:
+            broadcast_object_list(broadcastable_list, min_cp_rank, group=cp_group)
+
+        item = broadcastable_list[0]
+    return item
+
+
+def broadcast_condition(condition: BaseVideoCondition, to_tp: bool = True, to_cp: bool = True) -> BaseVideoCondition:
+    condition_kwargs = {}
+    for k, v in condition.to_dict().items():
+        if isinstance(v, torch.Tensor):
+            assert not v.requires_grad, f"{k} requires gradient. the current impl does not support it"
+        condition_kwargs[k] = _broadcast(v, to_tp=to_tp, to_cp=to_cp)
+    condition = type(condition)(**condition_kwargs)
+    return condition
+
+
+class DiffusionActionV2WModel(DiffusionV2WModel):
+    #######################################
+    # Not implemented yet
     def __init__(self, config):
         super().__init__(config)
+
+        self.sde = EDMSDE(
+            p_mean=0.0,
+            p_std=1.0,
+            sigma_max=80,
+            sigma_min=0.0002,
+        )
+        self.sampler = Sampler()
+        self.scaling = EDMScaling(self.sigma_data)
+
         self.is_extend_model = True
+
+    def _normalize_video_databatch_inplace(self, data_batch: dict[str, Tensor], input_key: str = None) -> None:
+        """
+        Normalizes video data in-place on a CUDA device to reduce data loading overhead.
+
+        This function modifies the video data tensor within the provided data_batch dictionary
+        in-place, scaling the uint8 data from the range [0, 255] to the normalized range [-1, 1].
+
+        Warning:
+            A warning is issued if the data has not been previously normalized.
+
+        Args:
+            data_batch (dict[str, Tensor]): A dictionary containing the video data under a specific key.
+                This tensor is expected to be on a CUDA device and have dtype of torch.uint8.
+
+        Side Effects:
+            Modifies the 'input_data_key' tensor within the 'data_batch' dictionary in-place.
+
+        Note:
+            This operation is performed directly on the CUDA device to avoid the overhead associated
+            with moving data to/from the GPU. Ensure that the tensor is already on the appropriate device
+            and has the correct dtype (torch.uint8) to avoid unexpected behaviors.
+        """
+        input_key = self.input_data_key if input_key is None else input_key
+        # only handle video batch
+        if input_key in data_batch:
+            # Check if the data has already been normalized and avoid re-normalizing
+            if IS_PREPROCESSED_KEY in data_batch and data_batch[IS_PREPROCESSED_KEY] is True:
+                assert torch.is_floating_point(data_batch[input_key]), "Video data is not in float format."
+                assert torch.all(
+                    (data_batch[input_key] >= -1.0001) & (data_batch[input_key] <= 1.0001)
+                ), f"Video data is not in the range [-1, 1]. get data range [{data_batch[input_key].min()}, {data_batch[input_key].max()}]"
+            else:
+                assert data_batch[input_key].dtype == torch.uint8, "Video data is not in uint8 format."
+                data_batch[input_key] = data_batch[input_key].to(**self.tensor_kwargs) / 127.5 - 1.0
+                data_batch[IS_PREPROCESSED_KEY] = True
 
     def get_data_and_condition(
         self, data_batch: dict[str, Tensor], num_condition_t: Union[int, None] = None
     ) -> Tuple[Tensor, VideoExtendCondition]:
-        raw_state, latent_state, condition = super().get_data_and_condition(data_batch)
-        if condition.data_type == DataType.VIDEO:
-            if self.config.conditioner.video_cond_bool.sample_tokens_start_from_p_or_i:
-                latent_state = self.sample_tokens_start_from_p_or_i(latent_state)
-            condition = self.add_condition_video_indicator_and_video_input_mask(
-                latent_state, condition, num_condition_t=num_condition_t
-            )
-            if self.config.conditioner.video_cond_bool.add_pose_condition:
-                condition = self.add_condition_pose(data_batch, condition)
+        # raw_state, latent_state, condition = super().get_data_and_condition(data_batch)
+
+        # ################## from DiffusionV2WModel ###################
+        self._normalize_video_databatch_inplace(data_batch)
+        input_key = self.input_data_key  # by default it is video key
+        is_video_batch = True
+
+        # Broadcast data and condition across TP and CP groups.
+        # sort keys to make sure the order is same, IMPORTANT! otherwise, nccl will hang!
+        local_keys = sorted(list(data_batch.keys()))
+        # log.critical(f"all keys {local_keys}", rank0_only=False)
+        for key in local_keys:
+            data_batch[key] = _broadcast(data_batch[key], to_tp=True, to_cp=is_video_batch)
+
+        # Latent state
+        raw_state = data_batch[input_key]
+        latent_state = self.encode(raw_state).contiguous()
+
+        # Condition
+        condition = self.conditioner(data_batch)
+        condition.data_type = DataType.VIDEO
+
+        # VAE has randomness. CP/TP group should have the same encoded output.
+
+        latent_state = _broadcast(latent_state, to_tp=True, to_cp=is_video_batch)
+        condition = broadcast_condition(condition, to_tp=True, to_cp=is_video_batch)
+
+        # ################## from DiffusionV2WModel ###################
+
+        if self.config.conditioner.video_cond_bool.sample_tokens_start_from_p_or_i:
+            latent_state = self.sample_tokens_start_from_p_or_i(latent_state)
+        condition = self.add_condition_video_indicator_and_video_input_mask(
+            latent_state, condition, num_condition_t=num_condition_t
+        )
+        if self.config.conditioner.video_cond_bool.add_pose_condition:
+            condition = self.add_condition_pose(data_batch, condition)
         log.debug(f"condition.data_type {condition.data_type}")
         return raw_state, latent_state, condition
 
@@ -183,26 +360,47 @@ class ExtendDiffusionModel(BaseModel):
 
         return condition, augment_latent_cin
 
-    def drop_out_condition_region(
-        self, augment_latent: Tensor, noise_x: Tensor, cfg_video_cond_bool: VideoCondBoolConfig
-    ) -> Tensor:
-        """Use for CFG on input frames, we drop out the conditional region
-        There are two option:
-        1. when we dropout, we set the region to be zero
-        2. when we dropout, we set the region to be noise_x
+    def _denoise(self, xt: torch.Tensor, sigma: torch.Tensor, condition: CosmosCondition) -> DenoisePrediction:
         """
-        # Unconditional case, use for cfg
-        if cfg_video_cond_bool.cfg_unconditional_type == "zero_condition_region_condition_mask":
-            # Set the condition location input to be zero
-            augment_latent_drop = torch.zeros_like(augment_latent)
-        elif cfg_video_cond_bool.cfg_unconditional_type == "noise_x_condition_region":
-            # Set the condition location input to be noise_x, i.e., same as base model training
-            augment_latent_drop = noise_x
-        else:
-            raise NotImplementedError(
-                f"cfg_unconditional_type {cfg_video_cond_bool.cfg_unconditional_type} not implemented"
-            )
-        return augment_latent_drop
+        Performs denoising on the input noise data, noise level, and condition
+
+        Args:
+            xt (torch.Tensor): The input noise data.
+            sigma (torch.Tensor): The noise level.
+            condition (CosmosCondition): conditional information, generated from self.conditioner
+
+        Returns:
+            DenoisePrediction: The denoised prediction, it includes clean data predicton (x0), \
+                noise prediction (eps_pred) and optional confidence (logvar).
+        """
+
+        if getattr(self.config, "use_dummy_temporal_dim", False):
+            # When using video DiT model for image, we need to use a dummy temporal dimension.
+            xt = xt.unsqueeze(2)
+
+        xt = xt.to(**self.tensor_kwargs)
+        sigma = sigma.to(**self.tensor_kwargs)
+        # get precondition for the network
+        c_skip, c_out, c_in, c_noise = self.scaling(sigma=sigma)
+
+        # forward pass through the network
+        net_output = self.net(
+            x=batch_mul(c_in, xt),  # Eq. 7 of https://arxiv.org/pdf/2206.00364.pdf
+            timesteps=c_noise,  # Eq. 7 of https://arxiv.org/pdf/2206.00364.pdf
+            **condition.to_dict(),
+        )
+
+        logvar = self.model.logvar(c_noise)
+        x0_pred = batch_mul(c_skip, xt) + batch_mul(c_out, net_output)
+
+        # get noise prediction based on sde
+        eps_pred = batch_mul(xt - x0_pred, 1.0 / sigma)
+
+        if getattr(self.config, "use_dummy_temporal_dim", False):
+            x0_pred = x0_pred.squeeze(2)
+            eps_pred = eps_pred.squeeze(2)
+
+        return DenoisePrediction(x0_pred, eps_pred, logvar)
 
     def denoise(
         self,
@@ -224,68 +422,60 @@ class ExtendDiffusionModel(BaseModel):
         Returns:
             Tensor: Denoised output tensor.
         """
-        if condition.data_type == DataType.IMAGE:
-            pred = super().denoise(noise_x, sigma, condition)
-            log.debug(f"hit image denoise, noise_x shape {noise_x.shape}, sigma shape {sigma.shape}", rank0_only=False)
-            return VideoDenoisePrediction(
-                x0=pred.x0,
-                eps=pred.eps,
-                logvar=pred.logvar,
-                xt=noise_x,
-            )
+
+        assert (
+            condition.gt_latent is not None
+        ), f"find None gt_latent in condition, likely didn't call self.add_condition_video_indicator_and_video_input_mask when preparing the condition or this is a image batch but condition.data_type is wrong, get {noise_x.shape}"
+        gt_latent = condition.gt_latent
+        cfg_video_cond_bool: VideoCondBoolConfig = self.config.conditioner.video_cond_bool
+
+        condition_latent = gt_latent
+
+        if cfg_video_cond_bool.normalize_condition_latent:
+            condition_latent = normalize_condition_latent(condition_latent)
+
+        # Augment the latent with different sigma value, and add the augment_sigma to the condition object if needed
+        condition, augment_latent = self.augment_conditional_latent_frames(
+            condition,
+            cfg_video_cond_bool,
+            condition_latent,
+            condition_video_augment_sigma_in_inference,
+            sigma,
+            seed_inference=seed_inference,
+        )
+
+        condition_video_indicator = condition.condition_video_indicator  # [B, 1, T, 1, 1]
+        if parallel_state.get_context_parallel_world_size() > 1:
+            cp_group = parallel_state.get_context_parallel_group()
+            condition_video_indicator = split_inputs_cp(condition_video_indicator, seq_dim=2, cp_group=cp_group)
+            augment_latent = split_inputs_cp(augment_latent, seq_dim=2, cp_group=cp_group)
+            gt_latent = split_inputs_cp(gt_latent, seq_dim=2, cp_group=cp_group)
+
+        if not condition.video_cond_bool:
+            # Unconditional case, drop out the condition region
+            augment_latent = self.drop_out_condition_region(augment_latent, noise_x, cfg_video_cond_bool)
+
+        # Compose the model input with condition region (augment_latent) and generation region (noise_x)
+        new_noise_xt = condition_video_indicator * augment_latent + (1 - condition_video_indicator) * noise_x
+        # Call the abse model
+        denoise_pred = self._denoise(new_noise_xt, sigma, condition)
+
+        x0_pred_replaced = condition_video_indicator * gt_latent + (1 - condition_video_indicator) * denoise_pred.x0
+        if cfg_video_cond_bool.compute_loss_for_condition_region:
+            # We also denoise the conditional region
+            x0_pred = denoise_pred.x0
         else:
-            assert (
-                condition.gt_latent is not None
-            ), f"find None gt_latent in condition, likely didn't call self.add_condition_video_indicator_and_video_input_mask when preparing the condition or this is a image batch but condition.data_type is wrong, get {noise_x.shape}"
-            gt_latent = condition.gt_latent
-            cfg_video_cond_bool: VideoCondBoolConfig = self.config.conditioner.video_cond_bool
+            x0_pred = x0_pred_replaced
 
-            condition_latent = gt_latent
-
-            if cfg_video_cond_bool.normalize_condition_latent:
-                condition_latent = normalize_condition_latent(condition_latent)
-
-            # Augment the latent with different sigma value, and add the augment_sigma to the condition object if needed
-            condition, augment_latent = self.augment_conditional_latent_frames(
-                condition,
-                cfg_video_cond_bool,
-                condition_latent,
-                condition_video_augment_sigma_in_inference,
-                sigma,
-                seed_inference=seed_inference,
-            )
-            condition_video_indicator = condition.condition_video_indicator  # [B, 1, T, 1, 1]
-            if parallel_state.get_context_parallel_world_size() > 1:
-                cp_group = parallel_state.get_context_parallel_group()
-                condition_video_indicator = split_inputs_cp(condition_video_indicator, seq_dim=2, cp_group=cp_group)
-                augment_latent = split_inputs_cp(augment_latent, seq_dim=2, cp_group=cp_group)
-                gt_latent = split_inputs_cp(gt_latent, seq_dim=2, cp_group=cp_group)
-
-            if not condition.video_cond_bool:
-                # Unconditional case, drop out the condition region
-                augment_latent = self.drop_out_condition_region(augment_latent, noise_x, cfg_video_cond_bool)
-
-            # Compose the model input with condition region (augment_latent) and generation region (noise_x)
-            new_noise_xt = condition_video_indicator * augment_latent + (1 - condition_video_indicator) * noise_x
-            # Call the abse model
-            denoise_pred = super().denoise(new_noise_xt, sigma, condition)
-
-            x0_pred_replaced = condition_video_indicator * gt_latent + (1 - condition_video_indicator) * denoise_pred.x0
-            if cfg_video_cond_bool.compute_loss_for_condition_region:
-                # We also denoise the conditional region
-                x0_pred = denoise_pred.x0
-            else:
-                x0_pred = x0_pred_replaced
-
-            return VideoDenoisePrediction(
-                x0=x0_pred,
-                eps=batch_mul(noise_x - x0_pred, 1.0 / sigma),
-                logvar=denoise_pred.logvar,
-                net_in=batch_mul(1.0 / torch.sqrt(self.sigma_data**2 + sigma**2), new_noise_xt),
-                net_x0_pred=denoise_pred.x0,
-                xt=new_noise_xt,
-                x0_pred_replaced=x0_pred_replaced,
-            )
+        return VideoDenoisePrediction(
+            x0=x0_pred,
+            eps=batch_mul(noise_x - x0_pred, 1.0 / sigma),
+            logvar=denoise_pred.logvar,
+            net_in=batch_mul(1.0 / torch.sqrt(self.sigma_data**2 + sigma**2), new_noise_xt),
+            net_x0_pred=denoise_pred.x0,
+            xt=new_noise_xt,
+            x0_pred_replaced=x0_pred_replaced,
+        )
 
     def generate_samples_from_batch(
         self,
@@ -315,28 +505,12 @@ class ExtendDiffusionModel(BaseModel):
             return_noise (bool): return the initial noise or not, used for ODE pairs generation
         """
         self._normalize_video_databatch_inplace(data_batch)
-        self._augment_image_dim_inplace(data_batch)
-        is_image_batch = self.is_image_batch(data_batch)
-        if is_image_batch:
-            log.debug("image batch, call base model generate_samples_from_batch")
-            return super().generate_samples_from_batch(
-                data_batch,
-                guidance=guidance,
-                seed=seed,
-                state_shape=state_shape,
-                n_sample=n_sample,
-                is_negative_prompt=is_negative_prompt,
-                num_steps=num_steps,
-            )
         if n_sample is None:
-            input_key = self.input_image_key if is_image_batch else self.input_data_key
+            input_key = self.input_data_key
             n_sample = data_batch[input_key].shape[0]
         if state_shape is None:
-            if is_image_batch:
-                state_shape = (self.state_shape[0], 1, *self.state_shape[2:])  # C,T,H,W
-            else:
-                log.debug(f"Default Video state shape is used. {self.state_shape}")
-                state_shape = self.state_shape
+            log.debug(f"Default Video state shape is used. {self.state_shape}")
+            state_shape = self.state_shape
 
         assert condition_latent is not None, "condition_latent should be provided"
 
@@ -570,8 +744,3 @@ class ExtendDiffusionModel(BaseModel):
             latent_state_sample = _broadcast(latent_state_sample, to_tp=True, to_cp=True)
 
         return latent_state_sample
-
-
-@diffusion_fsdp_class_decorator
-class FSDPExtendDiffusionModel(ExtendDiffusionModel):
-    pass

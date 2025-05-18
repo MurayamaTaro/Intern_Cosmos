@@ -75,4 +75,6 @@ FADITV2_Multiview_Config: LazyDict = L(MultiviewGeneralDIT)(
     rope_h_extrapolation_ratio=1.0,
     rope_w_extrapolation_ratio=1.0,
     rope_t_extrapolation_ratio=1.0,
+    extra_per_block_abs_pos_emb=True,
+    extra_per_block_abs_pos_emb_type="sincos",
 )
