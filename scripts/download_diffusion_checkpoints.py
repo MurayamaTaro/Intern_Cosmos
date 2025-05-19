@@ -47,7 +47,7 @@ def parse_args():
             "Text2World",
             "Video2World",
         ],  # Download all by default
-        choices=["Text2World", "Video2World", "Text2World-Sample-AV-Multiview", "Video2World-Sample-AV-Multiview"],
+        choices=["Text2World", "Video2World", "Text2World-Sample-AV-Multiview", "Video2World-Sample-AV-Multiview", "Cosmos-Predict1-7B-Single2Multiview-Sample-AV"],
         help="Which model types to download. Possible values: Text2World, Video2World",
     )
     parser.add_argument(
@@ -300,6 +300,8 @@ def main(args):
         allow_patterns=[
             "README.md",
             "model.pt",
+            "t2w_model.pt",
+            "v2w_model.pt",
             "mean_std.pt",
             "image_mean_std.pt",
             "config.json",

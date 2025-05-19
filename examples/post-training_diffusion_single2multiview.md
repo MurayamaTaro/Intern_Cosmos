@@ -27,7 +27,7 @@ Please refer to the Post-training section of [INSTALL.md](/INSTALL.md#post-train
 
 4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World-Sample-AV-Multiview --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Cosmos-Predict1-7B-Single2Multiview-Sample-AV --checkpoint_dir checkpoints
    ```
 
 ### Examples
@@ -38,17 +38,17 @@ Post-training a Cosmos Diffusion-based WFM enables you to train the model to gen
 The first step is to download a dataset with videos and captions and then preprocess it to our required format.
 
 Example 1. You can use [Waymo Open Dataset](https://waymo.com/open/) for post-training.
-Please follow the [instruction](https://github.com/nv-tlabs/cosmos-av-sample-toolkits/tree/tianshic/t5_changes) in [cosmos-av-sample-toolkits](https://github.com/nv-tlabs/cosmos-av-sample-toolkits) to download and convert the Waymo Open Dataset.
+Please follow the [instruction](https://github.com/nv-tlabs/cosmos-av-sample-toolkits/blob/main/docs/processing_waymo_for_predict1.md) in [cosmos-av-sample-toolkits](https://github.com/nv-tlabs/cosmos-av-sample-toolkits) to download and convert the Waymo Open Dataset.
 
 The resulting folder structure should look like this:
 ```
 <DATA_ROOT>/waymo/
 ├── cache/
-│   ├── prefix_t5_embeddings_pinhole_front.pickle
-│   ├── prefix_t5_embeddings_pinhole_front_left.pickle
-│   ├── prefix_t5_embeddings_pinhole_front_right.pickle
-│   ├── prefix_t5_embeddings_pinhole_side_left.pickle
-│   └── prefix_t5_embeddings_pinhole_side_right.pickle
+│   ├── prefix_t5_embeddings_pinhole_front.pkl
+│   ├── prefix_t5_embeddings_pinhole_front_left.pkl
+│   ├── prefix_t5_embeddings_pinhole_front_right.pkl
+│   ├── prefix_t5_embeddings_pinhole_side_left.pkl
+│   └── prefix_t5_embeddings_pinhole_side_right.pkl
 ├── videos/
 │   ├── pinhole_front
 │       ├── *.mp4

@@ -16,7 +16,7 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Sample-AV-Single2Multiview --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Cosmos-Predict1-7B-Single2Multiview-Sample-AV --checkpoint_dir checkpoints
    ```
 
 ### Examples
@@ -75,7 +75,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
     --prompt_back "${PROMPT_BACK}" \
     --prompt_back_left "${PROMPT_BACK_LEFT}" \
     --prompt_back_right "${PROMPT_BACK_RIGHT}" \
-    --video_save_name diffusion-single2multiview-text2world --disable_prompt_upsampler --disable_guardrail
+    --video_save_name diffusion-single2multiview-text2world
 ```
 Similar to other examples, multiple gpus can be leveraged in generation too:
 ```bash
@@ -84,7 +84,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} 
     --num_gpus ${NUM_GPUS} \
     --checkpoint_dir checkpoints \
     --diffusion_transformer_dir Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt \
-    --view_condition_video assets/diffusion/sv2mv_input_view.mp4 \
+    --view_condition_video assets/diffusion/sv2mv_input_view_2.mp4 \
     --num_input_frames 1 \
     --condition_location "first_cam" \
     --prompt "${PROMPT}" \
@@ -101,7 +101,7 @@ This example runs the front view + initial frames extension into multiview video
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --checkpoint_dir checkpoints \
     --diffusion_transformer_dir Cosmos-Predict1-7B-Single2Multiview-Sample-AV/v2w_model.pt \
-    --view_condition_video assets/diffusion/sv2mv_input_view.mp4 \
+    --view_condition_video assets/diffusion/sv2mv_input_view_2.mp4 \
     --initial_condition_video assets/diffusion/sv2mv_initial_frames.mp4 \
     --num_input_frames 9 \
     --condition_location "first_cam_and_first_n" \
