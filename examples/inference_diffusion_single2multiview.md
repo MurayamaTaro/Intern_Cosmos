@@ -16,7 +16,7 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Cosmos-Predict1-7B-Single2Multiview-Sample-AV --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Cosmos-Predict1-7B-SingleToMultiView-Sample-AV --checkpoint_dir checkpoints
    ```
 
 ### Examples
@@ -65,7 +65,7 @@ This is the basic example for running inference on the 7B single to multiview mo
 ```bash
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --checkpoint_dir checkpoints \
-    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2w_model.pt \
     --view_condition_video assets/diffusion/sv2mv_input_view.mp4 \
     --num_input_frames 1 \
     --condition_location "first_cam" \
@@ -83,7 +83,7 @@ NUM_GPUS=8
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --num_gpus ${NUM_GPUS} \
     --checkpoint_dir checkpoints \
-    --diffusion_transformer_dir Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2w_model.pt \
     --view_condition_video assets/diffusion/sv2mv_input_view_2.mp4 \
     --num_input_frames 1 \
     --condition_location "first_cam" \
@@ -100,7 +100,7 @@ This example runs the front view + initial frames extension into multiview video
 ```bash
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --checkpoint_dir checkpoints \
-    --diffusion_transformer_dir Cosmos-Predict1-7B-Single2Multiview-Sample-AV/v2w_model.pt \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt \
     --view_condition_video assets/diffusion/sv2mv_input_view_2.mp4 \
     --initial_condition_video assets/diffusion/sv2mv_initial_frames.mp4 \
     --num_input_frames 9 \
@@ -119,7 +119,7 @@ This example uses the generation results of example 1 as initial frames input to
 ```bash
 CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py \
     --checkpoint_dir checkpoints \
-    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt \
     --view_condition_video assets/diffusion/sv2mv_input_view.mp4 \
     --initial_condition_video outputs/diffusion-single2multiview-text2world.mp4 \
     --num_input_frames 9 \
