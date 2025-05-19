@@ -19,14 +19,8 @@ import os
 import torch
 from megatron.core import parallel_state
 
-
-from cosmos_predict1.diffusion.inference.inference_utils import (
-    add_common_arguments,
-    remove_argument
-)
-from cosmos_predict1.diffusion.inference.world_generation_pipeline import (
-    DiffusionViewExtendMultiviewGenerationPipeline,
-)
+from cosmos_predict1.diffusion.inference.inference_utils import add_common_arguments, remove_argument
+from cosmos_predict1.diffusion.inference.world_generation_pipeline import DiffusionViewExtendMultiviewGenerationPipeline
 from cosmos_predict1.utils import distributed, log, misc
 from cosmos_predict1.utils.io import read_prompts_from_file, save_video
 
@@ -57,8 +51,8 @@ def parse_arguments() -> argparse.Namespace:
         default="Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt",
         help="DiT model weights directory name relative to checkpoint_dir",
         choices=[
-            "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt", 
-            "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/v2w_model.pt"
+            "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt",
+            "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/v2w_model.pt",
         ],
     )
     parser.add_argument(
