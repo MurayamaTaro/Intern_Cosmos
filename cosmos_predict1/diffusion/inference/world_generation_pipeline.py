@@ -60,7 +60,7 @@ from cosmos_predict1.diffusion.prompt_upsampler.video2world_prompt_upsampler_inf
 from cosmos_predict1.diffusion.training.utils.inference_long_video import (
     generate_video_from_batch_with_loop,
     switch_config_for_inference,
-
+)
 from cosmos_predict1.diffusion.utils.dataset_utils import Resize_Preprocess, ToTensorVideo
 
 from cosmos_predict1.utils import distributed, log
@@ -92,9 +92,9 @@ MODEL_NAME_DICT = {
     "Cosmos-Predict1-7B-Text2World-Sample-AV-Multiview": "Cosmos_Predict1_Text2World_7B_Multiview",
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview": "Cosmos_Predict1_Video2World_7B_Multiview",
     "Cosmos-Predict1-7B-WorldInterpolator": "Cosmos_Predict1_WorldInterpolator_7B",
-    # sample-av single2multiview
-    "Cosmos-Predict1-7B-Text2World-Sample-AV-SingleToMultiView": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
-    "Cosmos-Predict1-7B-Video2World-Sample-AV-SingleToMultiView": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    # single2multiview
+    "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/t2w_model.pt": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-Single2Multiview-Sample-AV/v2w_model.pt": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
     # video2world action-conditioned
     "Cosmos-Predict1-7B-Video2World_action_post-trained": "Cosmos_Predict1_Video2World_7B_Action_Post_trained",
 }
@@ -194,7 +194,11 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
         )
 
     def _load_network(self):
-        load_network_model(self.model, f"{self.checkpoint_dir}/{self.checkpoint_name}/model.pt")
+        if self.checkpoint_name.endswith(".pt"):
+            load_network_model(self.model, f"{self.checkpoint_dir}/{self.checkpoint_name}")
+        else:
+            load_network_model(self.model, f"{self.checkpoint_dir}/{self.checkpoint_name}/model.pt")
+
         if distributed.get_world_size() > 1:
             process_group = parallel_state.get_context_parallel_group()
             self.model.net.enable_context_parallel(process_group)
@@ -655,6 +659,7 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
                 Final prompt used for generation (may be enhanced)
             ), or None if content fails guardrail safety checks
         """
+
         log.info(f"Run with image or video path: {image_or_video_path}")
         log.info(f"Run with negative prompt: {negative_prompt}")
         log.info(f"Run with prompt upsampler: {self.enable_prompt_upsampler}")

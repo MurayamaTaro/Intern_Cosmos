@@ -38,6 +38,8 @@ Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview: LazyDict = LazyDict(
                 128,
             ],
             net=L(MultiviewExtensionGeneralDIT)(
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="sincos",
                 n_views=6,  # this indicates how many views to generate, can be overwritten at inference time
                 n_views_emb=7,  # this indicates how many views the model has trained for, should not be changed at inference time
                 view_condition_dim=6,
