@@ -93,6 +93,7 @@ MODEL_NAME_DICT = {
     # single2multiview
     "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2w_model.pt": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
     "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
+    "Cosmos-Predict1-7B-SingleToMultiView_post-trained": "Cosmos_Predict1_Video2World_7B_ViewExtend_Multiview",
     # video2world action-conditioned
     "Cosmos-Predict1-7B-Video2World_action_post-trained": "Cosmos_Predict1_Video2World_7B_Action_Post_trained",
 }

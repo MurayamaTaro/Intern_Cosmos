@@ -16,12 +16,12 @@ Please refer to the Inference section of [INSTALL.md](/INSTALL.md#inference) for
 
 4. Download the Cosmos model weights from [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7):
    ```bash
-   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Cosmos-Predict1-7B-SingleToMultiView-Sample-AV --checkpoint_dir checkpoints
+   CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types SingleToMultiView-Sample-AV --checkpoint_dir checkpoints
    ```
 
 ### Examples
-We provide `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Text2World` for world generation from front view video and text,
-and `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV-Video2World` for world generation from front view video and multiview initial frame(s).
+We provide `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2w_model.pt` for world generation from front view video and text,
+and `Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt` for world generation from front view video and multiview initial frame(s).
 
 The inference script is `cosmos_predict1/diffusion/inference/video2world_view_extend_multiview.py`.
 To see the complete list of available arguments, run
