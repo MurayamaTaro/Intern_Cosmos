@@ -1,8 +1,8 @@
-## Post-training diffusion-based Single2Multiview-Sample-AV Models
+## Post-training diffusion-based SingleToMultiView-Sample-AV/ Models
 
 ### Model Support Matrix
 
-We support the following Cosmos Single2Multiview-Sample-AV models for post-training. Review the available models and their compute requirements for post-tuning and inference to determine the best model for your use case.
+We support the following Cosmos SingleToMultiView-Sample-AV models for post-training. Review the available models and their compute requirements for post-tuning and inference to determine the best model for your use case.
 
 | Model Name                                               | Model Status   | Compute Requirements for Post-Training   |
 |----------------------------------------------------------|----------------|------------------------------------------|
@@ -13,7 +13,7 @@ We support the following Cosmos Single2Multiview-Sample-AV models for post-train
 
 ### How we trained Cosmos-Predict1-7B-SingleToMultiView-Sample-AV
 
-The Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview model was post-trained with the following specifications:
+The Cosmos-Predict1-7B-SingleToMultiView-Sample-AV model was post-trained with the following specifications:
 
 #### Dataset Used:
 

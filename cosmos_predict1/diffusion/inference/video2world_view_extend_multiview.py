@@ -124,14 +124,15 @@ def parse_arguments() -> argparse.Namespace:
         "--num_input_frames",
         type=int,
         default=1,
-        help="Number of input frames for video2world prediction",
-        choices=[1, 9],
+        help="Number of input frames for video2world prediction, not used in the t2w setting",
+        choices=[0, 1, 9],
     )
     parser.add_argument(
         "--view_cond_start_frame",
         type=int,
         default=0,
-        help="Number of input frames for video2world prediction",
+        help="Number of frames to skip in the view_condition_video from the start, useful if you want to extend a segment "
+        "of the input video rather than from the beginning.",
     )
     return parser.parse_args()
 

@@ -84,7 +84,7 @@ video2world_singletomultiview_7b_example_waymo = LazyDict(
             save_iter=200,
             load_path="checkpoints/Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt",
             load_training_state=False,
-            strict_resume=True,
+            strict_resume=False,
             keys_not_to_resume=[],
         ),
         trainer=dict(

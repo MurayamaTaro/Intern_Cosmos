@@ -1,4 +1,4 @@
-## Inference with diffusion-based Single2Multiview models
+## Inference with diffusion-based SingleToMultiView-Sample-AV models
 
 ### Environment setup
 
@@ -93,7 +93,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) torchrun --nproc_per_node=${NUM_GPUS} 
     --prompt_back "${PROMPT_BACK}" \
     --prompt_back_left "${PROMPT_BACK_LEFT}" \
     --prompt_back_right "${PROMPT_BACK_RIGHT}" \
-    --video_save_name diffusion-single2multiview-text2world-8gpu --disable_prompt_upsampler --disable_guardrail
+    --video_save_name diffusion-single2multiview-text2world-8gpu
 ```
 #### Example 2: single view extension with initial frames condition
 This example runs the front view + initial frames extension into multiview video.
@@ -111,7 +111,7 @@ CUDA_HOME=$CONDA_PREFIX PYTHONPATH=$(pwd) python cosmos_predict1/diffusion/infer
     --prompt_back "${PROMPT_BACK}" \
     --prompt_back_left "${PROMPT_BACK_LEFT}" \
     --prompt_back_right "${PROMPT_BACK_RIGHT}" \
-    --video_save_name diffusion-single2multiview-video2world --disable_prompt_upsampler --disable_guardrail
+    --video_save_name diffusion-single2multiview-video2world
 ```
 
 #### Example 3: single view extension with looped generation
