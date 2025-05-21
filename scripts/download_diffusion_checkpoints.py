@@ -47,7 +47,13 @@ def parse_args():
             "Text2World",
             "Video2World",
         ],  # Download all by default
-        choices=["Text2World", "Video2World", "Text2World-Sample-AV-Multiview", "Video2World-Sample-AV-Multiview", "SingleToMultiView-Sample-AV"],
+        choices=[
+            "Text2World",
+            "Video2World",
+            "Text2World-Sample-AV-Multiview",
+            "Video2World-Sample-AV-Multiview",
+            "SingleToMultiView-Sample-AV",
+        ],
         help="Which model types to download. Possible values: Text2World, Video2World",
     )
     parser.add_argument(

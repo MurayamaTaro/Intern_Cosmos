@@ -82,7 +82,7 @@ The resulting folder structure should look like this:
 
 If you've used the multiview caption embedding option above, set `load_mv_emb` to True in `cosmos_predict1/diffusion/training/config/text2world_singletomultiview/experiment.py`
 
-* While here we use Waymo dataset, any RGB multi-view video dataset can be used as long as it's organized in the above structure. 
+* While here we use Waymo dataset, any RGB multi-view video dataset can be used as long as it's organized in the above structure.
 
 #### 2. Post-train the Model
 
@@ -148,7 +148,7 @@ checkpoints/posttraining/diffusion_text2world/text2world_singletomultiview_7b_ex
 #### Inference with the Post-trained Model Checkpoint
 Inference can be done with the same interface as described in [examples/inference_diffusion_single2multiview.md](https://github.com/nvidia-cosmos/cosmos-predict1/blob/main/examples/inference_diffusion_single2multiview.md).
 
-1. **Copying checkpoint to Designated Location** 
+1. **Copying checkpoint to Designated Location**
 The post-trained checkpoint needs to be copied to checkpoints/Cosmos-Predict1-7B-SingleToMultiView_post-trained/model.pt.
 For example, if a post-trained checkpoint (ema) with 1000 iterations is to be used,
 ```commandline
