@@ -22,9 +22,9 @@ assignees: pjannaty
 
 ## Steps to Reproduce (for bugs)
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 <!-- Provide a minimal, complete, and reproducible example if possible. -->
 
