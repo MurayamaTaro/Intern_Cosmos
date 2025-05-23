@@ -116,6 +116,7 @@ def main(args) -> None:
     # Write txt files to match other dataset formats.
     for meta_filename in metas_list:
         if not os.path.exists(meta_filename):
+            os.makedirs(os.path.dirname(meta_filename), exist_ok=True)
             with open(meta_filename, "w") as fp:
                 fp.write(args.prompt)
 

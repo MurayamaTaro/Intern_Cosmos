@@ -21,6 +21,7 @@ from cosmos_predict1.diffusion.config.base.conditioner import (
     VideoConditionerFpsSizePaddingFrameRepeatConfig,
     VideoExtendConditionerConfig,
     VideoExtendConditionerFrameRepeatConfig,
+    ViewConditionedVideoExtendConditionerFrameRepeatConfig,
 )
 from cosmos_predict1.diffusion.config.base.net import FADITV2_14B_Config, FADITV2_Multiview_Config, FADITV2Config
 from cosmos_predict1.diffusion.config.base.tokenizer import get_cosmos_diffusion_tokenizer_comp8x8x8
@@ -77,6 +78,12 @@ def register_conditioner(cs):
         package="model.conditioner",
         name="video_cond_frame_repeat",
         node=VideoExtendConditionerFrameRepeatConfig,
+    )
+    cs.store(
+        group="conditioner",
+        package="model.conditioner",
+        name="view_conditioned_video_frame_repeat_cond",
+        node=ViewConditionedVideoExtendConditionerFrameRepeatConfig,
     )
 
 

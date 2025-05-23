@@ -47,7 +47,13 @@ def parse_args():
             "Text2World",
             "Video2World",
         ],  # Download all by default
-        choices=["Text2World", "Video2World", "Text2World-Sample-AV-Multiview", "Video2World-Sample-AV-Multiview"],
+        choices=[
+            "Text2World",
+            "Video2World",
+            "Text2World-Sample-AV-Multiview",
+            "Video2World-Sample-AV-Multiview",
+            "SingleToMultiView-Sample-AV",
+        ],
         help="Which model types to download. Possible values: Text2World, Video2World",
     )
     parser.add_argument(
@@ -235,6 +241,8 @@ MD5_CHECKSUM_LOOKUP = {
     "Cosmos-Predict1-7B-Video2World-Sample-AV-Multiview/model.pt": "1653f87dce3d558ee01416593552a91c",
     "google-t5/t5-11b/pytorch_model.bin": "f890878d8a162e0045a25196e27089a3",
     "google-t5/t5-11b/tf_model.h5": "e081fc8bd5de5a6a9540568241ab8973",
+    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/t2w_model.pt": "a3fb13e8418d8bb366b58e4092bd91df",
+    "Cosmos-Predict1-7B-SingleToMultiView-Sample-AV/v2w_model.pt": "48b2080ca5be66c05fac44dea4989a04",
 }
 
 
@@ -300,6 +308,8 @@ def main(args):
         allow_patterns=[
             "README.md",
             "model.pt",
+            "t2w_model.pt",
+            "v2w_model.pt",
             "mean_std.pt",
             "image_mean_std.pt",
             "config.json",

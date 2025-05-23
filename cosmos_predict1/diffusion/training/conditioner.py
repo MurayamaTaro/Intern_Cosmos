@@ -165,6 +165,12 @@ class VideoExtendCondition(BaseVideoCondition):
 
 
 @dataclass
+class ViewConditionedVideoExtendCondition(VideoExtendCondition):
+    # view index indicating camera, used to index nn.Embedding
+    view_indices_B_T: Optional[torch.Tensor] = None
+
+
+@dataclass
 class VideoLatentDiffusionDecoderCondition(BaseVideoCondition):
     # latent_condition will concat to the input of network, along channel dim;
     # cfg will make latent_condition all zero padding.
@@ -204,6 +210,16 @@ class VideoExtendConditioner(GeneralConditioner):
     ) -> VideoExtendCondition:
         output = super()._forward(batch, override_dropout_rate)
         return VideoExtendCondition(**output)
+
+
+class ViewConditionedVideoExtendConditioner(GeneralConditioner):
+    def forward(
+        self,
+        batch: Dict,
+        override_dropout_rate: Optional[Dict[str, float]] = None,
+    ) -> ViewConditionedVideoExtendCondition:
+        output = super()._forward(batch, override_dropout_rate)
+        return ViewConditionedVideoExtendCondition(**output)
 
 
 class VideoConditionerWithTraingOnlyEmb(GeneralConditioner):

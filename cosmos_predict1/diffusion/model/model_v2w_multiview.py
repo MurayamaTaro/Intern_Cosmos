@@ -198,18 +198,21 @@ class DiffusionMultiviewV2WModel(DiffusionV2WModel):
         """
         # Augment the latent with different sigma value, and add the augment_sigma to the condition object if needed
         augment_sigma = condition_augment_sigma
-        latent = condition.gt_latent
-        indicator = condition.condition_video_indicator
-        if augment_sigma >= sigma:
-            indicator = torch.zeros_like(indicator)
-        # Now apply the augment_sigma to the gt_latent
-        noise = misc.arch_invariant_rand(
-            latent.shape,
-            torch.float32,
-            self.tensor_kwargs["device"],
-            seed,
-        )
-        augment_latent = latent + noise * augment_sigma
+        latent = condition.gt_latent.clone()
+        indicator = condition.condition_video_indicator.clone()
+        if augment_sigma > 0:
+            if augment_sigma >= sigma:
+                indicator = torch.zeros_like(indicator)
+            # Now apply the augment_sigma to the gt_latent
+            noise = misc.arch_invariant_rand(
+                latent.shape,
+                torch.float32,
+                self.tensor_kwargs["device"],
+                seed,
+            )
+            augment_latent = latent + noise * augment_sigma
+        else:
+            augment_latent = latent
         augment_latent = self.scheduler.precondition_inputs(augment_latent, augment_sigma)
         augment_latent_unscaled = self._reverse_precondition_input(augment_latent, sigma)
         if self.net.is_context_parallel_enabled:
