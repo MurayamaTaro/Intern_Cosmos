@@ -7,32 +7,26 @@
 ## git設定
 - git --version
 - sudo dnf install -y git
-- フォーク作成＆クロー
-  - GitHub/GitLab上でフォーク作成
-  - mkdir projects
-  - cd projects
+- クローン
   - git clone https://github.com/nvidia-cosmos/cosmos-predict1.git
-- フォーク確認
-  - cd cosmos-predict1
+  - mv cosmos-predict1 Cosmos
+  - cd Cosmos
+- リモート追加
+  - git remote remove origin
+  - Github/Gitlabでリモート作成
+  - git remote add origin 作成したURL（例：https://github.com/MurayamaTaro/Cosmos.git）
   - git remote -v
-- upstream (公式) リモートを追加
-  - git remote add upstream https://github.com/nvidia-cosmos/cosmos-predict1.git
-  - git remote -v
-- 公式リポジトリの最新情報を取り込む
-  - git fetch upstream
-  - git branch -rで確認
 - 実験用ブランチを切る（新ブランチを作成し切替）
-  - git checkout -b experiment-1 upstream/main
+  - git checkout -b expr-1 main
   - git branchで確認
 - コードを改造してコミット
-  - touch tmp.py
-  - git add .
-  - git commit -m "add tmp.py"
-- 実験ブランチをorigin（自分用写し）/実験ブランチにpush
-  - git push -u origin experiment-1
-- 実験ブランチをorigin/mainにpush
+- 実験ブランチをorigin/実験ブランチにpush
+  - git push -u origin expr-1
+- 実験ブランチをmainにマージ
   - git checkout main
-  - git merge experiment-1
+  - git merge expr-1
+- リモートにpush
+  - git push origin main
 
 ## Docker
 - dockerインストール
