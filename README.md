@@ -1,102 +1,69 @@
-<p align="center">
-    <img src="assets/nvidia-cosmos-header.png" alt="NVIDIA Cosmos Header">
-</p>
+# Cosmos
 
-### [Product Website](https://www.nvidia.com/en-us/ai/cosmos/) | [Hugging Face](https://huggingface.co/collections/nvidia/cosmos-predict1-67c9d1b97678dbf7669c89a7) | [Paper](https://arxiv.org/abs/2501.03575) | [Paper Website](https://research.nvidia.com/labs/dir/cosmos-predict1)
+## 環境構築
+- OS: Amazon Linux 2023
+- EC2インスタンスはオンプレではなくAWSのクラウド上に立っているのでプロキシ設定は不要
 
-Cosmos-Predict1 is a key branch of Cosmos World Foundation Models (WFMs) specialized for future state prediction, often referred to as world models. The tree main branches of Cosmos WFMs are [cosmos-predict](https://github.com/nvidia-cosmos/cosmos-predict1), [cosmos-transfer](https://github.com/nvidia-cosmos/cosmos-transfer1), and [cosmos-reason](https://github.com/nvidia-cosmos/cosmos-reason1). We visualize the architecture of Cosmos-Predict1 in the following figure.
+## git設定
+- git --version
+- sudo dnf install -y git
+- フォーク作成＆クロー
+  - GitHub/GitLab上でフォーク作成
+  - mkdir projects
+  - cd projects
+  - git clone https://github.com/nvidia-cosmos/cosmos-predict1.git
+- フォーク確認
+  - cd cosmos-predict1
+  - git remote -v
+- upstream (公式) リモートを追加
+  - git remote add upstream https://github.com/nvidia-cosmos/cosmos-predict1.git
+  - git remote -v
+- 公式リポジトリの最新情報を取り込む
+  - git fetch upstream
+  - git branch -rで確認
+- 実験用ブランチを切る（新ブランチを作成し切替）
+  - git checkout -b experiment-1 upstream/main
+  - git branchで確認
+- コードを改造してコミット
+  - touch tmp.py
+  - git add .
+  - git commit -m "add tmp.py"
+- 実験ブランチをorigin（自分用写し）/実験ブランチにpush
+  - git push -u origin experiment-1
+- 実験ブランチをorigin/mainにpush
+  - git checkout main
+  - git merge experiment-1
 
-<p align="center">
-    <img src="assets/predict1_diagram.png" alt="Cosmos-Predict1 Architecture Diagram">
-</p>
+## Docker
+- dockerインストール
+  - sudo yum update -y
+  - sudo yum install -y docker
+- Dockerサービス起動＆自動起動設定
+  - sudo systemctl start docker
+  - sudo systemctl enable docker
+- ec2-userをdockerグループに追加
+  - sudo usermod -aG docker ec2-user
+  - 再起動
+- NVIDIA Docker（nvidia-docker2）のインストール（Amazom linux 2向け）
+  - 必要なリポジトリ追加
+    - distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    - curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
+    sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+    - sudo yum update -y
+    - sudo yum install -y nvidia-docker2
+    - sudo systemctl restart docker
+  - GPU情報が表示されるか確認
+    - docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi
+
+## Devcontainerで、コンテナに入った後
+- python依存パッケージをインストール
+  - pip3 install --upgrade pip
+  - pip3 install -r requirements.txt
+- GPU環境の動作確認
+  - python3 -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count(), torch.cuda.get_device_name(0))"
 
 
-Cosmos-Predict1 includes the following:
-
-- **Diffusion-based world foundation models** for Text2World and Video2World generation, where a user can generate visual simulation based on text prompts and video prompts.
-- **Autoregressive-based world foundation models** for Video2World generation, where a user can generate visual simulation based on video prompts and optional text prompts.
-- **Image and video tokenizers** for tokenizing videos into continuous tokens (latent vectors) and discrete tokens (integers) efficiently and effectively.
-- **Post-training scripts** for helping Physical AI builders post-train pre-trained Cosmos-Predict1 for their applications.
-
-## Example Model Behavior
-
- [Cosmos-Predict Text2World](https://github.com/nvidia-cosmos/cosmos-predict1)
-
-<video src="https://github.com/user-attachments/assets/8abcc5d0-0840-47ae-8f95-10fc0dae7092"> Your browser does not support the video tag.</video>
-
-[Cosmos-Predict Video2World](https://github.com/nvidia-cosmos/cosmos-predict1)
-
-<video src="https://github.com/user-attachments/assets/d598af27-55de-4bc9-b68e-24b70876be9f"> Your browser does not support the video tag. </video>
-
-## Getting Started
-
-We provide a comphrehensive set of examples to illustrate how to perform inference, post-training, etc, with Cosmos-Predict1. Click a relevant example below and start your Cosmos journey.
-
-### Installation
-
-Please refer to [INSTALL.md](INSTALL.md) for general instructions on environment setup.
-
-### Inference with pre-trained Cosmos-Predict1 models
-* [Inference with diffusion-based Text2World models](/examples/inference_diffusion_text2world.md) **[with multi-GPU support]**
-* [Inference with diffusion-based Video2World models](/examples/inference_diffusion_video2world.md) **[with multi-GPU support]**
-* [Inference with diffusion-based WorldInterpolator models](/examples/inference_diffusion_WorldInterpolator.md) **[with multi-GPU support]**
-* [Inference with autoregressive-based base models](/examples/inference_autoregressive_base.md) **[with multi-GPU support]**
-* [Inference with autoregressive-based Video2World models](/examples/inference_autoregressive_video2world.md) **[with multi-GPU support]**
-* [Inference with tokenizer models](/examples/inference_tokenizer.md)
-
-### Post-train pre-trained Cosmos-Predict1 models
-* [Post-train diffusion-based Text2World models using custom datasets](/examples/post-training_diffusion_text2world.md) **[with multi-node support]**
-* [Post-train diffusion-based Video2World models using custom datasets](/examples/post-training_diffusion_video2world.md) **[with multi-node support]**
-* [Post-train diffusion-based Video2World models with action control using custom datasets](/examples/post-training_diffusion_video2world_action.md) **[with multi-node support]**
-* [Post-train diffusion-based WorldInterpolator models using custom datasets](/examples/post-training_diffusion_interpolator.md) **[with multi-node support]**
-* [Post-train diffusion-based Text2World models using custom multi-view datasets](/examples/post-training_diffusion_text2world_multiview.md) **[with multi-node support]**
-* [Post-train diffusion-based Video2World models using custom multi-view datasets)](/examples/post-training_diffusion_video2world_multiview.md) **[with multi-node support]**
-* [Post-train autoregressive-based base models using custom datasets](/examples/post-training_autoregressive_base.md) **[with multi-node support]**
-* [Post-train tokenizers using custom datasets](/examples/post-training_tokenizer.md) **[with multi-node support]**
-
-### Inference with post-trained models:
-* [Inference with post-trained multi-view diffusion-based Text2World models)](/examples/inference_diffusion_text2world_multiview.md) **[with multi-GPU support]**
-* [Inference with post-trained multi-view diffusion-based Video2World models)](/examples/inference_diffusion_video2world_multiview.md) **[with multi-GPU support]**
-
-
-## Cosmos-Predict1 Models
-
-Cosmos-Predict1 include the following models
-
-**Diffusion models**
-
-* [Cosmos-Predict1-7B-Text2World](https://huggingface.co/nvidia/Cosmos-Predict1-7B-Text2World): Text to visual world generation
-* [Cosmos-Predict1-14B-Text2World](https://huggingface.co/nvidia/Cosmos-Predict1-14B-Text2World): Text to visual world generation
-* [Cosmos-Predict1-7B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-7B-Video2World): Video + Text based future visual world generation
-* [Cosmos-Predict1-14B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-14B-Video2World): Video + Text based future visual world generation
-* [Cosmos-Predict1-7B-WorldInterpolator](https://huggingface.co/nvidia/Cosmos-Predict1-7B-WorldInterpolator): Generates a smooth, higher-FPS video segment.
-
-**Autoregressive models**
-
-* [Cosmos-Predict1-4B](https://huggingface.co/nvidia/Cosmos-Predict1-4B): Future visual world generation
-* [Cosmos-Predict1-12B](https://huggingface.co/nvidia/Cosmos-Predict1-12B): Future visual world generation
-* [Cosmos-Predict1-5B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-5B-Video2World): Video + Text based future visual world generation
-* [Cosmos-Predict1-13B-Video2World](https://huggingface.co/nvidia/Cosmos-Predict1-13B-Video2World): Video + Text based future visual world generation
-
-**Tokenizers**
-
-* [Cosmos-Tokenize1-CV8×8×8-720p](https://huggingface.co/nvidia/Cosmos-Tokenize1-CV8x8x8-720p): Continuous Video Tokenizer with 8x8x8 spatio-temporal compression with, 121 frames context
-* [Cosmos-Tokenize1-DV8×16×16-720p](https://huggingface.co/nvidia/Cosmos-Tokenize1-DV8x16x16-720p): Discrete Video Tokenizer with 8x16x16 spatio-temporal compression, and 49 frames context
-* [Cosmos-Tokenize1-CI8×8-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-CI8x8-360p): Continuous Image Tokenizer with 8x8 spatial compression with low-resolution support
-* [Cosmos-Tokenize1-CI16x16-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-CI16x16-360p): Continuous Image Tokenizer with 16x16 spatial compression with low-resolution support
-* [Cosmos-Tokenize1-CV4×8×8-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-CV4x8x8-360p): Continuous Video Tokenizer with 4x8x8 spatio-temporal compression with low-resolution support
-* [Cosmos-Tokenize1-DI8×8-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-DI8x8-360p): Discrete Image Tokenizer with 8x8 spatial compression with low-resolution support
-* [Cosmos-Tokenize1-DI16x16-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-DI16x16-360p): Discrete Image Tokenizer with 16x16 spatial compression with low-resolution support
-* [Cosmos-Tokenize1-DV4×8×8-360p](https://huggingface.co/nvidia/Cosmos-Tokenize1-DV4x8x8-360p): Discrete Video Tokenizer with 4x8x8 spatio-temporal compression with low-resolution support
-
-<!-- ------------------------------ -->
-
-## License and Contact
-
-This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
-
-This model includes safety and content moderation features powered by Llama Guard 3. Llama Guard 3 is used solely as a content input filter and is subject to its own license.
-
-NVIDIA Cosmos source code is released under the [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0).
-
-NVIDIA Cosmos models are released under the [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license). For a custom license, please contact [cosmos-license@nvidia.com](mailto:cosmos-license@nvidia.com).
+## Dockerコマンドメモ
+- docker ps -a
+- docker stop (ID)
+- docker rm (ID)
