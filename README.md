@@ -61,3 +61,21 @@
 - docker ps -a
 - docker stop (ID)
 - docker rm (ID)
+
+
+## 推論
+- torchrun + DDP (offloadなし)
+  - torchrun --nproc_per_node 8 \
+  cosmos_predict1/diffusion/inference/text2world.py \
+  --num_gpus 8 \
+  --checkpoint_dir checkpoints \
+  --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World \
+  --prompt "$PROMPT" \
+  --num_steps 30 \
+  --video_save_folder outputs \
+  --video_save_name splash_boy \
+  --seed 0 \
+  --fps 24 \
+  --disable_guardrail
+  - プロンプトアップサンプラーを切りたい場合
+    - --disable_prompt_upsampler

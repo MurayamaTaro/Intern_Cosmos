@@ -11,8 +11,19 @@ RUN apt-get update && \
 
 # 2) Python パッケージ（torch/vision/audio/transformer-engine を除外済み）
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+    # wheel 競合を潰す
+    pip uninstall -y opencv-python || true && \
+    pip install --no-cache-dir --force-reinstall \
+        numpy==1.26.4 opencv-contrib-python==4.8.0.74
 
-# 3) 作業ディレクトリ
+# git のユーザー情報
+RUN git config --global user.name  "MurayamaTaro" && \
+    git config --global user.email "muramura10taro@gmail.com"
+
+# 3) 警告防止
+# ENV PYTHONWARNINGS="ignore"
+ENV PYTHONWARNINGS="ignore::UserWarning"
+
+# 4) ワークスペース
 WORKDIR /workspace
