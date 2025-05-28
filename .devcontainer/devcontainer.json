@@ -1,0 +1,30 @@
+{
+  "name": "cosmos-predict1-dev",
+  "build": { "dockerfile": "Dockerfile" },
+
+  // GPU を devcontainer にパススルー
+  "runArgs": ["--gpus=all", "--ipc=host"],
+
+  // ワークスペースをマウント
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+  "workspaceFolder": "/workspace",
+
+  // コンテナ初回起動後：リポジトリ取得 → 開発モードでインストール
+  // "postCreateCommand": "pip install -e .",
+  "postCreateCommand": "/bin/bash -c 'pip install -e . && huggingface-cli login --token $(cat hf_token.txt) --add-to-git-credential --no-cache'",
+
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "yzhang.markdown-all-in-one",
+        "ms-python.python"
+      ]
+    }
+  },
+}

@@ -36,7 +36,6 @@ apex/
 *.pt
 *.bin
 *.pickle
-*.txt
 
 # Other uncheckable file types
 *.zip
@@ -221,7 +220,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 CLIP
-.devcontainer/devcontainer.json
 
 # Coverage
 .coverage
