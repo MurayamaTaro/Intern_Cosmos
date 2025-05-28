@@ -64,7 +64,7 @@
 
 
 ## 推論
-- torchrun + DDP (offloadなし)
+- 単一推論
   - torchrun --nproc_per_node 8 \
   cosmos_predict1/diffusion/inference/text2world.py \
   --num_gpus 8 \
@@ -79,3 +79,70 @@
   --disable_guardrail
   - プロンプトアップサンプラーを切りたい場合
     - --disable_prompt_upsampler
+
+## 学習
+- LoRA学習
+  - デフォルトではmax_iter=1000
+  - export OUTPUT_ROOT=checkpoints
+  - torchrun --nproc_per_node=8 \
+    -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
+- Full学習の場合
+  - -- experiment=text2world_7b_example_cosmos_nemo_assets
+- 比較（共通のアップサンプル後プロンプトを使う必要があることに注意）
+  - (1) Base モデルでアップサンプル→動画＆txt 出力
+  torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
+    --num_gpus 8 \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World \
+    --prompt "A video of sks teal robot picking up a green cube and placing it on a red platform." \
+    --num_steps 35 \
+    --video_save_folder outputs/comparison/prompt1/before \
+    --video_save_name before \
+    --disable_guardrail
+  - 生成されたアップサンプル済みプロンプトを読み込む
+  UPSAMPLED_PROMPT=$(< outputs/comparison/prompt1/before/before.txt)
+  - (2) LoRA モデルで同じテキストを使って推論
+  torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
+    --num_gpus 8 \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
+    --prompt "$UPSAMPLED_PROMPT" \
+    --num_steps 35 \
+    --video_save_folder outputs/comparison/prompt1/after \
+    --video_save_name after \
+    --disable_prompt_upsampler \
+    --disable_guardrail
+
+## 動画ファイルの送信
+- rsync -avz outputs/cat_robot.mp4 10001249777@10.20.1.50:/Downloads
+
+
+
+## tmp
+- PROMPT="In this captivating video, we are immersed in a sleek, futuristic laboratory setting, where a striking teal robot, reminiscent of a sophisticated industrial arm, takes center stage. The robot, equipped with a precision gripper, is poised on a polished metallic platform, its smooth surfaces reflecting the cool, artificial light that bathes the scene. The camera, positioned at a static angle, captures the robot's fluid movements as it gracefully extends its arm, reaching for a vibrant green cube resting on a nearby platform. With a delicate touch, the gripper envelops the cube, lifting it effortlessly into the air. The robot then navigates with precision, gliding towards a red platform, where it gently places the cube, showcasing its advanced dexterity. The background, adorned with a grid of metallic panels, enhances the industrial aesthetic, while the absence of human presence amplifies the focus on the robot's mechanical elegance and efficiency."
+- torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
+  --num_gpus 8 \
+  --checkpoint_dir checkpoints \
+  --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained \
+  --prompt "$PROMPT" \
+  --negative_prompt "" \
+  --num_steps 60 \
+  --video_save_folder outputs/debag \
+  --video_save_name debag \
+  --disable_prompt_upsampler \
+  --disable_guardrail
+
+
+
+PROMPT="In this captivating video, we are immersed in a sleek, futuristic laboratory setting, where a striking teal robot, reminiscent of a sophisticated industrial arm, takes center stage. The robot, equipped with a precision gripper, is poised on a polished metallic platform, its smooth surfaces reflecting the cool, artificial light that bathes the scene. The camera, positioned at a static angle, captures the robot's fluid movements as it gracefully extends its arm, reaching for a vibrant green cube resting on a nearby platform. With a delicate touch, the gripper envelops the cube, lifting it effortlessly into the air. The robot then navigates with precision, gliding towards a red platform, where it gently places the cube, showcasing its advanced dexterity. The background, adorned with a grid of metallic panels, enhances the industrial aesthetic, while the absence of human presence amplifies the focus on the robot's mechanical elegance and efficiency."
+torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
+  --num_gpus 8 \
+  --checkpoint_dir            checkpoints       \
+  --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
+  --prompt "${PROMPT}" \
+  --num_steps 30\
+  --video_save_folder outputs/demo --video_save_name demo \
+  --disable_prompt_upsampler --disable_guardrail
+

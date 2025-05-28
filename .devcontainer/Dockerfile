@@ -22,8 +22,11 @@ RUN git config --global user.name  "MurayamaTaro" && \
     git config --global user.email "muramura10taro@gmail.com"
 
 # 3) 警告防止
-# ENV PYTHONWARNINGS="ignore"
-ENV PYTHONWARNINGS="ignore::UserWarning"
+ENV PYTHONWARNINGS="ignore"
+# ENV PYTHONWARNINGS="ignore::UserWarning"
+# ENV PYTHONWARNINGS="ignore::FutureWarning"
+# NCCL や C++ 側のログを ERROR 以上に
+ENV TORCH_CPP_LOG_LEVEL=ERROR
 
 # 4) ワークスペース
 WORKDIR /workspace
