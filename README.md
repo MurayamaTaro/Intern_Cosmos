@@ -4,6 +4,10 @@
 - OS: Amazon Linux 2023
 - EC2インスタンスはオンプレではなくAWSのクラウド上に立っているのでプロキシ設定は不要
 
+## S3
+- aws s3 ls --profile murayama
+- aws s3 cp ./clips/ s3://dnjp-riron-murayama/clips/ --recursive
+
 ## git設定
 - git --version
 - sudo dnf install -y git
@@ -49,13 +53,6 @@
   - GPU情報が表示されるか確認
     - docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi
 
-## Devcontainerで、コンテナに入った後
-- python依存パッケージをインストール
-  - pip3 install --upgrade pip
-  - pip3 install -r requirements.txt
-- GPU環境の動作確認
-  - python3 -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count(), torch.cuda.get_device_name(0))"
-
 
 ## Dockerコマンドメモ
 - docker ps -a
@@ -64,21 +61,40 @@
 
 
 ## 推論
-- 単一推論
+- モデルパラメータをダウンロード
+  - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
+  - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Video2World
+- テキスト条件付け
   - torchrun --nproc_per_node 8 \
   cosmos_predict1/diffusion/inference/text2world.py \
   --num_gpus 8 \
   --checkpoint_dir checkpoints \
   --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World \
   --prompt "$PROMPT" \
-  --num_steps 30 \
+  --num_steps 35 \
   --video_save_folder outputs \
   --video_save_name splash_boy \
   --seed 0 \
   --fps 24 \
-  --disable_guardrail
-  - プロンプトアップサンプラーを切りたい場合
-    - --disable_prompt_upsampler
+  --disable_guardrail \
+  --disable_prompt_upsampler
+- テキスト＋画像条件付け
+  - torchrun --nproc_per_node 4 \
+    cosmos_predict1/diffusion/inference/video2world.py \
+    --num_gpus 4 \
+    --checkpoint_dir checkpoints \
+    --diffusion_transformer_dir Cosmos-Predict1-7B-Video2World \
+    --prompt "${PROMPT}" \
+    --num_steps 90 \
+    --input_image_or_video_path "denmaru/cut2.jpg" \
+    --video_save_folder denmaru \
+    --video_save_name output0 \
+    --seed 0 \
+    --fps 12 \
+    --guidance 9 \
+    --disable_guardrail \
+    --offload_prompt_upsampler \
+    --disable_prompt_upsampler
 
 ## 学習
 - LoRA学習
@@ -118,31 +134,42 @@
 ## 動画ファイルの送信
 - rsync -avz outputs/cat_robot.mp4 10001249777@10.20.1.50:/Downloads
 
+## データセット構築
+- pip install yt-dlp
+- nohup python3 download_raw_clips.py > output_download_raw_clips.log 2>&1 &
+
+## nohup
+- nohup python3 hoge.py > hoge.log 2>&1
 
 
-## tmp
-- PROMPT="In this captivating video, we are immersed in a sleek, futuristic laboratory setting, where a striking teal robot, reminiscent of a sophisticated industrial arm, takes center stage. The robot, equipped with a precision gripper, is poised on a polished metallic platform, its smooth surfaces reflecting the cool, artificial light that bathes the scene. The camera, positioned at a static angle, captures the robot's fluid movements as it gracefully extends its arm, reaching for a vibrant green cube resting on a nearby platform. With a delicate touch, the gripper envelops the cube, lifting it effortlessly into the air. The robot then navigates with precision, gliding towards a red platform, where it gently places the cube, showcasing its advanced dexterity. The background, adorned with a grid of metallic panels, enhances the industrial aesthetic, while the absence of human presence amplifies the focus on the robot's mechanical elegance and efficiency."
-- torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
-  --num_gpus 8 \
-  --checkpoint_dir checkpoints \
-  --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained \
-  --prompt "$PROMPT" \
-  --negative_prompt "" \
-  --num_steps 60 \
-  --video_save_folder outputs/debag \
-  --video_save_name debag \
-  --disable_prompt_upsampler \
-  --disable_guardrail
+# メモ
+root@e9f825167add:/workspace# find datasets/posttrain_panda70m/cooking/videos/ -type f | wc -l
+5258
+root@e9f825167add:/workspace# find datasets/posttrain_panda70m/vehicle/videos/ -type f | wc -l
+5433
+root@e9f825167add:/workspace# find datasets/posttrain_panda70m/sports/videos/ -type f | wc -l
+5715
 
 
 
-PROMPT="In this captivating video, we are immersed in a sleek, futuristic laboratory setting, where a striking teal robot, reminiscent of a sophisticated industrial arm, takes center stage. The robot, equipped with a precision gripper, is poised on a polished metallic platform, its smooth surfaces reflecting the cool, artificial light that bathes the scene. The camera, positioned at a static angle, captures the robot's fluid movements as it gracefully extends its arm, reaching for a vibrant green cube resting on a nearby platform. With a delicate touch, the gripper envelops the cube, lifting it effortlessly into the air. The robot then navigates with precision, gliding towards a red platform, where it gently places the cube, showcasing its advanced dexterity. The background, adorned with a grid of metallic panels, enhances the industrial aesthetic, while the absence of human presence amplifies the focus on the robot's mechanical elegance and efficiency."
-torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
-  --num_gpus 8 \
-  --checkpoint_dir            checkpoints       \
-  --diffusion_transformer_dir Cosmos-Predict1-7B-Text2World_post-trained-lora \
-  --prompt "${PROMPT}" \
-  --num_steps 30\
-  --video_save_folder outputs/demo --video_save_name demo \
-  --disable_prompt_upsampler --disable_guardrail
-
+## バッチ推論スクリプトinference/batch_inference.pyの使い方
+- 機能
+  - 単一条件に対し、複数シードの結果を出力
+- テキスト条件付け
+  - python3 inference/batch_inference.py \
+  --model_type text2world \
+  --prompt "a robot is surfing on the ocean" \
+  --num_seeds 1 \
+  --num_steps 10 \
+  --fps 24 \
+  --output_dir t2i_debug
+- テキスト＋画像条件付け
+  - python3 inference/batch_inference.py \
+  --model_type video2world \
+  --prompt "Denmaru, the round red character, jumps straight up vertically and lands smoothly on both feet, fully touching the ground. No rotation or sideways movement. The motion is continuous and smooth without distortions." \
+  --image_path "denmaru/denmaru2.jpg" \
+  --num_seeds 1 \
+  --num_steps 50 \
+  --fps 24 \
+  --guidance 9.0 \
+  --output_dir it2i_debug

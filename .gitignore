@@ -36,6 +36,7 @@ apex/
 *.pt
 *.bin
 *.pickle
+*.mp4
 
 # Other uncheckable file types
 *.zip
