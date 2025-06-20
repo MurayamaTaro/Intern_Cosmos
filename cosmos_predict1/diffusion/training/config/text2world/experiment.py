@@ -925,6 +925,8 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
     )
 )
 
+
+####### これを使用
 text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
     dict(
         defaults=[
@@ -971,24 +973,29 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
                 ),
                 progress_bar=L(ProgressBarCallback)(),
             ),
+            grad_accum_iter=4,  # 勾配累積を4ステップに設定
+            ddp=dict(
+                static_graph=False,
+                find_unused_parameters=True,  # この行を追加
+            ),
         ),
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
-            context_parallel_size=4,
+            context_parallel_size=1,
         ),
         model=dict(
             peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
-            # Use 16x16x32x40 latent shape for training
+            # OOMエラーを防ぐため、latent shapeを小さくする
             latent_shape=[
                 16,  # Latent channel dim
-                16,  # Latent temporal dim
-                88,  # Latent height dim
-                160,  # Latent width dim
+                5,   # Latent temporal dim
+                48,  # Latent height dim
+                48,  # Latent width dim
             ],
             loss_reduce="mean",
             ema=dict(
-                enabled=True,
+                enabled=False, # メモリ節約のためEMAを無効化
             ),
             fsdp_enabled=False,
             net=dict(
@@ -998,8 +1005,10 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
+                use_memory_save=False,  # メモリ節約のため勾配チェックポインティングを有効化
             ),
-            vae=dict(pixel_chunk_duration=num_frames),
+            # データローダーに合わせてVAEの設定を更新
+            vae=dict(pixel_chunk_duration=num_frames_8gpu_40gb),
         ),
         model_obj=L(PEFTVideoDiffusionModel)(
             config=PLACEHOLDER,
@@ -1008,10 +1017,108 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
         scheduler=dict(
             warm_up_steps=[0],
         ),
-        dataloader_train=dataloader_train_cosmos_nemo_assets_480_848,
-        dataloader_val=dataloader_val_cosmos_nemo_assets_480_848,
+        # メモリ消費の少ないデータローダーに変更
+        dataloader_train=dataloader_train_cosmos_nemo_assets_8gpu_40gb,
+        dataloader_val=dataloader_val_cosmos_nemo_assets_8gpu_40gb,
     )
 )
+
+
+# ####### これを使ってる！
+# text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
+#     dict(
+#         defaults=[
+#             {"override /net": "faditv2_7b"},
+#             {"override /ckpt_klass": "peft"},
+#             {"override /checkpoint": "local"},
+#             {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+#             {"override /conditioner": "add_fps_image_size_padding_mask"},
+#             "_self_",
+#         ],
+#         job=dict(
+#             project="posttraining",
+#             group="diffusion_text2world",
+#             name="text2world_7b_lora_example_cosmos_nemo_assets",
+#         ),
+#         optimizer=dict(
+#             lr=1e-4,
+#             weight_decay=0.1,
+#             betas=[0.9, 0.99],
+#             eps=1e-10,
+#         ),
+#         checkpoint=dict(
+#             save_iter=1000,
+#             broadcast_via_filesystem=True,
+#             load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+#             load_training_state=False,
+#             strict_resume=False,
+#             keys_not_to_resume=[],
+#             async_saving=False,
+#         ),
+#         trainer=dict(
+#             max_iter=5000,
+#             distributed_parallelism="ddp",
+#             logging_iter=200,
+#             callbacks=dict(
+#                 grad_clip=L(GradClip)(
+#                     model_key="model",
+#                     fsdp_enabled=False,
+#                 ),
+#                 low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+#                 iter_speed=L(IterSpeed)(
+#                     every_n=10,
+#                     hit_thres=0,
+#                 ),
+#                 progress_bar=L(ProgressBarCallback)(),
+#             ),
+#             grad_accum_iter=4,  # 勾配累積を4ステップに設定
+#         ),
+#         model_parallel=dict(
+#             sequence_parallel=False,
+#             tensor_model_parallel_size=1,
+#             context_parallel_size=1,
+#         ),
+#         model=dict(
+#             peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
+#             # Use 16x16x32x40 latent shape for training
+#             # latent_shape=[
+#             #     16,  # Latent channel dim
+#             #     5,  # Latent temporal dim
+#             #     48,  # Latent height dim
+#             #     48,  # Latent width dim
+#             # ],
+#             latent_shape=[
+#                 16,  # Latent channel dim
+#                 16,  # Latent temporal dim
+#                 88,  # Latent height dim
+#                 160,  # Latent width dim
+#             ],
+#             loss_reduce="mean",
+#             ema=dict(
+#                 enabled=False, # turn off to save memory
+#             ),
+#             fsdp_enabled=False,
+#             net=dict(
+#                 in_channels=16,
+#                 extra_per_block_abs_pos_emb=True,
+#                 extra_per_block_abs_pos_emb_type="learnable",
+#                 rope_h_extrapolation_ratio=1,
+#                 rope_w_extrapolation_ratio=1,
+#                 rope_t_extrapolation_ratio=2,
+#             ),
+#             vae=dict(pixel_chunk_duration=num_frames),
+#         ),
+#         model_obj=L(PEFTVideoDiffusionModel)(
+#             config=PLACEHOLDER,
+#             fsdp_checkpointer=PLACEHOLDER,
+#         ),
+#         scheduler=dict(
+#             warm_up_steps=[0],
+#         ),
+#         dataloader_train=dataloader_train_cosmos_nemo_assets_480_848,
+#         dataloader_val=dataloader_val_cosmos_nemo_assets_480_848,
+#     )
+# )
 
 
 def register_experiments(cs: ConfigStore) -> None:

@@ -104,8 +104,6 @@
     -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
-- Full学習の場合
-  - -- experiment=text2world_7b_example_cosmos_nemo_assets
 - 比較（共通のアップサンプル後プロンプトを使う必要があることに注意）
   - (1) Base モデルでアップサンプル→動画＆txt 出力
   torchrun --nproc_per_node=8 cosmos_predict1/diffusion/inference/text2world.py \
@@ -166,10 +164,10 @@ root@e9f825167add:/workspace# find datasets/posttrain_panda70m/sports/videos/ -t
 - テキスト＋画像条件付け
   - python3 inference/batch_inference.py \
   --model_type video2world \
-  --prompt "Denmaru, the round red character, jumps straight up vertically and lands smoothly on both feet, fully touching the ground. No rotation or sideways movement. The motion is continuous and smooth without distortions." \
-  --image_path "denmaru/denmaru2.jpg" \
-  --num_seeds 1 \
-  --num_steps 50 \
+  --prompt "Denmaru, the tall round red character with arms extended, jumps straight up vertically while keeping arms fixed at sides. No rotation, tilt, or sideways movement. At the peak, briefly pauses, then lands smoothly on both feet and comes to a full stop. The camera is fixed, always showing the full body from the front. The motion is continuous and smooth without distortions." \
+  --image_path "denmaru/denmaru3.jpg" \
+  --num_seeds 10 \
+  --num_steps 70 \
   --fps 24 \
   --guidance 9.0 \
-  --output_dir it2i_debug
+  --output_dir denmaru3_1

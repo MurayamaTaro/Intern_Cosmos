@@ -1,0 +1,1 @@
+Denmaru, the tall round red character with arms extended, jumps straight up vertically while keeping arms fixed at sides. No rotation, tilt, or sideways movement. At the peak, briefly pauses, then lands smoothly on both feet and comes to a full stop. The camera is fixed, always showing the full body from the front. The motion is continuous and smooth without distortions.

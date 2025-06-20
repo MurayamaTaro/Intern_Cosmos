@@ -1,0 +1,7 @@
+Prompt: Three kittens chase each other playfully in a living room. They dart between furniture, jump over cushions, and slide slightly on the polished floor. Their fur shifts dynamically with every movement. The camera smoothly tracks their energetic chase while keeping focus on one kitten at a time.
+Model type: text2world
+Num seeds: 10
+Num steps: 70
+FPS: 24
+Guidance: 9.0
+Command: inference/batch_inference.py --model_type text2world --prompt Three kittens chase each other playfully in a living room. They dart between furniture, jump over cushions, and slide slightly on the polished floor. Their fur shifts dynamically with every movement. The camera smoothly tracks their energetic chase while keeping focus on one kitten at a time. --num_seeds 10 --num_steps 70 --fps 24 --output_dir cat_1

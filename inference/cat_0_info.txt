@@ -1,0 +1,7 @@
+Prompt: A fluffy cat lies on a soft blanket, slowly kneading with its front paws. Its fur deforms realistically with each paw press. The camera focuses on the paws, showing individual toe movements and subtle fur shifts. The cat blinks slowly, purring softly, while sunlight casts warm reflections on its fur.
+Model type: text2world
+Num seeds: 10
+Num steps: 70
+FPS: 24
+Guidance: 9.0
+Command: inference/batch_inference.py --model_type text2world --prompt A fluffy cat lies on a soft blanket, slowly kneading with its front paws. Its fur deforms realistically with each paw press. The camera focuses on the paws, showing individual toe movements and subtle fur shifts. The cat blinks slowly, purring softly, while sunlight casts warm reflections on its fur. --num_seeds 10 --num_steps 70 --fps 24 --output_dir cat_0

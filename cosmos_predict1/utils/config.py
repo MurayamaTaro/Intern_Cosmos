@@ -159,6 +159,7 @@ class JobConfig:
     group: str = ""
     # Run/job name.
     name: str = ""
+    # path_local: str = ""  # <-- この行を追加
 
     @property
     def path(self) -> str:
@@ -243,6 +244,7 @@ class CheckpointConfig:
     broadcast_via_filesystem: bool = False
     load_ema_to_reg: bool = False
     async_saving: bool = True
+    # lora_weight_path: str = ""  # <-- この行を追加
 
 
 @make_freezable
@@ -299,6 +301,12 @@ class Config:
 
     # Model configs.
     model: LazyDict
+    # model_obj: LazyDict = attrs.field(
+    #     factory=lambda:LazyDict({
+    #         "config": None,
+    #         "_target_": "cosmos_predict1.diffusion.training.models.model_peft.PEFTVideoDiffusionModel"
+    #     })
+    # )
     # Optimizer configs.
     optimizer: LazyDict = LazyDict(dict(dummy=None))
     # Scheduler configs.

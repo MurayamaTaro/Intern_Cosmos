@@ -1,7 +1,0 @@
-Prompt: a robot is surfing on the ocean
-Model type: text2world
-Num seeds: 1
-Num steps: 10
-FPS: 24
-Guidance: 9.0
-Command: inference/batch_inference.py --model_type text2world --prompt a robot is surfing on the ocean --num_seeds 1 --num_steps 10 --fps 24 --output_dir t2i_debug

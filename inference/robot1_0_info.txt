@@ -1,0 +1,8 @@
+Prompt: A friendly humanoid robot stands on a futuristic city street at dusk. Neon signs reflect off its smooth metallic body. The robot slowly raises its right arm, waves gently, then tilts its head slightly as if recognizing someone. Passing cars blur in the background while soft ambient lights flicker. The camera slightly dolly-zooms forward, emphasizing depth and subtle reflections.
+Model type: video2world
+Image path: images/robot/robot1.jpg
+Num seeds: 10
+Num steps: 70
+FPS: 24
+Guidance: 7.5
+Command: inference/batch_inference.py --model_type video2world --prompt A friendly humanoid robot stands on a futuristic city street at dusk. Neon signs reflect off its smooth metallic body. The robot slowly raises its right arm, waves gently, then tilts its head slightly as if recognizing someone. Passing cars blur in the background while soft ambient lights flicker. The camera slightly dolly-zooms forward, emphasizing depth and subtle reflections. --image_path images/robot/robot1.jpg --num_seeds 10 --num_steps 70 --fps 24 --guidance 7.5 --output_dir robot1_0
