@@ -82,7 +82,7 @@ def encode_text_prompt_batch(
     embeddings = []
     for i in range(len(prompts)):
         length = lengths[i]
-        trimmed_embedding = encoded_text_cpu[i, :length].numpy().astype(np.float16)
+        trimmed_embedding = encoded_text_cpu[i:i+1, :length].numpy().astype(np.float16)
         embeddings.append(trimmed_embedding)
 
     return embeddings

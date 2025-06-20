@@ -16,6 +16,8 @@
 from hydra.core.config_store import ConfigStore
 from megatron.core import parallel_state
 from torch.utils.data import DataLoader, DistributedSampler
+# pathlibをインポート
+from pathlib import Path
 
 from cosmos_predict1.diffusion.training.callbacks.iter_speed import IterSpeed
 from cosmos_predict1.diffusion.training.callbacks.low_precision import LowPrecisionCallback
@@ -42,6 +44,16 @@ def get_sampler(dataset):
 
 
 cs = ConfigStore.instance()
+
+# --- ここから修正 ---
+# ワークスペースのルートディレクトリを絶対パスで取得
+# このファイルの場所から親ディレクトリを遡ることで、どこから実行されても正しいパスになる
+try:
+    WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
+except (NameError, IndexError):
+    # インタラクティブな環境など、__file__が定義されていない場合のためのフォールバック
+    WORKSPACE_ROOT = Path.cwd().resolve()
+
 
 n_length = 15
 num_frames = 8 * n_length + 1  # 121
@@ -926,7 +938,7 @@ text2world_14b_example_cosmos_nemo_assets = LazyDict(
 )
 
 
-####### これを使用
+### 修正済み
 text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
     dict(
         defaults=[
@@ -1024,101 +1036,144 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
 )
 
 
-# ####### これを使ってる！
-# text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
-#     dict(
-#         defaults=[
-#             {"override /net": "faditv2_7b"},
-#             {"override /ckpt_klass": "peft"},
-#             {"override /checkpoint": "local"},
-#             {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
-#             {"override /conditioner": "add_fps_image_size_padding_mask"},
-#             "_self_",
-#         ],
-#         job=dict(
-#             project="posttraining",
-#             group="diffusion_text2world",
-#             name="text2world_7b_lora_example_cosmos_nemo_assets",
-#         ),
-#         optimizer=dict(
-#             lr=1e-4,
-#             weight_decay=0.1,
-#             betas=[0.9, 0.99],
-#             eps=1e-10,
-#         ),
-#         checkpoint=dict(
-#             save_iter=1000,
-#             broadcast_via_filesystem=True,
-#             load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
-#             load_training_state=False,
-#             strict_resume=False,
-#             keys_not_to_resume=[],
-#             async_saving=False,
-#         ),
-#         trainer=dict(
-#             max_iter=5000,
-#             distributed_parallelism="ddp",
-#             logging_iter=200,
-#             callbacks=dict(
-#                 grad_clip=L(GradClip)(
-#                     model_key="model",
-#                     fsdp_enabled=False,
-#                 ),
-#                 low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
-#                 iter_speed=L(IterSpeed)(
-#                     every_n=10,
-#                     hit_thres=0,
-#                 ),
-#                 progress_bar=L(ProgressBarCallback)(),
-#             ),
-#             grad_accum_iter=4,  # 勾配累積を4ステップに設定
-#         ),
-#         model_parallel=dict(
-#             sequence_parallel=False,
-#             tensor_model_parallel_size=1,
-#             context_parallel_size=1,
-#         ),
-#         model=dict(
-#             peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
-#             # Use 16x16x32x40 latent shape for training
-#             # latent_shape=[
-#             #     16,  # Latent channel dim
-#             #     5,  # Latent temporal dim
-#             #     48,  # Latent height dim
-#             #     48,  # Latent width dim
-#             # ],
-#             latent_shape=[
-#                 16,  # Latent channel dim
-#                 16,  # Latent temporal dim
-#                 88,  # Latent height dim
-#                 160,  # Latent width dim
-#             ],
-#             loss_reduce="mean",
-#             ema=dict(
-#                 enabled=False, # turn off to save memory
-#             ),
-#             fsdp_enabled=False,
-#             net=dict(
-#                 in_channels=16,
-#                 extra_per_block_abs_pos_emb=True,
-#                 extra_per_block_abs_pos_emb_type="learnable",
-#                 rope_h_extrapolation_ratio=1,
-#                 rope_w_extrapolation_ratio=1,
-#                 rope_t_extrapolation_ratio=2,
-#             ),
-#             vae=dict(pixel_chunk_duration=num_frames),
-#         ),
-#         model_obj=L(PEFTVideoDiffusionModel)(
-#             config=PLACEHOLDER,
-#             fsdp_checkpointer=PLACEHOLDER,
-#         ),
-#         scheduler=dict(
-#             warm_up_steps=[0],
-#         ),
-#         dataloader_train=dataloader_train_cosmos_nemo_assets_480_848,
-#         dataloader_val=dataloader_val_cosmos_nemo_assets_480_848,
-#     )
-# )
+# ==========================================================================================
+# ===== ここからがPanda70M用の新しい設定 ========================================
+# ==========================================================================================
+
+# Panda70M用のフレーム数を定義
+n_length_panda70m = 15
+num_frames_panda70m = 8 * n_length_panda70m + 1  # 121フレーム
+
+# まず、Panda70M vehicle用のデータローダーを定義
+example_video_dataset_panda70m_vehicle = L(Dataset)(
+    # ↓↓↓ WORKSPACE_ROOTを使って、データセットのパスを絶対パスに修正
+    dataset_dir=str(WORKSPACE_ROOT / "datasets/posttrain_panda70m/vehicle"),
+    sequence_interval=1,
+    num_frames=num_frames_panda70m, # 正しいフレーム数(121)を使用
+    video_size=(384, 384), # まずはメモリに収まる解像度でテスト
+    start_frame_interval=1,
+)
+
+dataloader_train_panda70m_vehicle = L(DataLoader)(
+    dataset=example_video_dataset_panda70m_vehicle,
+    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m_vehicle),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True,
+)
+dataloader_val_panda70m_vehicle = L(DataLoader)(
+    dataset=example_video_dataset_panda70m_vehicle,
+    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m_vehicle),
+    batch_size=1,
+    drop_last=True,
+    num_workers=8,
+    pin_memory=True,
+)
+
+# 次に、動作確認済みの設定をコピーして、Panda70M vehicle用の実験設定を作成
+text2world_7b_lora_panda70m_vehicle_test = LazyDict(
+    dict(
+        defaults=[
+            {"override /net": "faditv2_7b"},
+            {"override /ckpt_klass": "peft"},
+            {"override /checkpoint": "local"},
+            # ↓↓↓ ここで、デフォルトの標準的なVAE設定を読み込む
+            {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
+            {"override /conditioner": "add_fps_image_size_padding_mask"},
+            "_self_",
+        ],
+        job=dict(
+            project="posttraining",
+            group="diffusion_text2world",
+            name="text2world_7b_lora_panda70m_vehicle_test", # 新しい実験名
+        ),
+        optimizer=dict(
+            lr=1e-4,
+            weight_decay=0.1,
+            betas=[0.9, 0.99],
+            eps=1e-10,
+        ),
+        checkpoint=dict(
+            save_iter=1000,
+            broadcast_via_filesystem=True,
+            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_training_state=False,
+            strict_resume=False,
+            keys_not_to_resume=[],
+            async_saving=False,
+        ),
+        trainer=dict(
+            max_iter=5000,
+            distributed_parallelism="ddp",
+            logging_iter=200,
+            callbacks=dict(
+                grad_clip=L(GradClip)(
+                    model_key="model",
+                    fsdp_enabled=False,
+                ),
+                low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
+                iter_speed=L(IterSpeed)(
+                    every_n=10,
+                    hit_thres=0,
+                ),
+                progress_bar=L(ProgressBarCallback)(),
+            ),
+            grad_accum_iter=4,
+            ddp=dict(
+                static_graph=False,
+                find_unused_parameters=True,
+            ),
+        ),
+        model_parallel=dict(
+            sequence_parallel=False,
+            tensor_model_parallel_size=1,
+            context_parallel_size=1,
+        ),
+        model=dict(
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
+            # フレーム数(121)と解像度(384x384)に合わせてlatent_shapeを更新
+            latent_shape=[
+                16,  # Latent channel dim
+                16,  # Latent temporal dim (121 frames -> 16)
+                48,  # Latent height dim (384 -> 48)
+                48,  # Latent width dim (384 -> 48)
+            ],
+            loss_reduce="mean",
+            ema=dict(
+                enabled=False,
+            ),
+            fsdp_enabled=False,
+            net=dict(
+                in_channels=16,
+                extra_per_block_abs_pos_emb=True,
+                extra_per_block_abs_pos_emb_type="learnable",
+                rope_h_extrapolation_ratio=1,
+                rope_w_extrapolation_ratio=1,
+                rope_t_extrapolation_ratio=2,
+                use_memory_save=False,
+            ),
+            # ↓↓↓ ここで、model.vae の中で直接パスを絶対パスで上書き
+            vae=dict(
+                pixel_chunk_duration=num_frames_panda70m,
+                enc_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/encoder.jit"),
+                dec_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/decoder.jit"),
+                mean_std_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/mean_std.pt"),
+            ),
+        ),
+        model_obj=L(PEFTVideoDiffusionModel)(
+            config=PLACEHOLDER,
+            fsdp_checkpointer=PLACEHOLDER,
+        ),
+        scheduler=dict(
+            warm_up_steps=[0],
+        ),
+        # ここで新しいデータローダーを指定
+        dataloader_train=dataloader_train_panda70m_vehicle,
+        dataloader_val=dataloader_val_panda70m_vehicle,
+    )
+)
+
 
 
 def register_experiments(cs: ConfigStore) -> None:
@@ -1132,6 +1187,7 @@ def register_experiments(cs: ConfigStore) -> None:
         text2world_7b_example_cosmos_nemo_assets_8gpu_40gb,
         text2world_7b_example_cosmos_nemo_assets_4gpu_40gb,
         text2world_7b_lora_example_cosmos_nemo_assets,
+        text2world_7b_lora_panda70m_vehicle_test, # 新しい実験設定を登録
     ]:
         experiment_name = _item["job"]["name"]
         log.info(f"Registering experiment: {experiment_name}")
@@ -1141,3 +1197,8 @@ def register_experiments(cs: ConfigStore) -> None:
             name=experiment_name,
             node=_item,
         )
+
+
+
+
+

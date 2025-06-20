@@ -171,3 +171,11 @@ root@e9f825167add:/workspace# find datasets/posttrain_panda70m/sports/videos/ -t
   --fps 24 \
   --guidance 9.0 \
   --output_dir denmaru3_1
+
+
+
+# LoRA学習動くコード
+export OUTPUT_ROOT=checkpoints
+torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
+    --config=cosmos_predict1/diffusion/training/config/config.py \
+    -- experiment=text2world_7b_lora_example_cosmos_nemo_assets

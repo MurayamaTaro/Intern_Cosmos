@@ -612,6 +612,11 @@ class GeneralDIT(nn.Module):
                 extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D = rearrange(
                     extra_pos_emb_B_T_H_W_D_or_T_H_W_B_D, "B T H W D -> T H W B D"
                 )
+
+            # # 仮説を検証するための修正: 2次元の埋め込みを受け取った場合、系列長1の3次元に変換する
+            # if crossattn_emb.ndim == 2:
+            #     crossattn_emb = crossattn_emb.unsqueeze(1)
+
             crossattn_emb = rearrange(crossattn_emb, "B M D -> M B D")
 
             if crossattn_mask:
