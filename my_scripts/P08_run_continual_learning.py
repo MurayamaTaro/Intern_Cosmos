@@ -14,12 +14,13 @@ def parse_loss_from_log(log_file_path: Path) -> pd.DataFrame:
         with open(log_file_path, 'r', encoding='utf-8') as f:
             log_content = f.read()
 
-        # ログから "iter: xxx/yyy, loss: zzz," のパターンを正規表現で探す
-        pattern = re.compile(r"iter: (\d+)/\d+, loss: ([\d.]+),")
+        # ★変更点: IterSpeedコールバックのログ形式に合わせた正規表現に変更
+        # 例: ...iter_speed.py:80:every_n_impl] 20 : ... | Loss: -0.0437
+        pattern = re.compile(r"every_n_impl\]\s+(\d+)\s+:.*?Loss:\s+([-\d\.]+)")
         matches = pattern.findall(log_content)
 
         if not matches:
-            print("Warning: No loss values found in the log file.", file=sys.stderr)
+            print("Warning: No loss values found in the log file. The log format might have changed.", file=sys.stderr)
             return pd.DataFrame(columns=["iteration", "loss"])
 
         df = pd.DataFrame(matches, columns=["iteration", "loss"])
@@ -43,7 +44,8 @@ def run_training(
 ) -> Path | None:
     """指定された実験設定でトレーニングを実行し、生成されたLoRAチェックポイントのパスを返す。"""
     workspace_root = Path.cwd().absolute()
-    current_experiment_name = f"{args.experiment_base_name}_{run_name}_{task_name}"
+    parent_experiment_name = f"{args.experiment_base_name}_{run_name}"
+    current_experiment_name = f"{parent_experiment_name}/{task_name}"
 
     log_dir = workspace_root / "posttraining_logs" / current_experiment_name
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -56,10 +58,8 @@ def run_training(
     else:
         load_path = workspace_root / "checkpoints/Cosmos-Predict1-7B-Text2World/model.pt"
 
-    # 解像度からlatent_shapeを計算 (VAEの空間圧縮率は8倍)
     latent_height = args.resolution[0] // 8
     latent_width = args.resolution[1] // 8
-    # 時間方向の圧縮は (121-1)/8 + 1 = 16
     latent_shape = f"[{16},{16},{latent_height},{latent_width}]"
 
     command = [
@@ -106,7 +106,6 @@ def run_training(
             log_file.write(line)
     process.wait()
 
-    # 訓練損失をCSVに保存
     loss_df = parse_loss_from_log(log_file_path)
     if not loss_df.empty:
         loss_csv_path = log_dir / "loss_history.csv"
@@ -134,22 +133,25 @@ def run_training(
         return None
 
 def main():
+    start_time = datetime.now()
+
     parser = argparse.ArgumentParser(
         description="Run a flexible continual learning loop for Cosmos-Predict1.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    # --- ハイパーパラメータ設定 ---
     parser.add_argument("--lora_rank", type=int, default=8, help="Rank of the LoRA matrices.")
     parser.add_argument("--max_iter", type=int, default=8000, help="Total training iterations per task.")
-    parser.add_argument("--batch_size_per_gpu", type=int, default=2, help="Batch size per GPU.")
+    parser.add_argument("--batch_size_per_gpu", type=int, default=1, help="Batch size per GPU.")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
-    parser.add_argument("--resolution", type=int, nargs=2, default=[720, 1280], help="Video resolution (height width).")
-
-    # --- 基本設定 ---
+    parser.add_argument("--resolution", type=int, nargs=2, default=[352, 640], help="Video resolution (height width). Must be multiples of 16.")
     parser.add_argument("--experiment_base_name", type=str, default="text2world_7b_lora_panda70m", help="The base name of the experiment in experiment.py.")
     parser.add_argument("--nproc_per_node", type=int, default=8, help="Number of GPUs to use.")
     args = parser.parse_args()
+
+    if args.resolution[0] % 16 != 0 or args.resolution[1] % 16 != 0:
+        print(f"Error: Resolution ({args.resolution[0]}x{args.resolution[1]}) must be multiples of 16.", file=sys.stderr)
+        sys.exit(1)
 
     global_batch_size = args.batch_size_per_gpu * args.nproc_per_node
     run_name = (
@@ -176,9 +178,13 @@ def main():
             print(f"\nCritical Error: Stage {i+1} ('{task_name}') failed. Aborting loop.")
             sys.exit(1)
 
+    end_time = datetime.now()
+    total_duration = end_time - start_time
+
     print("\n" + "#" * 80)
     print("# Continual learning loop finished successfully! #")
     print(f"# Final LoRA weights are at: {previous_lora_path}")
+    print(f"# Total execution time: {total_duration}")
     print("#" * 80)
 
 if __name__ == "__main__":

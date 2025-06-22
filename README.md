@@ -137,7 +137,7 @@
 - nohup python3 download_raw_clips.py > output_download_raw_clips.log 2>&1 &
 
 ## nohup
-- nohup python3 hoge.py > hoge.log 2>&1
+- nohup python3 hoge.py > hoge.log 2>&1 &
 
 
 # メモ
@@ -187,13 +187,15 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
 - ハイパーパラメータを変更して実行する例
   - python my_scripts/P08_run_continual_learning.py \
     --lora_rank 16 \
-    --max_iter 30 \
+    --max_iter 150 \
     --batch_size_per_gpu 1 \
     --learning_rate 1e-4 \
     --resolution 352 640
+  - nohup python my_scripts/P09_run_hyperparameter_sweep.py > nohup.log 2>&1 &
+    - tail -f nohup.log
 - ハイパラ
-  - r = 8, 16, 32
+  - r = 8, 16
   - lr = 5e-5, 1e-4, 3e-4
-  - bs_per_gpu = 1, 2 (大きい方が学習速い)
-  - max_iter = 5000 ~ 8000
+  - bs_per_gpu = 1 (2はOOM)
+  - max_iter = 2000 ~ 3500 (1エポック=5000/8=625step, 3~5エポック)
   - resolution = [352,640] ([720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)

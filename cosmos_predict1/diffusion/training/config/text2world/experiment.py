@@ -1105,7 +1105,7 @@ text2world_7b_lora_panda70m = LazyDict(
         trainer=dict(
             max_iter=0, # 実行時に上書き (型をintに)
             distributed_parallelism="ddp",
-            logging_iter=100, # ログの頻度を少し上げる
+            logging_iter=50, # ログの頻度を少し上げる
             callbacks=dict(
                 grad_clip=L(GradClip)(
                     model_key="model",
@@ -1116,7 +1116,7 @@ text2world_7b_lora_panda70m = LazyDict(
                     every_n=10,
                     hit_thres=0,
                 ),
-                progress_bar=L(ProgressBarCallback)(),
+                # progress_bar=L(ProgressBarCallback)(), # 無効化
             ),
             grad_accum_iter=1, # 基本は1。グローバルバッチサイズはbatch_size_per_gpuで調整
             ddp=dict(
