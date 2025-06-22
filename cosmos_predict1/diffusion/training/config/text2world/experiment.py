@@ -1095,7 +1095,7 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
             eps=1e-10,
         ),
         checkpoint=dict(
-            save_iter=1000,
+            save_iter=15, # 一時的に変更
             broadcast_via_filesystem=True,
             load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
             load_training_state=False,
@@ -1104,7 +1104,7 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
             async_saving=False,
         ),
         trainer=dict(
-            max_iter=5000,
+            max_iter=30, # 一時的に変更
             distributed_parallelism="ddp",
             logging_iter=200,
             callbacks=dict(
