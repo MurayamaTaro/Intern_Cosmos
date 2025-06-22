@@ -1037,48 +1037,47 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
 
 
 # ==========================================================================================
-# ===== ここからがPanda70M用の新しい設定 ========================================
+# ===== ここからがPanda70M用の汎用設定（P08用に修正） ========================
 # ==========================================================================================
 
 # Panda70M用のフレーム数を定義
 n_length_panda70m = 15
 num_frames_panda70m = 8 * n_length_panda70m + 1  # 121フレーム
 
-# まず、Panda70M vehicle用のデータローダーを定義
-example_video_dataset_panda70m_vehicle = L(Dataset)(
-    # ↓↓↓ WORKSPACE_ROOTを使って、データセットのパスを絶対パスに修正
-    dataset_dir=str(WORKSPACE_ROOT / "datasets/posttrain_panda70m/vehicle"),
+# 汎用的なデータローダーを定義
+# パス、解像度、バッチサイズは後からコマンドラインで上書きする
+example_video_dataset_panda70m = L(Dataset)(
+    dataset_dir="",  # 実行時に上書き (型をstrに)
     sequence_interval=1,
-    num_frames=num_frames_panda70m, # 正しいフレーム数(121)を使用
-    video_size=(384, 384), # まずはメモリに収まる解像度でテスト
+    num_frames=num_frames_panda70m,
+    video_size=[0, 0],  # 実行時に上書き (型をlistに)
     start_frame_interval=1,
 )
 
-dataloader_train_panda70m_vehicle = L(DataLoader)(
-    dataset=example_video_dataset_panda70m_vehicle,
-    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m_vehicle),
-    batch_size=1,
+dataloader_train_panda70m = L(DataLoader)(
+    dataset=example_video_dataset_panda70m,
+    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m),
+    batch_size=1,  # 実行時に上書き (型をintに)
     drop_last=True,
     num_workers=8,
     pin_memory=True,
 )
-dataloader_val_panda70m_vehicle = L(DataLoader)(
-    dataset=example_video_dataset_panda70m_vehicle,
-    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m_vehicle),
-    batch_size=1,
+dataloader_val_panda70m = L(DataLoader)(
+    dataset=example_video_dataset_panda70m,
+    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m),
+    batch_size=1,  # 実行時に上書き (型をintに)
     drop_last=True,
     num_workers=8,
     pin_memory=True,
 )
 
-# 次に、動作確認済みの設定をコピーして、Panda70M vehicle用の実験設定を作成
-text2world_7b_lora_panda70m_vehicle_test = LazyDict(
+# Panda70M用の汎用的なLoRA実験設定
+text2world_7b_lora_panda70m = LazyDict(
     dict(
         defaults=[
             {"override /net": "faditv2_7b"},
             {"override /ckpt_klass": "peft"},
             {"override /checkpoint": "local"},
-            # ↓↓↓ ここで、デフォルトの標準的なVAE設定を読み込む
             {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
             {"override /conditioner": "add_fps_image_size_padding_mask"},
             "_self_",
@@ -1086,27 +1085,27 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
         job=dict(
             project="posttraining",
             group="diffusion_text2world",
-            name="text2world_7b_lora_panda70m_vehicle_test", # 新しい実験名
+            name="text2world_7b_lora_panda70m", # 登録用に名前を付ける（実行時に上書きされる）
         ),
         optimizer=dict(
-            lr=1e-4,
+            lr=0.0, # 実行時に上書き (型をfloatに)
             weight_decay=0.1,
             betas=[0.9, 0.99],
             eps=1e-10,
         ),
         checkpoint=dict(
-            save_iter=15, # 一時的に変更
+            save_iter=5000, # 固定値にするか、必要なら上書き
             broadcast_via_filesystem=True,
-            load_path="checkpoints/Cosmos-Predict1-7B-Text2World/model.pt",
+            load_path="", # 実行時に上書き (型をstrに)
             load_training_state=False,
             strict_resume=False,
             keys_not_to_resume=[],
             async_saving=False,
         ),
         trainer=dict(
-            max_iter=30, # 一時的に変更
+            max_iter=0, # 実行時に上書き (型をintに)
             distributed_parallelism="ddp",
-            logging_iter=200,
+            logging_iter=100, # ログの頻度を少し上げる
             callbacks=dict(
                 grad_clip=L(GradClip)(
                     model_key="model",
@@ -1119,11 +1118,12 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
                 ),
                 progress_bar=L(ProgressBarCallback)(),
             ),
-            grad_accum_iter=4,
+            grad_accum_iter=1, # 基本は1。グローバルバッチサイズはbatch_size_per_gpuで調整
             ddp=dict(
                 static_graph=False,
                 find_unused_parameters=True,
             ),
+            seed=0, # 実行時に上書き (型をintに)
         ),
         model_parallel=dict(
             sequence_parallel=False,
@@ -1131,14 +1131,8 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
             context_parallel_size=1,
         ),
         model=dict(
-            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1),
-            # フレーム数(121)と解像度(384x384)に合わせてlatent_shapeを更新
-            latent_shape=[
-                16,  # Latent channel dim
-                16,  # Latent temporal dim (121 frames -> 16)
-                48,  # Latent height dim (384 -> 48)
-                48,  # Latent width dim (384 -> 48)
-            ],
+            peft_control=get_fa_ca_qv_lora_config(first_nblocks=28, rank=0, scale=1), # rankを実行時に上書き (型をintに)
+            latent_shape=[0, 0, 0, 0], # 解像度に合わせて実行時に上書き (型をlistに)
             loss_reduce="mean",
             ema=dict(
                 enabled=False,
@@ -1153,7 +1147,6 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
                 rope_t_extrapolation_ratio=2,
                 use_memory_save=False,
             ),
-            # ↓↓↓ ここで、model.vae の中で直接パスを絶対パスで上書き
             vae=dict(
                 pixel_chunk_duration=num_frames_panda70m,
                 enc_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/encoder.jit"),
@@ -1168,12 +1161,10 @@ text2world_7b_lora_panda70m_vehicle_test = LazyDict(
         scheduler=dict(
             warm_up_steps=[0],
         ),
-        # ここで新しいデータローダーを指定
-        dataloader_train=dataloader_train_panda70m_vehicle,
-        dataloader_val=dataloader_val_panda70m_vehicle,
+        dataloader_train=dataloader_train_panda70m,
+        dataloader_val=dataloader_val_panda70m,
     )
 )
-
 
 
 def register_experiments(cs: ConfigStore) -> None:
@@ -1187,18 +1178,17 @@ def register_experiments(cs: ConfigStore) -> None:
         text2world_7b_example_cosmos_nemo_assets_8gpu_40gb,
         text2world_7b_example_cosmos_nemo_assets_4gpu_40gb,
         text2world_7b_lora_example_cosmos_nemo_assets,
-        text2world_7b_lora_panda70m_vehicle_test, # 新しい実験設定を登録
+        text2world_7b_lora_panda70m, # 新しい汎用設定を登録
     ]:
-        experiment_name = _item["job"]["name"]
-        log.info(f"Registering experiment: {experiment_name}")
-        cs.store(
-            group="experiment",
-            package="_global_",
-            name=experiment_name,
-            node=_item,
-        )
-
-
-
+        # `name`がPLACEHOLDERの場合は登録をスキップ
+        if "name" in _item["job"] and _item["job"]["name"] != PLACEHOLDER:
+            experiment_name = _item["job"]["name"]
+            log.info(f"Registering experiment: {experiment_name}")
+            cs.store(
+                group="experiment",
+                package="_global_",
+                name=experiment_name,
+                node=_item,
+            )
 
 

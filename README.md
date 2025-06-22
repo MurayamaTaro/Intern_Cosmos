@@ -179,3 +179,21 @@ export OUTPUT_ROOT=checkpoints
 torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
     --config=cosmos_predict1/diffusion/training/config/config.py \
     -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
+
+
+# P08コード使い方
+- デフォルト設定で実行 (r=8, iter=8000, bs=16, lr=1e-4, 720x1280)
+  - python my_scripts/P08_run_continual_learning.py
+- ハイパーパラメータを変更して実行する例
+  - python my_scripts/P08_run_continual_learning.py \
+    --lora_rank 16 \
+    --max_iter 30 \
+    --batch_size_per_gpu 1 \
+    --learning_rate 1e-4 \
+    --resolution 352 640
+- ハイパラ
+  - r = 8, 16, 32
+  - lr = 5e-5, 1e-4, 3e-4
+  - bs_per_gpu = 1, 2 (大きい方が学習速い)
+  - max_iter = 5000 ~ 8000
+  - resolution = [352,640] ([720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
