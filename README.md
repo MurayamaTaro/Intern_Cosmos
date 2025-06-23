@@ -137,7 +137,7 @@
 - nohup python3 download_raw_clips.py > output_download_raw_clips.log 2>&1 &
 
 ## nohup
-- nohup python3 hoge.py > hoge.log 2>&1 &
+- nohup python3 hoge.py > nohup.log 2>&1 &
 
 
 # メモ
@@ -203,14 +203,36 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
 
 # LoRA重みでの推論（P10コード）使い方
 - python my_scripts/P10_run_lora_inference.py \
-  --experiment_name "text2world_7b_lora_panda70m_r8_iter3000_bs8_lr0.0001_seed0" \
+  --inference_name "vehicle_00015"
+  --experiment_name "r8_iter3000_bs8_lr0.0001_seed0" \
   --prompt "The person is driving a purple car on an empty road with blue sky in the background." \
   --num_videos 1 \
-  --nproc_per_node 1 \
-  --num_steps 10 \
+  --num_steps 50 \
   --fps 24 \
   --guidance 8.0
-
+- nohup bash run_lora_inference.sh > nohup.log 2>&1 &
 - マシなvehicleデータ番号
-  - 15
-    - The person is driving a purple car on an empty road with blue sky in the background.
+  - 15: The person is driving a purple car on an empty road with blue sky in the background.
+  - 25: A truck on the side of the road next to a house.
+  - 48: A person is driving a car on a city street, and there are several cars parked on the side of the road.
+
+
+
+# コマンドで.ptのキー確認
+- base
+  - python -c "import torch; \
+print(list(torch.load('checkpoints/Cosmos-Predict1-7B-Text2World/model.pt', \
+map_location='cpu').keys()))"
+- lora
+  - python -c "
+import torch
+ckpt = torch.load('checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_panda70m_r8_iter3000_bs8_lr0.0001_seed0/vehicle/checkpoints/iter_000003000_model.pt', map_location='cpu')
+for k in ['model', 'ema', 'trained_data_record']:
+    v = ckpt[k]
+    print(f'[{k}] type: {type(v)}')
+    if isinstance(v, dict):
+        print(f'  keys: {list(v.keys())[:50]}')
+    else:
+        print(f'  value: {v}')
+"
+

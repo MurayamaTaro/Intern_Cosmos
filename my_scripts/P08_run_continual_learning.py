@@ -147,6 +147,14 @@ def main():
     parser.add_argument("--resolution", type=int, nargs=2, default=[352, 640], help="Video resolution (height width). Must be multiples of 16.")
     parser.add_argument("--experiment_base_name", type=str, default="text2world_7b_lora_panda70m", help="The base name of the experiment in experiment.py.")
     parser.add_argument("--nproc_per_node", type=int, default=8, help="Number of GPUs to use.")
+    # ★変更点: --tasks 引数を追加
+    parser.add_argument(
+        "--tasks",
+        type=str,
+        nargs='+',
+        default=["vehicle", "cooking", "sports"],
+        help="A list of task names to run in sequence."
+    )
     args = parser.parse_args()
 
     if args.resolution[0] % 16 != 0 or args.resolution[1] % 16 != 0:
@@ -160,7 +168,10 @@ def main():
     )
     print(f"Generated Run Name: {run_name}")
 
-    tasks = ["vehicle", "cooking", "sports"]
+    # ★変更点: ハードコードされたリストの代わりに引数を使用
+    tasks = args.tasks
+    print(f"Tasks to be executed: {tasks}")
+
     previous_lora_path = None
     for i, task_name in enumerate(tasks):
         print("\n" + "#" * 80)

@@ -12,6 +12,10 @@ def main():
         'seed': [0],
     }
 
+    # 実行したいタスクをここで設定
+    tasks_to_run = ['vehicle']
+    # tasks_to_run = ['vehicle', 'cooking', 'sports']
+
     # パラメータの組み合わせを生成
     keys, values = zip(*param_grid.items())
     param_combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
