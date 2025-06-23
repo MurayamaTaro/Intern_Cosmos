@@ -51,7 +51,7 @@ def main():
         video_name = f"{args.output_dir}_{seed}"
         video_path = os.path.join(output_dir, f"{video_name}.mp4")
 
-        cmd = ["torchrun", "--nproc_per_node", "4"]
+        cmd = ["torchrun", "--nproc_per_node", "1"]
         if args.model_type == "text2world":
             cmd += [
                 "cosmos_predict1/diffusion/inference/text2world.py",
@@ -66,7 +66,7 @@ def main():
                 "--offload_prompt_upsampler",
             ]
         cmd += [
-            "--num_gpus", "4",
+            "--num_gpus", "1",
             "--checkpoint_dir", "checkpoints",
             "--prompt", args.prompt,
             "--num_steps", str(args.num_steps),

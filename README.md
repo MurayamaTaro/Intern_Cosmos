@@ -199,3 +199,18 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
   - bs_per_gpu = 1 (2はOOM)
   - max_iter = 2000 ~ 3500 (1エポック=5000/8=625step, 3~5エポック)
   - resolution = [352,640] ([720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
+
+
+# LoRA重みでの推論（P10コード）使い方
+- python my_scripts/P10_run_lora_inference.py \
+  --experiment_name "text2world_7b_lora_panda70m_r8_iter3000_bs8_lr0.0001_seed0" \
+  --prompt "The person is driving a purple car on an empty road with blue sky in the background." \
+  --num_videos 1 \
+  --nproc_per_node 1 \
+  --num_steps 10 \
+  --fps 24 \
+  --guidance 8.0
+
+- マシなvehicleデータ番号
+  - 15
+    - The person is driving a purple car on an empty road with blue sky in the background.

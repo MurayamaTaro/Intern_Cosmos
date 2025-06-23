@@ -54,29 +54,27 @@ def main():
             print(f"Running command: {' '.join(command)}")
             print(f"Log file will be saved to: {log_file_path}")
 
-            # subprocess.runを使って同期的に実行
-            result = subprocess.run(
-                command,
-                capture_output=True, # stdoutとstderrをキャプチャ
-                text=True,
-                encoding='utf-8'
-            )
+            # subprocess.run の代わりに Popen を使い、出力を直接ファイルにリダイレクト
+            with open(log_file_path, 'w', encoding='utf-8') as log_file:
+                process = subprocess.Popen(
+                    command,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT, # 標準エラー出力を標準出力にまとめる
+                    text=True,
+                    encoding='utf-8'
+                )
+                # プロセスの終了を待つ
+                process.wait()
+                returncode = process.returncode
 
-            # ログをファイルに書き込む
-            with open(log_file_path, 'w') as f:
-                f.write(result.stdout)
-                f.write(result.stderr)
-
-            # コンソールにも出力（エラーがあった場合などに見やすいように）
-            print(result.stdout)
-            if result.stderr:
-                print("--- STDERR ---")
-                print(result.stderr)
-
-
-            if result.returncode != 0:
-                print(f"\n[ERROR] Experiment {i+1} failed with return code {result.returncode}.")
+            # 終了コードで成功/失敗を判定
+            if returncode != 0:
+                print(f"\n[ERROR] Experiment {i+1} failed with return code {returncode}.")
                 print(f"Check log for details: {log_file_path}")
+                # エラーログをコンソールに表示して確認しやすくする
+                with open(log_file_path, 'r', encoding='utf-8') as f:
+                    print("--- LOGS ---")
+                    print(f.read())
             else:
                 print(f"\n[SUCCESS] Experiment {i+1} completed successfully.")
 
