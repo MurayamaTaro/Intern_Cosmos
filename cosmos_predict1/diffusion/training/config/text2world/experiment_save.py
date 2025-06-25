@@ -1076,7 +1076,7 @@ text2world_7b_lora_panda70m = LazyDict(
     dict(
         defaults=[
             {"override /net": "faditv2_7b"},
-            {"override /ckpt_klass": "fsdp"},
+            {"override /ckpt_klass": "peft"},
             {"override /checkpoint": "local"},
             {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
             {"override /conditioner": "add_fps_image_size_padding_mask"},
@@ -1104,12 +1104,12 @@ text2world_7b_lora_panda70m = LazyDict(
         ),
         trainer=dict(
             max_iter=0, # 実行時に上書き (型をintに)
-            distributed_parallelism="fsdp",
+            distributed_parallelism="ddp",
             logging_iter=50, # ログの頻度を少し上げる
             callbacks=dict(
                 grad_clip=L(GradClip)(
                     model_key="model",
-                    fsdp_enabled=True,
+                    fsdp_enabled=False,
                 ),
                 low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
                 iter_speed=L(IterSpeed)(
@@ -1119,10 +1119,10 @@ text2world_7b_lora_panda70m = LazyDict(
                 # progress_bar=L(ProgressBarCallback)(), # 無効化
             ),
             grad_accum_iter=1, # 後で変更
-            # ddp=dict(
-            #     static_graph=False,
-            #     find_unused_parameters=True,
-            # ),
+            ddp=dict(
+                static_graph=False,
+                find_unused_parameters=True,
+            ),
             seed=0, # 実行時に上書き (型をintに)
         ),
         model_parallel=dict(
@@ -1137,15 +1137,7 @@ text2world_7b_lora_panda70m = LazyDict(
             ema=dict(
                 enabled=False,
             ),
-            fsdp_enabled=True,
-            # FSDP設定ブロックを他の7B設定からコピーして追加
-            fsdp=dict(
-                policy="block",
-                checkpoint=True,  # FSDPネイティブの勾配チェックポイントを有効化
-                min_num_params=1024,
-                sharding_group_size=32,
-                sharding_strategy="hybrid",
-            ),
+            fsdp_enabled=False,
             net=dict(
                 in_channels=16,
                 extra_per_block_abs_pos_emb=True,
@@ -1153,7 +1145,7 @@ text2world_7b_lora_panda70m = LazyDict(
                 rope_h_extrapolation_ratio=1,
                 rope_w_extrapolation_ratio=1,
                 rope_t_extrapolation_ratio=2,
-                use_memory_save=False,
+                use_memory_save=True,
             ),
             vae=dict(
                 pixel_chunk_duration=num_frames_panda70m,
@@ -1162,11 +1154,7 @@ text2world_7b_lora_panda70m = LazyDict(
                 mean_std_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/mean_std.pt"),
             ),
         ),
-        # model_obj=L(PEFTVideoDiffusionModel)(
-        #     config=PLACEHOLDER,
-        #     fsdp_checkpointer=PLACEHOLDER,
-        # ),
-        model_obj=L(FSDPDiffusionModel)(
+        model_obj=L(PEFTVideoDiffusionModel)(
             config=PLACEHOLDER,
             fsdp_checkpointer=PLACEHOLDER,
         ),

@@ -87,7 +87,7 @@ class Dataset(Dataset):
             future_to_video_path = {
                 executor.submit(self._load_and_process_video_path, video_path): video_path for video_path in video_paths
             }
-            for future in tqdm(as_completed(future_to_video_path), total=len(video_paths)):
+            for future in tqdm(as_completed(future_to_video_path), total=len(video_paths), disable=True):
                 samples.extend(future.result())
         return samples
 

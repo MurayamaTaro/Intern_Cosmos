@@ -1,32 +1,26 @@
 import subprocess
-import itertools
 from pathlib import Path
 import sys
 
 def main():
-    # --- 探索するハイパーパラメータの範囲を定義 ---
-    param_grid = {
-        'lora_rank': [8, 16], # 8, 16
-        'learning_rate': [5e-5, 1e-4],
-        'max_iter': [3000], # 3000
-        'seed': [0],
-    }
+    # --- 実行したい実験の組み合わせをここに定義 ---
+    # grad_accum_iter の代わりに batch_size_per_gpu を指定
+    experiment_configs = [
+        # test
+        {'lora_rank': 8, 'max_iter': 10, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
+        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
+        # {'lora_rank': 8, 'max_iter': 5000, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=16エポック
+        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'scale': 1, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=6エポック
+    ]
 
-    # 実行したいタスクをここで設定
-    tasks_to_run = ['vehicle', 'cooking', 'sports']
-
-    # パラメータの組み合わせを生成
-    keys, values = zip(*param_grid.items())
-    param_combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    print(f"Total number of experiments to run: {len(param_combinations)}")
+    print(f"Total number of experiments to run: {len(experiment_configs)}")
 
     # 既存のスクリプトのパス
     script_to_run = '/workspace/my_scripts/P08_run_continual_learning.py'
 
-    for i, params in enumerate(param_combinations):
+    for i, params in enumerate(experiment_configs):
         print("\n" + "="*80)
-        print(f"Starting experiment {i+1}/{len(param_combinations)}")
+        print(f"Starting experiment {i+1}/{len(experiment_configs)}")
         print(f"Parameters: {params}")
         print("="*80)
 
@@ -35,20 +29,21 @@ def main():
             sys.executable,  # 現在のPythonインタプリタを使用
             script_to_run,
             '--lora_rank', str(params['lora_rank']),
-            '--learning_rate', str(params['learning_rate']),
             '--max_iter', str(params['max_iter']),
+            '--batch_size_per_gpu', str(params['batch_size_per_gpu']), # accumの代わりにbsを渡す
+            '--scale', str(params['scale']),
+            '--learning_rate', str(params['learning_rate']),
             '--seed', str(params['seed']),
-            # --- その他の固定パラメータ ---
-            # '--batch_size_per_gpu', '1',
-            # '--nproc_per_node', '8',
+            # grad_accum_iter は P08 のデフォルト値(1)が使われます
         ]
 
         # 実行
         try:
             # ログをファイルに保存しつつ、コンソールにも表示
+            # run_name を batch_size_per_gpu を使うように変更
             run_name = (
-                f"r{params['lora_rank']}_lr{params['learning_rate']}"
-                f"_iter{params['max_iter']}_seed{params['seed']}"
+                f"r{params['lora_rank']}_iter{params['max_iter']}_bs{params['batch_size_per_gpu']}"
+                f"_scale{params['scale']}_lr{params['learning_rate']}_seed{params['seed']}"
             )
             log_dir = Path(f"/workspace/sweep_logs/{run_name}")
             log_dir.mkdir(parents=True, exist_ok=True)

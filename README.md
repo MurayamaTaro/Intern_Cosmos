@@ -190,7 +190,8 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
     --max_iter 10 \
     --batch_size_per_gpu 1 \
     --learning_rate 1e-4 \
-    --resolution 352 640
+    --grad_accum_iter 1 \
+    --resolution 256 448
   - nohup python my_scripts/P09_run_hyperparameter_sweep.py > nohup.log 2>&1 &
     - tail -f nohup.log
 - ハイパラ
@@ -198,7 +199,7 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
   - lr = 5e-5, 1e-4, 3e-4
   - bs_per_gpu = 1 (2はOOM)
   - max_iter = 2000 ~ 3500 (1エポック=5000/8=625step, 3~5エポック)
-  - resolution = [352,640] ([720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
+  - resolution = [256,448] ([352, 640]厳しい。[720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
 
 
 # LoRA重みでの推論（P10コード）使い方
@@ -221,17 +222,17 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
 # コマンドで.ptのキー確認
 - base
   - python -c "import torch; \
-print(list(torch.load('checkpoints/Cosmos-Predict1-7B-Text2World/model.pt', \
+print(list(torch.load('checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_panda70m_r8_iter100_bs2_scale2.0_lr0.0001_seed0/vehicle/checkpoints/iter_000000100.pt', \
 map_location='cpu').keys()))"
 - lora
   - python -c "
 import torch
-ckpt = torch.load('checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_panda70m_r8_iter3000_bs8_lr0.0001_seed0/vehicle/checkpoints/iter_000003000_model.pt', map_location='cpu')
-for k in ['model', 'ema', 'trained_data_record']:
+ckpt = torch.load('checkpoints/posttraining/diffusion_text2world/text2world_7b_lora_panda70m_r8_iter100_bs2_scale2.0_lr0.0001_seed0/vehicle/checkpoints/iter_000000100.pt', map_location='cpu')
+for k in ['iteration']:
     v = ckpt[k]
     print(f'[{k}] type: {type(v)}')
     if isinstance(v, dict):
-        print(f'  keys: {list(v.keys())[:50]}')
+        print(f'  keys: {list(v.keys())[:10]}')
     else:
         print(f'  value: {v}')
 "

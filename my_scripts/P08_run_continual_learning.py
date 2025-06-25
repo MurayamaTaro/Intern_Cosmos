@@ -14,7 +14,7 @@ def parse_loss_from_log(log_file_path: Path) -> pd.DataFrame:
         with open(log_file_path, 'r', encoding='utf-8') as f:
             log_content = f.read()
 
-        # ★変更点: IterSpeedコールバックのログ形式に合わせた正規表現に変更
+        # IterSpeedコールバックのログ形式に合わせた正規表現に変更
         # 例: ...iter_speed.py:80:every_n_impl] 20 : ... | Loss: -0.0437
         pattern = re.compile(r"every_n_impl\]\s+(\d+)\s+:.*?Loss:\s+([-\d\.]+)")
         matches = pattern.findall(log_content)
@@ -80,6 +80,7 @@ def run_training(
         f"trainer.seed={args.seed}",
         f"optimizer.lr={args.learning_rate}",
         f"model.peft_control.rank={args.lora_rank}",
+        f"model.peft_control.scale={args.scale}",
         f"model.latent_shape={latent_shape}",
         f"dataloader_train.dataset.video_size={args.resolution}",
         f"dataloader_train.sampler.dataset.video_size={args.resolution}",
@@ -91,6 +92,7 @@ def run_training(
         f"dataloader_val.sampler.dataset.dataset_dir={dataset_path}",
         f"dataloader_train.batch_size={args.batch_size_per_gpu}",
         f"dataloader_val.batch_size={args.batch_size_per_gpu}",
+        f"trainer.grad_accum_iter={args.grad_accum_iter}",
     ]
 
     new_env = os.environ.copy()
@@ -124,15 +126,29 @@ def run_training(
             workspace_root / "checkpoints" / "posttraining" / "diffusion_text2world"
             / current_experiment_name / "checkpoints"
         )
-        checkpoints = list(checkpoint_dir.glob("iter_*_model.pt"))
-        if not checkpoints:
-            print(f"Error: No model checkpoint file found in {checkpoint_dir}", file=sys.stderr)
+        # FSDPのメタデータファイル (iter_*.pt) を探す
+        # 'iter_00000100.pt' のような形式のファイル名に完全に一致するもののみを対象とする
+        manifest_files = [p for p in checkpoint_dir.glob("iter_*.pt") if re.fullmatch(r"iter_\d+\.pt", p.name)]
+
+        if not manifest_files:
+            print(f"Error: No FSDP manifest file (e.g., iter_00000100.pt) found in {checkpoint_dir}", file=sys.stderr)
             return None
-        latest_checkpoint = max(
-            checkpoints, key=lambda p: int(re.search(r"iter_(\d+)_model\.pt", p.name).group(1))
+
+        # 最新のイテレーションを持つメタデータファイルを見つける
+        latest_manifest = max(
+            manifest_files, key=lambda p: int(re.search(r"iter_(\d+)\.pt", p.name).group(1))
         )
-        print(f"Saved checkpoint for next task: {latest_checkpoint}")
-        return latest_checkpoint
+
+        # メタデータファイル名から、対応するモデル重みファイルパスを構築する
+        # 例: 'iter_00000100.pt' -> 'iter_00000100_reg_model.pt'
+        model_weights_file = latest_manifest.with_name(f"{latest_manifest.stem}_reg_model.pt")
+
+        if not model_weights_file.exists():
+            print(f"Error: Corresponding model weights file not found: {model_weights_file}", file=sys.stderr)
+            return None
+
+        print(f"Saved checkpoint for next task: {model_weights_file}")
+        return model_weights_file
     else:
         print(f"\nTask '{task_name}' failed with return code {process.returncode}.", file=sys.stderr)
         print(f"Check the log for details: {log_file_path}", file=sys.stderr)
@@ -149,11 +165,12 @@ def main():
     parser.add_argument("--max_iter", type=int, default=8000, help="Total training iterations per task.")
     parser.add_argument("--batch_size_per_gpu", type=int, default=1, help="Batch size per GPU.")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate.")
+    parser.add_argument("--scale", type=float, default=1.0, help="LoRA scaling factor (alpha/rank).")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
     parser.add_argument("--resolution", type=int, nargs=2, default=[352, 640], help="Video resolution (height width). Must be multiples of 16.")
     parser.add_argument("--experiment_base_name", type=str, default="text2world_7b_lora_panda70m", help="The base name of the experiment in experiment.py.")
     parser.add_argument("--nproc_per_node", type=int, default=8, help="Number of GPUs to use.")
-    # ★変更点: --tasks 引数を追加
+    parser.add_argument("--grad_accum_iter", type=int, default=1, help="Number of gradient accumulation steps.")
     parser.add_argument(
         "--tasks",
         type=str,
@@ -167,14 +184,13 @@ def main():
         print(f"Error: Resolution ({args.resolution[0]}x{args.resolution[1]}) must be multiples of 16.", file=sys.stderr)
         sys.exit(1)
 
-    global_batch_size = args.batch_size_per_gpu * args.nproc_per_node
     run_name = (
-        f"r{args.lora_rank}_iter{args.max_iter}_bs{global_batch_size}"
-        f"_lr{args.learning_rate}_seed{args.seed}"
+        f"r{args.lora_rank}_iter{args.max_iter}_bs{args.batch_size_per_gpu}"
+        f"_scale{args.scale}_lr{args.learning_rate}_seed{args.seed}"
     )
     print(f"Generated Run Name: {run_name}")
 
-    # ★変更点: ハードコードされたリストの代わりに引数を使用
+    # ハードコードされたリストの代わりに引数を使用
     tasks = args.tasks
     print(f"Tasks to be executed: {tasks}")
 
