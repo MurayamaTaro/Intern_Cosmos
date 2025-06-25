@@ -53,10 +53,15 @@ def run_training(
 
     dataset_path = workspace_root / "datasets/posttrain_panda70m" / task_name
 
+    # 継続的学習のステージに応じて、読み込むチェックポイントのパスを動的に決定する
     if previous_lora_path:
+        # 2番目以降のタスクでは、前のタスクの出力チェックポイントを読み込む
         load_path = previous_lora_path
+        print(f"Continual learning step. Loading previous checkpoint from: {load_path}")
     else:
+        # 最初のタスクでは、ベースモデルを読み込む
         load_path = workspace_root / "checkpoints/Cosmos-Predict1-7B-Text2World/model.pt"
+        print(f"First training step. Starting from the base model: {load_path}")
 
     latent_height = args.resolution[0] // 8
     latent_width = args.resolution[1] // 8
@@ -69,6 +74,7 @@ def run_training(
         "--config=cosmos_predict1/diffusion/training/config/config.py",
         "--", f"experiment={args.experiment_base_name}",
         f"job.name={current_experiment_name}",
+        # 動的に決定した `load_path` を使用
         f"checkpoint.load_path={load_path}",
         f"trainer.max_iter={args.max_iter}",
         f"trainer.seed={args.seed}",

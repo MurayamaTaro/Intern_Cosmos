@@ -13,8 +13,7 @@ def main():
     }
 
     # 実行したいタスクをここで設定
-    tasks_to_run = ['vehicle']
-    # tasks_to_run = ['vehicle', 'cooking', 'sports']
+    tasks_to_run = ['vehicle', 'cooking', 'sports']
 
     # パラメータの組み合わせを生成
     keys, values = zip(*param_grid.items())

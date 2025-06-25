@@ -274,9 +274,24 @@ def main():
     args = parser.parse_args()
 
     workspace_root = Path("/workspace")
-    checkpoints_root = workspace_root / "checkpoints/posttraining/diffusion_text2world"
 
-    # ★変更点: 短い名前からチェックポイントのフルパスを生成
+    # --- Base Model Inference (with skip check) ---
+    base_output_dir = workspace_root / "lora_inference" / args.inference_name / "original"
+    if base_output_dir.exists():
+        print(f"Base model output directory '{base_output_dir}' already exists. Skipping base model inference.")
+    else:
+        run_inference_for_base_model(
+            prompt=args.prompt,
+            output_base_dir=base_output_dir,
+            num_videos=args.num_videos,
+            nproc_per_node=args.nproc_per_node,
+            num_steps=args.num_steps,
+            fps=args.fps,
+            guidance=args.guidance,
+        )
+
+    # --- LoRA Model Inference ---
+    checkpoints_root = workspace_root / "checkpoints/posttraining/diffusion_text2world"
     experiment_path = checkpoints_root / f"text2world_7b_lora_panda70m_{args.experiment_name}"
 
     if not experiment_path.exists():
@@ -292,25 +307,13 @@ def main():
         print("Could not find all required checkpoints. Aborting.", file=sys.stderr)
         sys.exit(1)
 
-    # ★変更点: 出力ディレクトリには短い名前を使用
-    output_root = workspace_root / "lora_inference" / args.inference_name / args.experiment_name
-
-    # Stage 0: original (Base Model)
-    run_inference_for_base_model(
-        prompt=args.prompt,
-        output_base_dir=output_root / "original",
-        num_videos=args.num_videos,
-        nproc_per_node=args.nproc_per_node,
-        num_steps=args.num_steps,
-        fps=args.fps,
-        guidance=args.guidance,
-    )
+    lora_output_root = workspace_root / "lora_inference" / args.inference_name / args.experiment_name
 
     # Stage 1: vehicle_only (LoRA)
     run_inference_for_lora_stage(
         lora_model_file=vehicle_lora_file,
         prompt=args.prompt,
-        output_base_dir=output_root / "vehicle_only",
+        output_base_dir=lora_output_root / "vehicle_only",
         num_videos=args.num_videos,
         nproc_per_node=args.nproc_per_node,
         num_steps=args.num_steps,
@@ -322,7 +325,7 @@ def main():
     run_inference_for_lora_stage(
         lora_model_file=final_lora_file,
         prompt=args.prompt,
-        output_base_dir=output_root / "final",
+        output_base_dir=lora_output_root / "final",
         num_videos=args.num_videos,
         nproc_per_node=args.nproc_per_node,
         num_steps=args.num_steps,
@@ -332,7 +335,7 @@ def main():
 
     print("\n" + "="*80)
     print("Inference script finished.")
-    print(f"All outputs are saved in: {output_root}")
+    print(f"All outputs are saved in: {workspace_root / 'lora_inference' / args.inference_name}")
     print("="*80)
 
 if __name__ == "__main__":

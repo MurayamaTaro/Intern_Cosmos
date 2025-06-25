@@ -186,8 +186,8 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
   - python my_scripts/P08_run_continual_learning.py
 - ハイパーパラメータを変更して実行する例
   - python my_scripts/P08_run_continual_learning.py \
-    --lora_rank 16 \
-    --max_iter 150 \
+    --lora_rank 8 \
+    --max_iter 10 \
     --batch_size_per_gpu 1 \
     --learning_rate 1e-4 \
     --resolution 352 640
