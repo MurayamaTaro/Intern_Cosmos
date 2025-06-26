@@ -137,7 +137,7 @@
 - nohup python3 download_raw_clips.py > output_download_raw_clips.log 2>&1 &
 
 ## nohup
-- nohup python3 hoge.py > nohup.log 2>&1 &
+- rm nohup.log; nohup python3 hoge.py > nohup.log 2>&1 &
 
 
 # メモ
@@ -181,7 +181,7 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
     -- experiment=text2world_7b_lora_example_cosmos_nemo_assets
 
 
-# P08コード使い方
+# P08,P09コード使い方
 - デフォルト設定で実行 (r=8, iter=8000, bs=16, lr=1e-4, 720x1280)
   - python my_scripts/P08_run_continual_learning.py
 - ハイパーパラメータを変更して実行する例
@@ -192,7 +192,7 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
     --learning_rate 1e-4 \
     --grad_accum_iter 1 \
     --resolution 256 448
-  - nohup python my_scripts/P09_run_hyperparameter_sweep.py > nohup.log 2>&1 &
+  - rm nohup.log; nohup python my_scripts/P09_run_hyperparameter_sweep.py > nohup.log 2>&1 &
     - tail -f nohup.log
 - ハイパラ
   - r = 8, 16

@@ -186,7 +186,8 @@ def main():
 
     run_name = (
         f"r{args.lora_rank}_iter{args.max_iter}_bs{args.batch_size_per_gpu}"
-        f"_scale{args.scale}_lr{args.learning_rate}_seed{args.seed}"
+        f"_accum{args.grad_accum_iter}_scale{args.scale}"
+        f"_lr{args.learning_rate}_seed{args.seed}"
     )
     print(f"Generated Run Name: {run_name}")
 

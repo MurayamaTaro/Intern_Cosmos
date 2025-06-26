@@ -6,11 +6,10 @@ def main():
     # --- 実行したい実験の組み合わせをここに定義 ---
     # grad_accum_iter の代わりに batch_size_per_gpu を指定
     experiment_configs = [
-        # test
-        {'lora_rank': 8, 'max_iter': 10, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
-        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
-        # {'lora_rank': 8, 'max_iter': 5000, 'batch_size_per_gpu': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=16エポック
-        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'scale': 1, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=6エポック
+        # 実質バッチサイズ = batch_size_per_gpu * grad_accum_iter * 8
+        {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
+        # {'lora_rank': 8, 'max_iter': 5000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=16エポック
+        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 1, 'scale': 1, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=6エポック
     ]
 
     print(f"Total number of experiments to run: {len(experiment_configs)}")
@@ -30,7 +29,8 @@ def main():
             script_to_run,
             '--lora_rank', str(params['lora_rank']),
             '--max_iter', str(params['max_iter']),
-            '--batch_size_per_gpu', str(params['batch_size_per_gpu']), # accumの代わりにbsを渡す
+            '--batch_size_per_gpu', str(params['batch_size_per_gpu']),
+            '--grad_accum_iter', str(params['grad_accum_iter']),
             '--scale', str(params['scale']),
             '--learning_rate', str(params['learning_rate']),
             '--seed', str(params['seed']),
@@ -43,7 +43,8 @@ def main():
             # run_name を batch_size_per_gpu を使うように変更
             run_name = (
                 f"r{params['lora_rank']}_iter{params['max_iter']}_bs{params['batch_size_per_gpu']}"
-                f"_scale{params['scale']}_lr{params['learning_rate']}_seed{params['seed']}"
+                f"_accum{params['grad_accum_iter']}_scale{params['scale']}"
+                f"_lr{params['learning_rate']}_seed{params['seed']}"
             )
             log_dir = Path(f"/workspace/sweep_logs/{run_name}")
             log_dir.mkdir(parents=True, exist_ok=True)
