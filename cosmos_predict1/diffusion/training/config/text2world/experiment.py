@@ -45,7 +45,6 @@ def get_sampler(dataset):
 
 cs = ConfigStore.instance()
 
-# --- ここから修正 ---
 # ワークスペースのルートディレクトリを絶対パスで取得
 # このファイルの場所から親ディレクトリを遡ることで、どこから実行されても正しいパスになる
 try:
@@ -1094,7 +1093,7 @@ text2world_7b_lora_panda70m = LazyDict(
             eps=1e-10,
         ),
         checkpoint=dict(
-            save_iter=5000, # 固定値にするか、必要なら上書き
+            save_iter=500, # 固定値にするか、必要なら上書き
             broadcast_via_filesystem=True,
             load_path="", # 実行時に上書き (型をstrに)
             load_training_state=False,
@@ -1105,7 +1104,7 @@ text2world_7b_lora_panda70m = LazyDict(
         trainer=dict(
             max_iter=0, # 実行時に上書き (型をintに)
             distributed_parallelism="fsdp",
-            logging_iter=5, # ログの頻度を少し上げる
+            logging_iter=50, # ログの頻度を少し上げる
             callbacks=dict(
                 grad_clip=L(GradClip)(
                     model_key="model",
@@ -1143,8 +1142,8 @@ text2world_7b_lora_panda70m = LazyDict(
                 policy="block",
                 checkpoint=True,  # FSDPネイティブの勾配チェックポイントを有効化
                 min_num_params=1024,
-                sharding_group_size=32,
-                sharding_strategy="hybrid",
+                # sharding_group_size=32,
+                sharding_strategy="full", # "hybrid"から"full"に変更
             ),
             net=dict(
                 in_channels=16,

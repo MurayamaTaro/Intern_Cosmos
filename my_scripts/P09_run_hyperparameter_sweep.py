@@ -7,7 +7,8 @@ def main():
     # grad_accum_iter の代わりに batch_size_per_gpu を指定
     experiment_configs = [
         # 実質バッチサイズ = batch_size_per_gpu * grad_accum_iter * 8
-        {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
+        {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 1, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=5.6エポック
+        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
         # {'lora_rank': 8, 'max_iter': 5000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=16エポック
         # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 1, 'scale': 1, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=6エポック
     ]

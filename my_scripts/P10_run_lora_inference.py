@@ -270,25 +270,32 @@ def main():
     parser.add_argument("--num_steps", type=int, default=50, help="Number of denoising steps.")
     parser.add_argument("--fps", type=int, default=24, help="Frames per second of the generated video.")
     parser.add_argument("--guidance", type=float, default=8.0, help="Guidance scale.")
+    parser.add_argument(
+        "--skip_base", action="store_true",
+        help="Skip inference for the base model stage."
+    )
 
     args = parser.parse_args()
 
     workspace_root = Path("/workspace")
 
     # --- Base Model Inference (with skip check) ---
-    base_output_dir = workspace_root / "lora_inference" / args.inference_name / "original"
-    if base_output_dir.exists():
-        print(f"Base model output directory '{base_output_dir}' already exists. Skipping base model inference.")
+    if not args.skip_base:
+        base_output_dir = workspace_root / "lora_inference" / args.inference_name / "original"
+        if base_output_dir.exists():
+            print(f"Base model output directory '{base_output_dir}' already exists. Skipping base model inference.")
+        else:
+            run_inference_for_base_model(
+                prompt=args.prompt,
+                output_base_dir=base_output_dir,
+                num_videos=args.num_videos,
+                nproc_per_node=args.nproc_per_node,
+                num_steps=args.num_steps,
+                fps=args.fps,
+                guidance=args.guidance,
+            )
     else:
-        run_inference_for_base_model(
-            prompt=args.prompt,
-            output_base_dir=base_output_dir,
-            num_videos=args.num_videos,
-            nproc_per_node=args.nproc_per_node,
-            num_steps=args.num_steps,
-            fps=args.fps,
-            guidance=args.guidance,
-        )
+        print("Skipping base model inference as '--skip_base' flag is set.")
 
     # --- LoRA Model Inference ---
     checkpoints_root = workspace_root / "checkpoints/posttraining/diffusion_text2world"

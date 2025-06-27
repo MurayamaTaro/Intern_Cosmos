@@ -53,15 +53,50 @@ def run_training(
 
     dataset_path = workspace_root / "datasets/posttrain_panda70m" / task_name
 
-    # 継続的学習のステージに応じて、読み込むチェックポイントのパスを動的に決定する
-    if previous_lora_path:
-        # 2番目以降のタスクでは、前のタスクの出力チェックポイントを読み込む
-        load_path = previous_lora_path
-        print(f"Continual learning step. Loading previous checkpoint from: {load_path}")
-    else:
-        # 最初のタスクでは、ベースモデルを読み込む
-        load_path = workspace_root / "checkpoints/Cosmos-Predict1-7B-Text2World/model.pt"
-        print(f"First training step. Starting from the base model: {load_path}")
+    # --- ★ここから自動再開ロジックを追加 ---
+    load_path = None
+    # 現在のタスクの中間チェックポイントが存在するか確認
+    current_task_checkpoint_dir = (
+        workspace_root / "checkpoints" / "posttraining" / "diffusion_text2world"
+        / current_experiment_name / "checkpoints"
+    )
+
+    if current_task_checkpoint_dir.exists():
+        manifest_files = [p for p in current_task_checkpoint_dir.glob("iter_*.pt") if re.fullmatch(r"iter_\d+\.pt", p.name)]
+        if manifest_files:
+            # 最新の中間チェックポイントを見つける
+            latest_manifest = max(
+                manifest_files, key=lambda p: int(re.search(r"iter_(\d+)\.pt", p.name).group(1))
+            )
+            # 対応するモデル重みファイルパスを構築
+            potential_load_path = latest_manifest.with_name(f"{latest_manifest.stem}_reg_model.pt")
+            if potential_load_path.exists():
+                load_path = potential_load_path
+                print(f"Found existing checkpoint for task '{task_name}'. Resuming from: {load_path}")
+            else:
+                print(f"Warning: Manifest file found but model weights file is missing: {potential_load_path}", file=sys.stderr)
+
+    if load_path is None:
+        # 中間チェックポイントから再開しない場合、前のタスクのチェックポイントかベースモデルを読み込む
+        if previous_lora_path:
+            # 2番目以降のタスクでは、前のタスクの出力チェックポイントを読み込む
+            load_path = previous_lora_path
+            print(f"Continual learning step. Loading previous checkpoint from: {load_path}")
+        else:
+            # 最初のタスクでは、ベースモデルを読み込む
+            load_path = workspace_root / "checkpoints/Cosmos-Predict1-7B-Text2World/model.pt"
+            print(f"First training step. Starting from the base model: {load_path}")
+    # --- ★ここまで自動再開ロジック ---
+
+    # # 継続的学習のステージに応じて、読み込むチェックポイントのパスを動的に決定する
+    # if previous_lora_path:
+    #     # 2番目以降のタスクでは、前のタスクの出力チェックポイントを読み込む
+    #     load_path = previous_lora_path
+    #     print(f"Continual learning step. Loading previous checkpoint from: {load_path}")
+    # else:
+    #     # 最初のタスクでは、ベースモデルを読み込む
+    #     load_path = workspace_root / "checkpoints/Cosmos-Predict1-7B-Text2World/model.pt"
+    #     print(f"First training step. Starting from the base model: {load_path}")
 
     latent_height = args.resolution[0] // 8
     latent_width = args.resolution[1] // 8
@@ -167,7 +202,7 @@ def main():
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate.")
     parser.add_argument("--scale", type=float, default=1.0, help="LoRA scaling factor (alpha/rank).")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
-    parser.add_argument("--resolution", type=int, nargs=2, default=[352, 640], help="Video resolution (height width). Must be multiples of 16.")
+    parser.add_argument("--resolution", type=int, nargs=2, default=[256,448], help="Video resolution (height width). Must be multiples of 16.")
     parser.add_argument("--experiment_base_name", type=str, default="text2world_7b_lora_panda70m", help="The base name of the experiment in experiment.py.")
     parser.add_argument("--nproc_per_node", type=int, default=8, help="Number of GPUs to use.")
     parser.add_argument("--grad_accum_iter", type=int, default=1, help="Number of gradient accumulation steps.")
