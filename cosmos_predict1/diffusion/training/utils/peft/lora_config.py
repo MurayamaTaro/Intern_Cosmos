@@ -13,18 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+# 修正版
 def get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1):
-    """
-    Get a LoRA configuration for the Self-Attention (FA) and Cross-Attention (CA) blocks in the model.
-    This LoRA configuration is used to inject LoRA parameters into the model.
-
-    Args:
-        first_nblocks (int): The number of blocks to apply LoRA to.
-        rank (int): The rank of the LoRA matrices.
-    """
     blocks_regex = r"\b(" + "|".join([str(i) for i in range(first_nblocks)]) + r")\b"
-    return dict(
+    config = dict(
         enabled=True,
         customization_type="LoRA",
         rank=rank,
@@ -42,3 +34,35 @@ def get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1):
             )
         ],
     )
+    print(f"[DEBUG] LoRA config generated: {config}")
+    return config
+
+
+# def get_fa_ca_qv_lora_config(first_nblocks=28, rank=8, scale=1):
+#     """
+#     Get a LoRA configuration for the Self-Attention (FA) and Cross-Attention (CA) blocks in the model.
+#     This LoRA configuration is used to inject LoRA parameters into the model.
+
+#     Args:
+#         first_nblocks (int): The number of blocks to apply LoRA to.
+#         rank (int): The rank of the LoRA matrices.
+#     """
+#     blocks_regex = r"\b(" + "|".join([str(i) for i in range(first_nblocks)]) + r")\b"
+#     return dict(
+#         enabled=True,
+#         customization_type="LoRA",
+#         rank=rank,
+#         scale=scale,
+#         edits=[
+#             dict(
+#                 blocks=blocks_regex,
+#                 customization_type="LoRA",
+#                 rank=rank,
+#                 scale=scale,
+#                 block_edit=[
+#                     "FA[to_q, to_v]",
+#                     "CA[to_q, to_v]",
+#                 ],
+#             )
+#         ],
+#     )

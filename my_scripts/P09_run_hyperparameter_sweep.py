@@ -4,13 +4,20 @@ import sys
 
 def main():
     # --- 実行したい実験の組み合わせをここに定義 ---
-    # grad_accum_iter の代わりに batch_size_per_gpu を指定
+    # 'tasks' キーを追加して、実行したいタスクを指定
     experiment_configs = [
-        # 実質バッチサイズ = batch_size_per_gpu * grad_accum_iter * 8
-        {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 1, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=5.6エポック
-        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=11エポック
-        # {'lora_rank': 8, 'max_iter': 5000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/16)=16エポック
-        # {'lora_rank': 8, 'max_iter': 3500, 'batch_size_per_gpu': 1, 'grad_accum_iter': 1, 'scale': 1, 'learning_rate': 1e-4, 'seed': 0}, # 3500/(5000/8)=6エポック
+        # vehicle タスクのみ実行
+        # {'lora_rank': 8, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 2e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # {'lora_rank': 8, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 5e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # {'lora_rank': 8, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 4, 'scale': 2, 'learning_rate': 2e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # {'lora_rank': 8, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 4, 'scale': 2, 'learning_rate': 5e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # {'lora_rank': 16, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 2e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # {'lora_rank': 16, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 4, 'scale': 2, 'learning_rate': 2e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+
+        {'lora_rank': 16, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 5e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # 済 {'lora_rank': 16, 'max_iter': 4000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 4, 'scale': 2, 'learning_rate': 5e-5, 'seed': 0, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # 済 {'lora_rank': 16, 'max_iter': 6000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 1, 'learning_rate': 5e-5, 'seed': 1, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
+        # 済予定 {'lora_rank': 16, 'max_iter': 6000, 'batch_size_per_gpu': 1, 'grad_accum_iter': 2, 'scale': 2, 'learning_rate': 5e-5, 'seed': 1, 'tasks': ['vehicle', 'cooking', 'sports']}, # 1epoch=5000/(16or32)iter=312or624iter
     ]
 
     print(f"Total number of experiments to run: {len(experiment_configs)}")
@@ -35,8 +42,12 @@ def main():
             '--scale', str(params['scale']),
             '--learning_rate', str(params['learning_rate']),
             '--seed', str(params['seed']),
-            # grad_accum_iter は P08 のデフォルト値(1)が使われます
         ]
+
+        # 'tasks' パラメータが存在し、空でない場合にコマンドに追加
+        if 'tasks' in params and params['tasks']:
+            command.append('--tasks')
+            command.extend(params['tasks'])
 
         # 実行
         try:

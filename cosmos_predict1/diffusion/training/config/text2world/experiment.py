@@ -1075,7 +1075,8 @@ text2world_7b_lora_panda70m = LazyDict(
     dict(
         defaults=[
             {"override /net": "faditv2_7b"},
-            {"override /ckpt_klass": "fsdp"},
+            # {"override /ckpt_klass": "fsdp"},
+            {"override /ckpt_klass": "peft"},
             {"override /checkpoint": "local"},
             {"override /vae": "cosmos_diffusion_tokenizer_comp8x8x8"},
             {"override /conditioner": "add_fps_image_size_padding_mask"},
@@ -1091,9 +1092,10 @@ text2world_7b_lora_panda70m = LazyDict(
             weight_decay=0.1,
             betas=[0.9, 0.99],
             eps=1e-10,
+            sharding=True,
         ),
         checkpoint=dict(
-            save_iter=500, # 固定値にするか、必要なら上書き
+            save_iter=1000000000, # 固定値にするか、必要なら上書き
             broadcast_via_filesystem=True,
             load_path="", # 実行時に上書き (型をstrに)
             load_training_state=False,
@@ -1103,12 +1105,13 @@ text2world_7b_lora_panda70m = LazyDict(
         ),
         trainer=dict(
             max_iter=0, # 実行時に上書き (型をintに)
-            distributed_parallelism="fsdp",
+            distributed_parallelism="ddp", # "fsdp"
             logging_iter=50, # ログの頻度を少し上げる
             callbacks=dict(
                 grad_clip=L(GradClip)(
                     model_key="model",
-                    fsdp_enabled=True,
+                    # DDPではFSDPフラグをFalseに
+                    fsdp_enabled=False,
                 ),
                 low_prec=L(LowPrecisionCallback)(config=PLACEHOLDER, trainer=PLACEHOLDER, update_iter=1),
                 iter_speed=L(IterSpeed)(
@@ -1118,33 +1121,37 @@ text2world_7b_lora_panda70m = LazyDict(
                 # progress_bar=L(ProgressBarCallback)(), # 無効化
             ),
             grad_accum_iter=1, # 後で変更
-            # ddp=dict(
-            #     static_graph=False,
-            #     find_unused_parameters=True,
-            # ),
+            ddp=dict(
+                static_graph=False,
+                find_unused_parameters=True,
+            ),
             seed=0, # 実行時に上書き (型をintに)
         ),
         model_parallel=dict(
             sequence_parallel=False,
             tensor_model_parallel_size=1,
             context_parallel_size=1,
+            bf16=True,
         ),
         model=dict(
-            peft_control=L(get_fa_ca_qv_lora_config)(first_nblocks=28, rank=0, scale=1), # alpha = scale * rank !!
+            # peft_control={
+            #     "_target_": "cosmos_predict1.diffusion.training.utils.peft.lora_config.get_fa_ca_qv_lora_config",
+            #     "customization_type": "LORA",  # ★ ここを追加してLoRAを有効化
+            #     "first_nblocks": 28,
+            #     "rank": 0,      # 実行時にスクリプトから上書き
+            #     "scale": 1.0,   # 実行時にスクリプトから上書き
+            # },
+            peft_control=get_fa_ca_qv_lora_config(
+                first_nblocks=28,
+                rank=0,      # コマンドラインから上書きされる
+                scale=1.0,   # コマンドラインから上書きされる
+            ),
             latent_shape=[0, 0, 0, 0], # 解像度に合わせて実行時に上書き (型をlistに)
             loss_reduce="mean",
             ema=dict(
                 enabled=False,
             ),
-            fsdp_enabled=True,
-            # FSDP設定ブロックを他の7B設定からコピーして追加
-            fsdp=dict(
-                policy="block",
-                checkpoint=True,  # FSDPネイティブの勾配チェックポイントを有効化
-                min_num_params=1024,
-                # sharding_group_size=32,
-                sharding_strategy="full", # "hybrid"から"full"に変更
-            ),
+            fsdp_enabled=False,
             net=dict(
                 in_channels=16,
                 extra_per_block_abs_pos_emb=True,
@@ -1154,23 +1161,19 @@ text2world_7b_lora_panda70m = LazyDict(
                 rope_t_extrapolation_ratio=2,
                 use_memory_save=False,
             ),
-            vae=dict(
-                pixel_chunk_duration=num_frames_panda70m,
-                enc_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/encoder.jit"),
-                dec_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/decoder.jit"),
-                mean_std_fp=str(WORKSPACE_ROOT / "checkpoints/Cosmos-Tokenize1-CV8x8x8-720p/mean_std.pt"),
-            ),
+            vae=dict(pixel_chunk_duration=num_frames_panda70m),
+            conditioner=dict(text=dict(dropout_rate=0.0)),
         ),
-        # model_obj=L(PEFTVideoDiffusionModel)(
-        #     config=PLACEHOLDER,
-        #     fsdp_checkpointer=PLACEHOLDER,
-        # ),
-        model_obj=L(FSDPDiffusionModel)(
+        model_obj=L(PEFTVideoDiffusionModel)(
             config=PLACEHOLDER,
             fsdp_checkpointer=PLACEHOLDER,
         ),
+        # model_obj=L(FSDPDiffusionModel)(
+        #     config=PLACEHOLDER,
+        #     fsdp_checkpointer=PLACEHOLDER,
+        # ),
         scheduler=dict(
-            warm_up_steps=[0],
+            warm_up_steps=[300],
         ),
         dataloader_train=dataloader_train_panda70m,
         dataloader_val=dataloader_val_panda70m,

@@ -138,6 +138,7 @@
 
 ## nohup
 - rm nohup.log; nohup python3 hoge.py > nohup.log 2>&1 &
+- rm nohup.log; nohup bash run_seq.sh > nohup.log 2>&1 &
 
 
 # メモ
@@ -199,7 +200,7 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
   - lr = 5e-5, 1e-4, 3e-4
   - bs_per_gpu = 1 (2はOOM)
   - max_iter = 2000 ~ 3500 (1エポック=5000/8=625step, 3~5エポック)
-  - resolution = [256,448] ([352, 640]厳しい。[720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
+  - resolution = [288,512]  ([256,448]でも良いかも。[352, 640]はギリ。[720,1280]のアスペクト比9:16は保つ, かつ16で割り切れないといけない)
 
 
 # LoRA重みでの推論（P10コード）使い方
@@ -216,6 +217,9 @@ torchrun --nproc_per_node=8 -m cosmos_predict1.diffusion.training.train \
   - 15: The person is driving a purple car on an empty road with blue sky in the background.
   - 25: A truck on the side of the road next to a house.
   - 48: A person is driving a car on a city street, and there are several cars parked on the side of the road.
+  - 57: There is a car driving on a winding road surrounded by trees and hills.
+  - 61: There is a red car racing on an asphalt road in front of a large crowd of people who are watching the race.
+  - 75: There is a traffic jam on the road and police cars are directing traffic.
 
 
 

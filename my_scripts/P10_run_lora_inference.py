@@ -53,10 +53,25 @@ def run_inference_for_lora_stage(
     print("=" * 80)
 
     tmp_checkpoint_dir = output_base_dir.parent / f"tmp_{output_base_dir.name}"
+    compatible_lora_checkpoint_path = None
     try:
         if tmp_checkpoint_dir.exists():
             shutil.rmtree(tmp_checkpoint_dir)
         tmp_checkpoint_dir.mkdir(parents=True)
+
+        # --- 1. 互換性のあるLoRAチェックポイントを一度だけ準備 ---
+        print("Preparing compatible LoRA checkpoint...")
+        original_checkpoint = torch.load(lora_model_file, map_location="cpu")
+        lora_state_dict = original_checkpoint.get('model')
+        if lora_state_dict is None:
+            raise KeyError("Checkpoint does not contain a 'model' key.")
+
+        compatible_checkpoint = {"model": lora_state_dict, "ema": {}}
+        # 一時ディレクトリのルートに互換性のあるファイルを保存
+        compatible_lora_checkpoint_path = tmp_checkpoint_dir / "compatible_model.pt"
+        torch.save(compatible_checkpoint, compatible_lora_checkpoint_path)
+        print(f"Compatible LoRA checkpoint saved to: {compatible_lora_checkpoint_path}")
+        # --- ここまでが準備 ---
 
         print("Preparing a temporary directory with symbolic links...")
         workspace_root = Path("/workspace")
@@ -80,19 +95,12 @@ def run_inference_for_lora_stage(
         nested_model_dir = tmp_checkpoint_dir / model_type_subdir_name
         nested_model_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"Loading original LoRA checkpoint from: {lora_model_file}")
-        original_checkpoint = torch.load(lora_model_file, map_location="cpu")
-
-        lora_state_dict = original_checkpoint['model']
-        print("Successfully extracted LoRA weights from the 'model' key.")
-
-        compatible_checkpoint = {
-            "model": lora_state_dict,
-            "ema": {}
-        }
-        tmp_model_path = nested_model_dir / "model.pt"
-        torch.save(compatible_checkpoint, tmp_model_path)
-        print(f"Prepared compatible LoRA checkpoint at: {tmp_model_path}")
+        # --- 2. モデルファイルのシンボリックリンクを作成 ---
+        # 時間のかかるファイルコピーの代わりにシンボリックリンクを使用
+        symlink_model_path = nested_model_dir / "model.pt"
+        os.symlink(compatible_lora_checkpoint_path, symlink_model_path)
+        print(f"Created symlink for model: {symlink_model_path} -> {compatible_lora_checkpoint_path}")
+        # --- ここまでが変更点 ---
 
         for i in range(num_videos):
             seed = i
@@ -271,16 +279,20 @@ def main():
     parser.add_argument("--fps", type=int, default=24, help="Frames per second of the generated video.")
     parser.add_argument("--guidance", type=float, default=8.0, help="Guidance scale.")
     parser.add_argument(
-        "--skip_base", action="store_true",
-        help="Skip inference for the base model stage."
+        "--stages",
+        type=str,
+        nargs='+',
+        default=['original', 'vehicle', 'final'],
+        choices=['original', 'vehicle', 'final'],
+        help="Specify which inference stages to run. Can be one or more of 'original', 'vehicle', 'final'."
     )
 
     args = parser.parse_args()
 
     workspace_root = Path("/workspace")
 
-    # --- Base Model Inference (with skip check) ---
-    if not args.skip_base:
+    # --- Base Model Inference (with stage check) ---
+    if 'original' in args.stages:
         base_output_dir = workspace_root / "lora_inference" / args.inference_name / "original"
         if base_output_dir.exists():
             print(f"Base model output directory '{base_output_dir}' already exists. Skipping base model inference.")
@@ -295,9 +307,14 @@ def main():
                 guidance=args.guidance,
             )
     else:
-        print("Skipping base model inference as '--skip_base' flag is set.")
+        print("Skipping base model inference as 'original' is not in --stages.")
 
     # --- LoRA Model Inference ---
+    # LoRAステージが指定されていない場合は、ここで終了
+    if not any(s in args.stages for s in ['vehicle', 'final']):
+        print("No LoRA stages ('vehicle', 'final') selected. Exiting.")
+        sys.exit(0)
+
     checkpoints_root = workspace_root / "checkpoints/posttraining/diffusion_text2world"
     experiment_path = checkpoints_root / f"text2world_7b_lora_panda70m_{args.experiment_name}"
 
@@ -306,39 +323,41 @@ def main():
         sys.exit(1)
 
     tasks = ["vehicle", "cooking", "sports"]
-
-    vehicle_lora_file = find_lora_checkpoint_file(experiment_path, tasks[0])
-    final_lora_file = find_lora_checkpoint_file(experiment_path, tasks[-1])
-
-    if not vehicle_lora_file or not final_lora_file:
-        print("Could not find all required checkpoints. Aborting.", file=sys.stderr)
-        sys.exit(1)
-
     lora_output_root = workspace_root / "lora_inference" / args.inference_name / args.experiment_name
 
     # Stage 1: vehicle_only (LoRA)
-    run_inference_for_lora_stage(
-        lora_model_file=vehicle_lora_file,
-        prompt=args.prompt,
-        output_base_dir=lora_output_root / "vehicle_only",
-        num_videos=args.num_videos,
-        nproc_per_node=args.nproc_per_node,
-        num_steps=args.num_steps,
-        fps=args.fps,
-        guidance=args.guidance,
-    )
+    if 'vehicle' in args.stages:
+        vehicle_lora_file = find_lora_checkpoint_file(experiment_path, tasks[0])
+        if vehicle_lora_file:
+            run_inference_for_lora_stage(
+                lora_model_file=vehicle_lora_file,
+                prompt=args.prompt,
+                output_base_dir=lora_output_root / "vehicle_only",
+                num_videos=args.num_videos,
+                nproc_per_node=args.nproc_per_node,
+                num_steps=args.num_steps,
+                fps=args.fps,
+                guidance=args.guidance,
+            )
+        else:
+            print(f"Skipping 'vehicle' stage as its checkpoint was not found.", file=sys.stderr)
 
     # Stage 2: final (LoRA)
-    run_inference_for_lora_stage(
-        lora_model_file=final_lora_file,
-        prompt=args.prompt,
-        output_base_dir=lora_output_root / "final",
-        num_videos=args.num_videos,
-        nproc_per_node=args.nproc_per_node,
-        num_steps=args.num_steps,
-        fps=args.fps,
-        guidance=args.guidance,
-    )
+    if 'final' in args.stages:
+        final_lora_file = find_lora_checkpoint_file(experiment_path, tasks[-1])
+        if final_lora_file:
+            run_inference_for_lora_stage(
+                lora_model_file=final_lora_file,
+                prompt=args.prompt,
+                output_base_dir=lora_output_root / "final",
+                num_videos=args.num_videos,
+                nproc_per_node=args.nproc_per_node,
+                num_steps=args.num_steps,
+                fps=args.fps,
+                guidance=args.guidance,
+            )
+        else:
+            print(f"Skipping 'final' stage as its checkpoint was not found.", file=sys.stderr)
 
     print("\n" + "="*80)
     print("Inference script finished.")

@@ -48,7 +48,12 @@ class Model(torch.nn.Module):
             optimizer (torch.optim.Optimizer): The model optimizer.
             scheduler (torch.optim.lr_scheduler.LRScheduler): The optimization scheduler.
         """
-        optimizer_config.params = self.parameters()
+        # optimizer_config.params = self.parameters()
+        # ────────────★ ここを修正 ★────────────
+        # LoRA チューニング時は base-model の param は requires_grad=False なので
+        # trainable なものだけを optimiser に渡して Adam の状態メモリを極小化する
+        optimizer_config.params = [p for p in self.parameters() if p.requires_grad]
+        # ────────────────────────────────────
         optimizer = instantiate(optimizer_config)
         scheduler_config.optimizer = optimizer
         scheduler = instantiate(scheduler_config)

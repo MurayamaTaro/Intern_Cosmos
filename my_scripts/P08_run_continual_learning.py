@@ -69,7 +69,8 @@ def run_training(
                 manifest_files, key=lambda p: int(re.search(r"iter_(\d+)\.pt", p.name).group(1))
             )
             # 対応するモデル重みファイルパスを構築
-            potential_load_path = latest_manifest.with_name(f"{latest_manifest.stem}_reg_model.pt")
+            # LoRA学習(DDP)では "_reg_model.pt" ではなく "_model.pt" が生成される
+            potential_load_path = latest_manifest.with_name(f"{latest_manifest.stem}_model.pt")
             if potential_load_path.exists():
                 load_path = potential_load_path
                 print(f"Found existing checkpoint for task '{task_name}'. Resuming from: {load_path}")
@@ -161,7 +162,6 @@ def run_training(
             workspace_root / "checkpoints" / "posttraining" / "diffusion_text2world"
             / current_experiment_name / "checkpoints"
         )
-        # FSDPのメタデータファイル (iter_*.pt) を探す
         # 'iter_00000100.pt' のような形式のファイル名に完全に一致するもののみを対象とする
         manifest_files = [p for p in checkpoint_dir.glob("iter_*.pt") if re.fullmatch(r"iter_\d+\.pt", p.name)]
 
@@ -175,8 +175,8 @@ def run_training(
         )
 
         # メタデータファイル名から、対応するモデル重みファイルパスを構築する
-        # 例: 'iter_00000100.pt' -> 'iter_00000100_reg_model.pt'
-        model_weights_file = latest_manifest.with_name(f"{latest_manifest.stem}_reg_model.pt")
+        # 例: 'iter_00000100.pt' -> 'iter_00000100_model.pt'
+        model_weights_file = latest_manifest.with_name(f"{latest_manifest.stem}_model.pt")
 
         if not model_weights_file.exists():
             print(f"Error: Corresponding model weights file not found: {model_weights_file}", file=sys.stderr)
@@ -202,7 +202,7 @@ def main():
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate.")
     parser.add_argument("--scale", type=float, default=1.0, help="LoRA scaling factor (alpha/rank).")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
-    parser.add_argument("--resolution", type=int, nargs=2, default=[256,448], help="Video resolution (height width). Must be multiples of 16.")
+    parser.add_argument("--resolution", type=int, nargs=2, default=[288,512], help="Video resolution (height width). Must be multiples of 16.")
     parser.add_argument("--experiment_base_name", type=str, default="text2world_7b_lora_panda70m", help="The base name of the experiment in experiment.py.")
     parser.add_argument("--nproc_per_node", type=int, default=8, help="Number of GPUs to use.")
     parser.add_argument("--grad_accum_iter", type=int, default=1, help="Number of gradient accumulation steps.")
@@ -222,7 +222,7 @@ def main():
     run_name = (
         f"r{args.lora_rank}_iter{args.max_iter}_bs{args.batch_size_per_gpu}"
         f"_accum{args.grad_accum_iter}_scale{args.scale}"
-        f"_lr{args.learning_rate}_seed{args.seed}"
+        f"_lr{args.learning_rate:.0e}_seed{args.seed}"
     )
     print(f"Generated Run Name: {run_name}")
 

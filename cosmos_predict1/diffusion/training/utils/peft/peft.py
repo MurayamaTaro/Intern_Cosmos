@@ -28,28 +28,50 @@ def get_all_lora_params(model):
     log.info(f"Found {len(lora_params)} LoRA weight matrices")
     return lora_params
 
-
+# 修正版
 def setup_lora_requires_grad(model):
-    """
-    Freeze all model parameters except LoRA parameters.
-    """
-    num_param = count_params(model, verbose=True)
-    log.critical(f"Model has {num_param * 1e-6:.2f}M parameters before freezing")
+    trainable_before = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"[DEBUG] Before freezing: Trainable params: {trainable_before:,} / Total params: {total_params:,}")
+
+    model.requires_grad_(False)
+
+    trainable_after_freeze = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"[DEBUG] After freezing: Trainable params: {trainable_after_freeze:,} / Total params: {total_params:,}")
+
     lora_params = get_all_lora_params(model)
-    num_lora_param = sum([p.numel() for _, p in lora_params])
-    log.info(f"Total number of LoRA parameters: {num_lora_param * 1e-6:.2f}M")
-    if num_lora_param > 0:
-        log.info("Freezing all parameters")
-        model.requires_grad_(False)
-        log.info("Unfreezing LoRA parameters")
-        for name, param in lora_params:
-            # log.info(f"Unfreezing loRA : {name}")
-            param.requires_grad_(True)
-        num_param = count_params(model, verbose=True)
-        log.critical(f"Model has {num_param * 1e-6:.2f}M parameters after freezing")
+    num_lora_param = sum(p.numel() for _, p in lora_params)
+    for _, param in lora_params:
+        param.requires_grad_(True)
+
+    trainable_after_unfreeze = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"[DEBUG] After unfreezing LoRA: Trainable params: {trainable_after_unfreeze:,} / Total params: {total_params:,}")
+    print(f"[DEBUG] LoRA params: {num_lora_param:,}")
+
     return num_lora_param
 
 
+# def setup_lora_requires_grad(model):
+#     """
+#     Freeze all model parameters except LoRA parameters.
+#     """
+#     num_param = count_params(model, verbose=True)
+#     log.critical(f"Model has {num_param * 1e-6:.2f}M parameters before freezing")
+#     lora_params = get_all_lora_params(model)
+#     num_lora_param = sum([p.numel() for _, p in lora_params])
+#     log.info(f"Total number of LoRA parameters: {num_lora_param * 1e-6:.2f}M")
+#     if num_lora_param > 0:
+#         log.info("Freezing all parameters")
+#         model.requires_grad_(False)
+#         log.info("Unfreezing LoRA parameters")
+#         for name, param in lora_params:
+#             # log.info(f"Unfreezing loRA : {name}")
+#             param.requires_grad_(True)
+#         num_param = count_params(model, verbose=True)
+#         log.critical(f"Model has {num_param * 1e-6:.2f}M parameters after freezing")
+#     return num_lora_param
+
+# 修正版
 def add_lora_layers(model, peft_control_config):
     for i, block_name in enumerate(model.net.blocks):
         block = model.net.blocks[block_name]
@@ -59,5 +81,18 @@ def add_lora_layers(model, peft_control_config):
             peft_control_subblock = peft_control.get(block_type.upper(), {})
             customization_type = peft_control_subblock.get("customization_type", None)
             if customization_type == CustomizationType.LORA:
+                # print(f"[DEBUG] Adding LoRA layers to block {block_name}, subblock {j}, type {block_type}")
                 if block_type.upper() in ["CA", "FA"]:
                     build_attn_lora(subblock.block.attn, peft_control_subblock)
+
+# def add_lora_layers(model, peft_control_config):
+#     for i, block_name in enumerate(model.net.blocks):
+#         block = model.net.blocks[block_name]
+#         peft_control = peft_control_config.get(i, {})
+#         for j, subblock in enumerate(block.blocks):
+#             block_type = subblock.block_type
+#             peft_control_subblock = peft_control.get(block_type.upper(), {})
+#             customization_type = peft_control_subblock.get("customization_type", None)
+#             if customization_type == CustomizationType.LORA:
+#                 if block_type.upper() in ["CA", "FA"]:
+#                     build_attn_lora(subblock.block.attn, peft_control_subblock)
