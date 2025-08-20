@@ -30,3 +30,5 @@ ENV TORCH_CPP_LOG_LEVEL=ERROR
 
 # 4) ワークスペース
 WORKDIR /workspace
+COPY bashrc /root/.bashrc
+CMD ["bash"]

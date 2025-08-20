@@ -49,6 +49,12 @@ apex/
 *Thumbs.db
 *.patch
 
+*.log
+datasets*/
+.tmp*/
+
+Panda70m/
+
 # Credential information that should never be checked in
 credentials
 *.secret
@@ -186,6 +192,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.p70m_dl_venv/
 
 # Spyder project settings
 .spyderproject
