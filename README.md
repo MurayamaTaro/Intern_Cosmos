@@ -46,6 +46,18 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --disable_prompt_upsampler
 
 ### 追加学習
+- python my_scripts/posttrain_single.py \
+--dataset_path /workspace/dataset_panda70m/vehicle \
+--dataset_name panda70m_vehicle \
+--lora_rank 8 \
+--max_iter 100 \
+--batch_size_per_gpu 1 \
+--learning_rate 1e-4 \
+--scale 1.0 \
+--grad_accum_iter 1 \
+--seed 0
+
+### 追加学習済みLoRA重みでの推論
 
 
 ## 注意

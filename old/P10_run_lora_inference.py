@@ -316,7 +316,7 @@ def main():
         sys.exit(0)
 
     checkpoints_root = workspace_root / "checkpoints/posttraining/diffusion_text2world"
-    experiment_path = checkpoints_root / f"text2world_7b_lora_panda70m_{args.experiment_name}"
+    experiment_path = checkpoints_root / f"text2world_7b_lora_my_{args.experiment_name}"
 
     if not experiment_path.exists():
         print(f"Error: Experiment directory not found at {experiment_path}", file=sys.stderr)

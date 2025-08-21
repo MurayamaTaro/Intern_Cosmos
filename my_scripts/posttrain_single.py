@@ -1,6 +1,7 @@
 """
 Cosmos-Predict1 (diffusion, text-to-video, 7B) の単一データセット学習用スクリプト。
-Cosmosシステムは非常に厳密なため、Hydra風のキー(trainer.*, optimizer.*, dataloader_*.*, model.*)の命名やコマンドライン渡しには注意。
+- Cosmosシステムは非常に厳密なため、Hydra風のキー(trainer.*, optimizer.*, dataloader_*.*, model.*)の命名やコマンドライン渡しには注意。
+- logs/配下にstdout.log（デバッグ用, checkpoints/配下にできるログと被りあり）、loss_history.csvが生成される。
 """
 
 import argparse
@@ -47,8 +48,8 @@ def run_training(args: argparse.Namespace, run_name: str) -> Path | None:
 
     current_experiment_name = f"text2world_7b_lora_my/{run_name}"
 
-    # ログディレクトリ: stdout.logとloss_history.csv はここに並べて保存
-    log_dir = workspace_root / "posttraining_logs" / current_experiment_name
+    # ログディレクトリ: stdout.log（デバッグ用）とloss_history.csv はここに並べて保存
+    log_dir = workspace_root / "logs" / current_experiment_name
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file_path = log_dir / "stdout.log"
 
