@@ -25,6 +25,7 @@
 ## Cosmos (diffusion, text to video, 7B)
 - https://github.com/nvidia-cosmos/cosmos-predict1
 - https://docs.nvidia.com/cosmos/latest/
+- 以下コードは全て正常に動くことを確認済み
 
 ### 準備
 - モデルパラメータをダウンロード

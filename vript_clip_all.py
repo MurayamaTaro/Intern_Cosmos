@@ -1,7 +1,3 @@
-# 以下コマンドで実行
-# ULTRA_PRESET=faster ULTRA_CRF=23 VRIPT_WORKERS=32 FFMPEG_THREADS=1 \
-# nohup python vript_clip_all.py > vript_clips.nohup.log 2>&1 &
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -31,6 +27,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from collections import defaultdict
+from concurrent.futures import wait, FIRST_COMPLETED
+
 
 # ルートと入力
 ROOT = Path("dataset_vript")
@@ -100,38 +98,63 @@ def run(cmd, timeout=None):
         raise
 
 def ffprobe_info(path: Path):
-    dur=None; frames=None; fps=None; w=None; h=None
-    # duration
-    p = run(["ffprobe","-v","error","-show_entries","format=duration","-of","json",str(path)], timeout=30)
-    d=json.loads(p.stdout or b"{}").get("format",{}).get("duration")
+    # 速い2段階: (a) stream基本情報 (b) duration
+    # どちらも "数秒" タイムアウト。デコードはしない（-count_frames禁止）
+    width = height = fps = None
+    nb_frames_hdr = None
+    duration = None
+
+    # a) stream基本
     try:
-        dur=float(d);
-        if not math.isfinite(dur) or dur<=0: dur=None
-    except Exception: dur=None
-    # stream
-    p = run(["ffprobe","-v","error","-count_frames","-select_streams","v:0",
-             "-show_entries","stream=nb_read_frames,width,height,avg_frame_rate,r_frame_rate",
-             "-of","json",str(path)], timeout=60)
-    st=json.loads(p.stdout or b"{}").get("streams",[])
-    if st:
-        s=st[0]
-        w=s.get("width"); h=s.get("height")
-        nrf=s.get("nb_read_frames")
-        frames=int(nrf) if nrf and str(nrf).isdigit() else None
-        fr=s.get("avg_frame_rate") or s.get("r_frame_rate")
-        if fr and fr!="0/0":
-            try:
-                num,den=fr.split("/")
-                fps=float(num)/float(den) if float(den)!=0 else None
-            except Exception: fps=None
-    if frames is None and fps and dur: frames=int(round(fps*dur))
-    if fps is None and frames and dur and dur>0: fps=float(frames)/dur
-    return {"duration":dur,"frames":frames,"fps":fps,"width":w,"height":h}
+        p = run([
+            "ffprobe","-v","error","-select_streams","v:0",
+            "-show_entries","stream=width,height,avg_frame_rate,r_frame_rate,nb_frames",
+            "-of","json", str(path)
+        ], timeout=15)
+        st = json.loads(p.stdout or b"{}").get("streams",[])
+        if st:
+            s = st[0]
+            width  = s.get("width")
+            height = s.get("height")
+            # fps
+            fr = s.get("avg_frame_rate") or s.get("r_frame_rate")
+            if fr and fr!="0/0":
+                try:
+                    num,den = fr.split("/")
+                    fps = float(num)/float(den) if float(den)!=0 else None
+                except Exception:
+                    fps = None
+            # nb_frames（ヘッダにある場合のみ、信用できる範囲で使う）
+            nf = s.get("nb_frames")
+            if nf and str(nf).isdigit():
+                nb_frames_hdr = int(nf)
+    except Exception:
+        pass
+
+    # b) duration
+    try:
+        p = run([
+            "ffprobe","-v","error","-show_entries","format=duration","-of","json", str(path)
+        ], timeout=15)
+        d = json.loads(p.stdout or b"{}").get("format",{}).get("duration")
+        duration = float(d) if d is not None else None
+        if duration is not None and (not math.isfinite(duration) or duration<=0):
+            duration = None
+    except Exception:
+        pass
+
+    return {
+        "duration": duration,
+        "frames": nb_frames_hdr,   # ヘッダにあれば数値、無ければ None
+        "fps": fps,
+        "width": width,
+        "height": height,
+    }
 
 def build_common(src: Path):
     # mp4を明示（拡張子に依存しない）
     return [
-        "ffmpeg","-hide_banner","-loglevel","error","-y",
+        "ffmpeg","-hide_banner","-loglevel","error","-nostdin","-y",
         "-i", str(src), "-an",
         "-c:v","libx264","-preset",X264_PRESET,"-crf",X264_CRF,
         "-pix_fmt","yuv420p","-movflags","+faststart",
@@ -254,10 +277,18 @@ def main():
 
     meta_all = load_meta_all()
 
-    # グローバルログ準備
-    log_header = ["ts","video_id","base","status","err","domain_slug","domain_raw","widx","start_frame","fps"]
-    fail_header= ["video_id","domain_slug","widx","start_frame","err"]
-    # index.csv はドメイン毎（ensure_indexで作成）
+    # グローバルログを先に用意（空でもヘッダ作る）
+    log_header  = ["ts","video_id","base","status","err","domain_slug","domain_raw","widx","start_frame","fps"]
+    fail_header = ["video_id","domain_slug","widx","start_frame","err"]
+
+    if not GLOBAL_LOG.exists():
+        with GLOBAL_LOG.open("w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(log_header)
+
+    if not GLOBAL_FAIL.exists():
+        with GLOBAL_FAIL.open("w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(fail_header)
+
 
     t0=time.time()
     print(f"[INFO] workers={WORKERS}, ffmpeg_threads={FFMPEG_THREADS}, preset={X264_PRESET}, crf={X264_CRF}")
@@ -265,7 +296,8 @@ def main():
     print(f"[INFO] logs: {GLOBAL_LOG} , failed: {GLOBAL_FAIL}")
 
     # まず全動画の計画を作りつつ、ウィンドウの Future を段階的に投入（過大投入を避ける）
-    inflight_limit = max( WORKERS * 4, 64 )
+    INFLIGHT_LIMIT = int(os.getenv("INFLIGHT_LIMIT", str(WORKERS * 3)))
+    inflight_limit = INFLIGHT_LIMIT
     futures = {}
     done_windows = 0
     total_windows = 0
@@ -284,18 +316,38 @@ def main():
                 failed_videos += 1
                 continue
 
-            info = ffprobe_info(src)
-            F = info["frames"] or 0
-            fps = info["fps"] or 30.0
-            if F < 121:
-                ts=datetime.utcnow().isoformat()
-                append_csv(GLOBAL_LOG, [ts, vid, "", "skip_video", "too_short", domain_slug, domain_raw, "", "", fps], log_lock)
+            try:
+                info = ffprobe_info(src)
+            except Exception as e:
+                ts = datetime.utcnow().isoformat()
+                err = "ffprobe_exception"
+                append_csv(GLOBAL_LOG,  [ts, vid, "", "fail_video", err, domain_slug, domain_raw, "", "", ""], log_header, log_lock)
+                append_csv(GLOBAL_FAIL, [vid, domain_slug, "", "", err],              fail_header, log_lock)
                 continue
 
-            W = min(MAX_CLIPS_PER_VIDEO, F // 121)
+            # フレーム数の安全見積り
+            F_hdr = info.get("frames")
+            fps = info.get("fps") or 30.0
+            dur = info.get("duration")
+            if F_hdr and isinstance(F_hdr, int) and F_hdr > 0:
+                F_est = F_hdr
+            elif (dur and fps):
+                F_est = int(dur * fps * 0.98)  # 2%クッション
+            else:
+                # 情報が取れない動画は動画ごとスキップ
+                ts = datetime.utcnow().isoformat()
+                append_csv(GLOBAL_LOG,  [ts, vid, "", "skip_video", "insufficient_probe", domain_slug, domain_raw, "", "", fps], log_header, log_lock)
+                continue
+
+            if F_est < 121:
+                ts = datetime.utcnow().isoformat()
+                append_csv(GLOBAL_LOG,  [ts, vid, "", "skip_video", "too_short", domain_slug, domain_raw, "", "", fps], log_header, log_lock)
+                continue
+
+            W = min(MAX_CLIPS_PER_VIDEO, F_est // 121)
             if W <= 0:
-                ts=datetime.utcnow().isoformat()
-                append_csv(GLOBAL_LOG, [ts, vid, "", "skip_video", "no_window", domain_slug, domain_raw, "", "", fps], log_lock)
+                ts = datetime.utcnow().isoformat()
+                append_csv(GLOBAL_LOG,  [ts, vid, "", "skip_video", "no_window", domain_slug, domain_raw, "", "", fps], log_header, log_lock)
                 continue
 
             # index.csv を準備
@@ -326,20 +378,24 @@ def main():
 
     with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         scheduler = schedule_windows(ex)
-        # メインループ：スケジューラを進めつつ、完了した分を回収
-        while True:
-            # まずスケジューラを1ステップ進める
-            try:
-                next(scheduler)
-            except StopIteration:
-                # 全送信済み、残りの完了待ちへ
-                pass
 
-            # 完了した future を1つ回収（無ければ少し待つ）
+        # 送信し終わったかどうかのフラグ
+        all_submitted = False
+
+        while True:
+            # まず送信側を1ステップ進める（混み具合の制御は schedule_windows 内の inflight_limit と yield で維持）
+            if not all_submitted:
+                try:
+                    next(scheduler)
+                except StopIteration:
+                    all_submitted = True
+
             if futures:
-                done, _ = next(iter(futures.items()))
-                # すぐ待つのではなく as_completed を使ってまとめて回収
-                for fut in as_completed(list(futures.keys()), timeout=0.1):
+                # 1つでも終わったら取り出す（TimeoutErrorが出ない）
+                done_set, _ = wait(list(futures.keys()), timeout=1.0, return_when=FIRST_COMPLETED)
+                if not done_set:
+                    continue  # まだ終わってないので次ループ
+                for fut in done_set:
                     vid, domain_slug, domain_raw, widx, start_frame, fps = futures.pop(fut)
                     ts = datetime.utcnow().isoformat()
                     try:
@@ -348,7 +404,7 @@ def main():
                         if status == "fail":
                             append_csv(GLOBAL_FAIL, [vid, domain_slug, widx, start_frame, err or ""], fail_header, log_lock)
                         else:
-                            # 成功/スキップ → index.csv に追記
+                            # 成功/スキップ → index.csv を追記
                             idx_path = CLIPS_ROOT / domain_slug / "index.csv"
                             with idx_locks[domain_slug]:
                                 with idx_path.open("a", newline="", encoding="utf-8") as f:
@@ -356,19 +412,15 @@ def main():
                                     w.writerow([base, vid, domain_slug, domain_raw, start_frame, fps, 121, 1280, 720])
                         done_windows += 1
                     except Exception as e:
-                        msg = getattr(e,"cmd_str",str(e))
+                        msg = getattr(e, "cmd_str", str(e))
                         append_csv(GLOBAL_LOG, [ts, vid, "", "fail", msg, domain_slug, domain_raw, widx, start_frame, fps], log_header, log_lock)
-                        append_csv(GLOBAL_FAIL,[vid, domain_slug, widx, start_frame, msg], fail_header, log_lock)
+                        append_csv(GLOBAL_FAIL, [vid, domain_slug, widx, start_frame, msg], fail_header, log_lock)
                         done_windows += 1
             else:
-                # スケジューラが終わっていて、futures も空なら終了
-                if 'scheduler' in locals():
-                    try:
-                        next(scheduler)
-                    except StopIteration:
-                        break
-                else:
+                # 何もin-flightがなく、かつ送信済みなら終了
+                if all_submitted:
                     break
+                time.sleep(0.1)
 
             # 進捗表示
             elapsed = time.time()-t0
