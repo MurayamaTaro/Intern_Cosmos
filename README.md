@@ -49,4 +49,4 @@ cosmos_predict1/diffusion/inference/text2world.py \
 
 
 ## 注意
-- conda使用はNG。ライセンスを取っていないため。
+- conda系の使用はNG(minicondaも)。ライセンスを取っていないため。

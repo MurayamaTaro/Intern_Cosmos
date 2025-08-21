@@ -7,11 +7,11 @@ def main():
     # --- 共通設定 ---
     # これらの値は、すべての推論ジョブで共通して使用されます。
     common_args = {
-        "num_videos": 5,
-        "num_steps": 60,
+        "num_videos": 1,
+        "num_steps": 20,
         "fps": 24,
         # 実行したいステージをリストで指定: 'original', 'vehicle', 'final'
-        "stages_to_run": ["vehicle", "final"],
+        "stages_to_run": ["vehicle"],
     }
 
     # --- スイープ対象のパラメータ ---
@@ -19,21 +19,7 @@ def main():
     # 1. 実験名のリスト
     # P08/P09で学習させた実験の短い名前を指定します。
     experiment_names = [
-        # "r8_iter4000_bs1_accum2_scale2.0_lr2e-05_seed0",
-        # "r8_iter4000_bs1_accum2_scale2.0_lr5e-05_seed0",
-        # "r8_iter4000_bs1_accum4_scale2.0_lr2e-05_seed0",
-        # "r8_iter4000_bs1_accum4_scale2.0_lr5e-05_seed0",
-        # "r16_iter4000_bs1_accum2_scale2.0_lr2e-05_seed0",
-        # "r16_iter4000_bs1_accum4_scale2.0_lr2e-05_seed0",
-
-        # 学習済み
-        # "r16_iter4000_bs1_accum4_scale2.0_lr5e-05_seed0",
-        "r16_iter6000_bs1_accum2_scale1.0_lr5e-05_seed1",
-        # 学習済み予定
-        # "r16_iter6000_bs1_accum2_scale2.0_lr5e-05_seed1",
-
-        # まだ学習終わってない
-        # "r16_iter4000_bs1_accum2_scale2.0_lr5e-05_seed0",
+        "r16_iter500_bs1_accum2_scale2.0_lr5e-05_seed0",
     ]
 
     # 2. (プロンプト, 推論名) のペアのリスト
