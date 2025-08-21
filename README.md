@@ -22,5 +22,31 @@
 - テキスト埋め込みもしていない
 
 
+## Cosmos (diffusion, text to video, 7B)
+- https://github.com/nvidia-cosmos/cosmos-predict1
+- https://docs.nvidia.com/cosmos/latest/
+
+### 準備
+- モデルパラメータをダウンロード
+  - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
+
+### 事前学習重みでの推論
+- torchrun --nproc_per_node 8 \
+cosmos_predict1/diffusion/inference/text2world.py \
+--num_gpus 8 \
+--checkpoint_dir checkpoints \
+--diffusion_transformer_dir Cosmos-Predict1-7B-Text2World \
+--prompt "A sleek, humanoid robot stands in a vast warehouse filled with neatly stacked cardboard boxes on industrial shelves." \
+--num_steps 50 \
+--video_save_folder outputs \
+--video_save_name humanoid_robot \
+--seed 0 \
+--fps 24 \
+--disable_guardrail \
+--disable_prompt_upsampler
+
+### 追加学習
+
+
 ## 注意
 - conda使用はNG。ライセンスを取っていないため。

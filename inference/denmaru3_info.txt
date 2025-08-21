@@ -1,8 +1,0 @@
-Prompt: Denmaru, the tall round red character with arms extended, jumps straight up vertically and lands smoothly on both feet. No rotation or sideways movement. The motion is continuous and smooth without distortions.
-Model type: video2world
-Image path: denmaru/denmaru3.jpg
-Num seeds: 10
-Num steps: 50
-FPS: 24
-Guidance: 9.0
-Command: inference/batch_inference.py --model_type video2world --prompt Denmaru, the tall round red character with arms extended, jumps straight up vertically and lands smoothly on both feet. No rotation or sideways movement. The motion is continuous and smooth without distortions. --image_path denmaru/denmaru3.jpg --num_seeds 10 --num_steps 50 --fps 24 --guidance 9.0 --output_dir denmaru3

@@ -1,7 +1,0 @@
-Prompt: Multiple cars move through a busy intersection in a futuristic city. Traffic lights change, pedestrians cross, and autonomous vehicles navigate smoothly around each other. Reflections from skyscrapers glide over the car surfaces, while drones fly overhead. The camera follows one car from above, then smoothly transitions to street-level perspective.
-Model type: text2world
-Num seeds: 10
-Num steps: 70
-FPS: 24
-Guidance: 9.0
-Command: inference/batch_inference.py --model_type text2world --prompt Multiple cars move through a busy intersection in a futuristic city. Traffic lights change, pedestrians cross, and autonomous vehicles navigate smoothly around each other. Reflections from skyscrapers glide over the car surfaces, while drones fly overhead. The camera follows one car from above, then smoothly transitions to street-level perspective. --num_seeds 10 --num_steps 70 --fps 24 --output_dir car_1

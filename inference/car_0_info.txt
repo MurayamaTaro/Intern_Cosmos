@@ -1,7 +1,0 @@
-Prompt: A sports car accelerates smoothly along a coastal highway at sunset. The camera follows behind, capturing the reflections of the sun on the glossy curved body. The suspension gently compresses as the car takes a slight curve, tires gripping the asphalt with subtle deformation. Waves crash against the nearby rocks as seagulls fly overhead.
-Model type: text2world
-Num seeds: 10
-Num steps: 70
-FPS: 24
-Guidance: 9.0
-Command: inference/batch_inference.py --model_type text2world --prompt A sports car accelerates smoothly along a coastal highway at sunset. The camera follows behind, capturing the reflections of the sun on the glossy curved body. The suspension gently compresses as the car takes a slight curve, tires gripping the asphalt with subtle deformation. Waves crash against the nearby rocks as seagulls fly overhead. --num_seeds 10 --num_steps 70 --fps 24 --output_dir car_0

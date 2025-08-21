@@ -1,8 +1,0 @@
-Prompt: The small robot subtly shifts its weight from one foot to another, maintaining balance while its head slowly moves side to side as if scanning the surroundings. Its glossy surface reflects the colorful city lights dynamically. Small mechanical servos softly hum as the movements transition smoothly. The camera gently zooms in to emphasize the balance corrections.
-Model type: video2world
-Image path: images/robot/robot1.jpg
-Num seeds: 10
-Num steps: 70
-FPS: 24
-Guidance: 7.5
-Command: inference/batch_inference.py --model_type video2world --prompt The small robot subtly shifts its weight from one foot to another, maintaining balance while its head slowly moves side to side as if scanning the surroundings. Its glossy surface reflects the colorful city lights dynamically. Small mechanical servos softly hum as the movements transition smoothly. The camera gently zooms in to emphasize the balance corrections. --image_path images/robot/robot1.jpg --num_seeds 10 --num_steps 70 --fps 24 --guidance 7.5 --output_dir robot1_1

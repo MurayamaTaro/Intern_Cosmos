@@ -1,1 +1,0 @@
-The small robot subtly shifts its weight from one foot to another, maintaining balance while its head slowly moves side to side as if scanning the surroundings. Its glossy surface reflects the colorful city lights dynamically. Small mechanical servos softly hum as the movements transition smoothly. The camera gently zooms in to emphasize the balance corrections.

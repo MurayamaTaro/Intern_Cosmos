@@ -7,10 +7,9 @@ RUN apt-get update && \
         ffmpeg libsm6 libxext6 libgl1-mesa-glx git curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Pythonパッケージ（torch/vision/audio/transformer-engineを除外済み）
+# Pythonパッケージ（wheel競合をなくす）
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
-    # wheel競合をなくす
     pip uninstall -y opencv-python || true && \
     pip install --no-cache-dir --force-reinstall \
         numpy==1.26.4 opencv-contrib-python==4.8.0.74
