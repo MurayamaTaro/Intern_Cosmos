@@ -1036,42 +1036,42 @@ text2world_7b_lora_example_cosmos_nemo_assets = LazyDict(
 
 
 # ==========================================================================================
-# ===== ここからがPanda70M用の汎用設定（P08用に修正） ========================
+# ===== ここからがmy設定 ========================
 # ==========================================================================================
 
-# Panda70M用のフレーム数を定義
-n_length_panda70m = 15
-num_frames_panda70m = 8 * n_length_panda70m + 1  # 121フレーム
+# my用のフレーム数を定義
+n_length_my = 15
+num_frames_my = 8 * n_length_my + 1  # 121フレーム
 
 # 汎用的なデータローダーを定義
 # パス、解像度、バッチサイズは後からコマンドラインで上書きする
-example_video_dataset_panda70m = L(Dataset)(
+example_video_dataset_my = L(Dataset)(
     dataset_dir="",  # 実行時に上書き (型をstrに)
     sequence_interval=1,
-    num_frames=num_frames_panda70m,
+    num_frames=num_frames_my,
     video_size=[0, 0],  # 実行時に上書き (型をlistに)
     start_frame_interval=1,
 )
 
-dataloader_train_panda70m = L(DataLoader)(
-    dataset=example_video_dataset_panda70m,
-    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m),
+dataloader_train_my = L(DataLoader)(
+    dataset=example_video_dataset_my,
+    sampler=L(get_sampler)(dataset=example_video_dataset_my),
     batch_size=1,  # 実行時に上書き (型をintに)
     drop_last=True,
     num_workers=8,
     pin_memory=True,
 )
-dataloader_val_panda70m = L(DataLoader)(
-    dataset=example_video_dataset_panda70m,
-    sampler=L(get_sampler)(dataset=example_video_dataset_panda70m),
+dataloader_val_my = L(DataLoader)(
+    dataset=example_video_dataset_my,
+    sampler=L(get_sampler)(dataset=example_video_dataset_my),
     batch_size=1,  # 実行時に上書き (型をintに)
     drop_last=True,
     num_workers=8,
     pin_memory=True,
 )
 
-# Panda70M用の汎用的なLoRA実験設定
-text2world_7b_lora_panda70m = LazyDict(
+# my用の汎用的なLoRA実験設定
+text2world_7b_lora_my = LazyDict(
     dict(
         defaults=[
             {"override /net": "faditv2_7b"},
@@ -1085,7 +1085,7 @@ text2world_7b_lora_panda70m = LazyDict(
         job=dict(
             project="posttraining",
             group="diffusion_text2world",
-            name="text2world_7b_lora_panda70m", # 登録用に名前を付ける（実行時に上書きされる）
+            name="text2world_7b_lora_my", # 登録用に名前を付ける（実行時に上書きされる）
         ),
         optimizer=dict(
             lr=0.0, # 実行時に上書き (型をfloatに)
@@ -1161,7 +1161,7 @@ text2world_7b_lora_panda70m = LazyDict(
                 rope_t_extrapolation_ratio=2,
                 use_memory_save=False,
             ),
-            vae=dict(pixel_chunk_duration=num_frames_panda70m),
+            vae=dict(pixel_chunk_duration=num_frames_my),
             conditioner=dict(text=dict(dropout_rate=0.0)),
         ),
         model_obj=L(PEFTVideoDiffusionModel)(
@@ -1175,8 +1175,8 @@ text2world_7b_lora_panda70m = LazyDict(
         scheduler=dict(
             warm_up_steps=[300],
         ),
-        dataloader_train=dataloader_train_panda70m,
-        dataloader_val=dataloader_val_panda70m,
+        dataloader_train=dataloader_train_my,
+        dataloader_val=dataloader_val_my,
     )
 )
 
@@ -1192,7 +1192,7 @@ def register_experiments(cs: ConfigStore) -> None:
         text2world_7b_example_cosmos_nemo_assets_8gpu_40gb,
         text2world_7b_example_cosmos_nemo_assets_4gpu_40gb,
         text2world_7b_lora_example_cosmos_nemo_assets,
-        text2world_7b_lora_panda70m, # 新しい汎用設定を登録
+        text2world_7b_lora_my, # 新しい汎用設定を登録
     ]:
         # `name`がPLACEHOLDERの場合は登録をスキップ
         if "name" in _item["job"] and _item["job"]["name"] != PLACEHOLDER:
