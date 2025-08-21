@@ -300,7 +300,7 @@ def main():
                         help="Text prompt for video generation.")
     parser.add_argument("--num_videos", type=int, default=1,
                         help="Number of videos to generate (different seeds).")
-    parser.add_argument("--nproc_per_node", type=int, default=1,
+    parser.add_argument("--nproc_per_node", type=int, default=8,
                         help="Number of GPUs for inference.")
     parser.add_argument("--num_steps", type=int, default=50,
                         help="Number of denoising steps.")

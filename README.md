@@ -44,6 +44,8 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --fps 24 \
 --disable_guardrail \
 --disable_prompt_upsampler
+  - num_stepsは拡散モデルのサンプリングステップのこと。大きくすると品質が上がるが計算時間も増える
+  - guardrail, prompt_upsamplerは研究用途のため、またgpuを圧迫するため常に外す
 
 ### 追加学習
 - python my_scripts/posttrain_single.py \
@@ -56,9 +58,19 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --scale 1.0 \
 --grad_accum_iter 1 \
 --seed 0
+  - batch_size_per_gpuを増やすとOOMになる可能性あり, grad_accum_iterを増やすのが安全
+  - scale（lora重みを何倍して足すか）は2, lora_rankは8, learning_rateは1e-4が標準的と思われる
+  - max_iterは3~10エポックほど?(不明)
 
-### 追加学習済みLoRA重みでの推論
-
+### 追加学習後LoRA重みでの推論
+- python my_scripts/inference_orig_lora.py \
+--inference_name test \
+--experiment_name panda70m_vehicle_r8_iter100_bs1_accum1_scale1.0_lr1e-04_seed0 \
+--prompt "A cinematic shot of a futuristic electric vehicle driving along a coastal road at sunset." \
+--num_videos 1 \
+--num_steps 50 \
+--stages both
+  - stagesにはoriginal（ベース重み）, lora（lora重み）, bothを指定できる
 
 ## 注意
 - conda系の使用はNG(minicondaも)。ライセンスを取っていないため。
