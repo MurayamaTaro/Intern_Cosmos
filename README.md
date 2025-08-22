@@ -1,14 +1,24 @@
 # Intern Cosmos
 
 ## 環境構築
-- VSCode拡張の「Dev containers」を入れる
-- 画面左下の水色のボタンから、「コンテナで開く」を押す
-  - cuda, pythonライブラリなど必要なものは全て入る
-- ビルドに1時間ほどかかるので注意
-- コード実行のためには以下フォルダが同じ階層に並んでいる必要あり
-  - checkpoints/, cosmos_predict1/, dataset_panda70m/, dataset_ultravideo/, dataset_vript/, my_scripts/, .devcontainer/
+- cd /data2/intern01/
+- /data2/intern01/for_Cosmos/直下にdataset_{3種類}/とcheckpoints/を準備済み
+  - それぞれ、データセットとモデル重みの実体が入っている
+- /data2/intern01/ で git clone https://github.com/MurayamaTaro/Intern_Cosmos.git
+- /data2/intern01/Intern_Cosmos/のようなフォルダができる
+- このフォルダにdataset_{3種類}/（重い）とcheckpoints/を移動(mvコマンド)
+  - 同ファイルシステム内なのですぐに終わるはず
+  - シンボリックリンクを貼っても良いかもしれないがコードの動作は未検証のため注意
+- このフォルダをVSCodeで開く
+- VSCode拡張機能の「Dev containers」を入れる
+- 画面左下の水色のボタンを押し、「コンテナで開く」を押す
+  - dockerコンテナのビルドが開始され、cuda, pythonライブラリなどが入る
+  - **ビルドに30分~1時間ほどかかるので注意**
+- 以下フォルダが同じ階層に並んでいることを確認（コード実行のために必要）
+  - checkpoints/, cosmos_predict1/, my_scripts/
 
-## データセット
+
+## データセット詳細
 
 ### VRipt
 - https://github.com/mutonix/Vript
@@ -16,7 +26,7 @@
   - 解像度はアスペクト比を保ちつつセンタークロップ&スケーリングで処理
   - フレーム数は長尺動画を前から重複なしで121フレームずつ切り出し
 - 付属カテゴリ名でドメイン分割済み
-- テキスト埋め込みはしていない
+- テキスト埋め込み済み
 
 ### UltraVideo
 - https://github.com/xzc-zju/UltraVideo
@@ -24,7 +34,6 @@
 - 解像度720×1280、フレーム数121に整形済み
   - 解像度はアスペクト比を保ちつつセンタークロップ&スケーリングで処理
   - フレームが足りないときは補間で処理
-- コーデック: H.264
 - ドメイン分割はしていない
 - テキスト埋め込みもしていない
 
