@@ -13,7 +13,8 @@
 - VSCode拡張機能の「Dev containers」を入れる
 - 画面左下の水色のボタンを押し、「コンテナで開く」を押す
   - dockerコンテナのビルドが開始され、cuda, pythonライブラリなどが入る
-  - **ビルドに30分~1時間ほどかかるので注意**
+  - **初回ビルドでは30分~1時間ほどかかるので注意**
+  - 二回目からは一瞬で終わる
 - 以下フォルダが同じ階層に並んでいることを確認（コード実行のために必要）
   - checkpoints/, cosmos_predict1/, my_scripts/
 
@@ -25,6 +26,9 @@
 - 解像度720×1280、フレーム数121に整形済み
   - 解像度はアスペクト比を保ちつつセンタークロップ&スケーリングで処理
   - フレーム数は長尺動画を前から重複なしで121フレームずつ切り出し
+- fps: 30 （元データ通り）
+  - Cosmosの学習ではフレーム数が121であることが重要なので問題なし
+  - fps24で推論すると少し遅く見える可能性あり（どちらでもok）
 - 付属カテゴリ名でドメイン分割済み
 - テキスト埋め込み済み
 
@@ -43,13 +47,13 @@
 - https://docs.nvidia.com/cosmos/latest/
 - 以下コードは動作確認済み
 
-### 準備（実行済みなので不要）
+### 準備（実行済みなので作業不要）
 - モデル重みをダウンロード
   - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
   - 成果物はcheckpoints/に入る
 
 ### プロンプト埋め込み
--
+- 省略
 
 ### 事前学習重みでの推論
 - torchrun --nproc_per_node 8 \
@@ -79,9 +83,10 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --scale 1.0 \
 --grad_accum_iter 1 \
 --seed 0
-  - batch_size_per_gpuを増やすとOOMになる可能性あり, grad_accum_iterを増やすのが安全
+  - batch_size_per_gpuを増やすとOOMになる可能性あり, grad_accum_iter（勾配累積）を増やすのが安全
   - scale（lora重みを何倍して足すか）は2, lora_rankは8, learning_rateは1e-4が標準的と思われる
   - max_iterは3~10エポックほど?(不明)
+  - ログがたくさん出ますがCosmosの仕様です。
 
 ### 追加学習後LoRA重みでの推論
 - python my_scripts/inference_orig_lora.py \
@@ -93,6 +98,8 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --stages both
   - stagesにはoriginal（ベース重み）, lora（lora重み）, bothを指定できる
 
-## 注意
-- conda系の使用はNG(minicondaも)。ライセンスを取っていないため。
+## 備考
+- conda系の使用はNG(minicondaも)なため注意。ライセンスを取っていないため。
 - Cosmosシステムは非常に厳密なのでcheckpointsの中のフォルダ名を変えるなどするとすぐエラーが出がちなため注意。
+- UltraVideoを使う場合、プロンプト埋め込みにはvript加工時に使ったコードold/create_vript_t5_embeddings_all_compat.pyが参考になるかもしれない。
+  - ドメイン分割については付属のメタ情報を使ってスクリプトを自作する必要あり
