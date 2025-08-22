@@ -1,5 +1,10 @@
 # Intern Cosmos
 
+## 環境構築
+- VSCode拡張の「Dev containers」を入れる
+- 画面左下の水色のボタンから、「コンテナで開く」を押す
+  - cuda, pythonライブラリなど必要なものは全て入る
+- ビルドに1時間ほどかかるので注意
 
 ## データセット
 
@@ -9,7 +14,7 @@
   - 解像度はアスペクト比を保ちつつセンタークロップ&スケーリングで処理
   - フレーム数は長尺動画を前から重複なしで121フレームずつ切り出し
 - 付属カテゴリ名でドメイン分割済み
-- テキスト埋め込み済み
+- テキスト埋め込みはしていない
 
 ### UltraVideo
 - https://github.com/xzc-zju/UltraVideo
@@ -25,11 +30,14 @@
 ## Cosmos (diffusion, text to video, 7B)
 - https://github.com/nvidia-cosmos/cosmos-predict1
 - https://docs.nvidia.com/cosmos/latest/
-- 以下コードは全て正常に動くことを確認済み
+- 以下コードは動作確認済み
 
 ### 準備
 - モデルパラメータをダウンロード
   - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
+
+### プロンプト埋め込み
+-
 
 ### 事前学習重みでの推論
 - torchrun --nproc_per_node 8 \
