@@ -5,6 +5,8 @@
 - 画面左下の水色のボタンから、「コンテナで開く」を押す
   - cuda, pythonライブラリなど必要なものは全て入る
 - ビルドに1時間ほどかかるので注意
+- コード実行のためには以下フォルダが同じ階層に並んでいる必要あり
+  - checkpoints/, cosmos_predict1/, dataset_panda70m/, dataset_ultravideo/, dataset_vript/, my_scripts/, .devcontainer/
 
 ## データセット
 
@@ -32,9 +34,10 @@
 - https://docs.nvidia.com/cosmos/latest/
 - 以下コードは動作確認済み
 
-### 準備
-- モデルパラメータをダウンロード
+### 準備（実行済みなので不要）
+- モデル重みをダウンロード
   - PYTHONPATH=$(pwd) python scripts/download_diffusion_checkpoints.py --model_sizes 7B --model_types Text2World
+  - 成果物はcheckpoints/に入る
 
 ### プロンプト埋め込み
 -
@@ -83,3 +86,4 @@ cosmos_predict1/diffusion/inference/text2world.py \
 
 ## 注意
 - conda系の使用はNG(minicondaも)。ライセンスを取っていないため。
+- Cosmosシステムは非常に厳密なのでcheckpointsの中のフォルダ名を変えるなどするとすぐエラーが出がちなため注意。
