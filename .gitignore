@@ -1,4 +1,5 @@
 dataset*/
+hf_token.txt
 
 # Misc
 outputs/
@@ -39,8 +40,6 @@ apex/
 *.log
 datasets*/
 .tmp*/
-
-Panda70m/
 
 # Credential information that should never be checked in
 credentials
