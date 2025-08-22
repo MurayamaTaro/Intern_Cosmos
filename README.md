@@ -4,6 +4,7 @@
 - cd /data2/intern01/
 - /data2/intern01/for_Cosmos/直下にdataset_{3種類}/とcheckpoints/を準備済み
   - それぞれ、データセットとモデル重みの実体が入っている
+  - dataset_panda70m:91GB, dataset_vript:222GB, dataset_vript:40GB, checkpoints:303GB
 - /data2/intern01/ で git clone https://github.com/MurayamaTaro/Intern_Cosmos.git
 - /data2/intern01/Intern_Cosmos/のようなフォルダができる
 - このフォルダにdataset_{3種類}/（重い）とcheckpoints/を移動(mvコマンド)
@@ -69,6 +70,7 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --fps 24 \
 --disable_guardrail \
 --disable_prompt_upsampler
+  - huggingfaceのログインを求められたら、https://huggingface.co/でアカウント作成 -> 画面右上の自分のアイコンからAccess Tokensを押す -> Create new tokenを押す -> token typeをReadにしてToken nameを適当につけて（何でも良い）、トークンを取得 -> コマンドで huggingface-cli login, トークン入力
   - num_stepsは拡散モデルのサンプリングステップのこと。大きくすると品質が上がるが計算時間も増える
   - guardrail, prompt_upsamplerは研究用途のため、またgpuを圧迫するため常に外す
 
@@ -83,10 +85,23 @@ cosmos_predict1/diffusion/inference/text2world.py \
 --scale 1.0 \
 --grad_accum_iter 1 \
 --seed 0
-  - batch_size_per_gpuを増やすとOOMになる可能性あり, grad_accum_iter（勾配累積）を増やすのが安全
-  - scale（lora重みを何倍して足すか）は2, lora_rankは8, learning_rateは1e-4が標準的と思われる
-  - max_iterは3~10エポックほど?(不明)
-  - ログがたくさん出ますがCosmosの仕様です。
+  - ハイパラについて
+    - 総イテレーション数 max_iter = データ数 × エポック数 / 実効グローバルバッチ
+    - batch_size_per_gpuを増やすとOutOfMemoryになる可能性あり -> grad_accum_iter（勾配累積）を増やすのが安全
+      - 勾配累積：勾配を複数回溜めてからパラメータ更新するテクニックで、大バッチサイズを近似する方法としてよく使われる（大規模モデルではgpuメモリの制約によりバッチサイズを大きくできないため）
+    - 実効バッチサイズ = #GPU(8) * batch_size_per_gpu * grad_accum_iter
+      - 実効バッチサイズは16~64ぐらいが安定
+    - エポック数：3~5エポックほど?
+    - learning_rate：5e-5~2e-4 が標準的
+    - lora_rank：8~32 が標準的
+    - scale（lora重みを何倍して足すか）：1.5~2.5 が標準的
+      - 大きくするならscaleかlrを下げて安定化必要
+  - メモ
+    - 計算時間は~
+    - ログがたくさん出るがこれはCosmosの仕様
+    - 損失値が負になることもあるが、Cosmosの損失関数はもともと負になりうるものを使っているため問題なし
+    - 拡散モデルでは分類モデルのように損失値が急激に減少しない。学習時、毎回各データの別のタイムステップを見るため。
+    - 分散学習はDDP（全gpuにモデル全体を置く）を採用している。gpuメモリを消費するが、FSDP（各gpuにモデルを分割して置く）ではクラッシュを回避できなかったため。
 
 ### 追加学習後LoRA重みでの推論
 - python my_scripts/inference_orig_lora.py \
